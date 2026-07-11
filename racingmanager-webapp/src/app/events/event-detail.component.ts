@@ -8,11 +8,7 @@ import { EventResponse } from './event.models';
   standalone: true,
   imports: [RouterLink, RouterOutlet],
   templateUrl: './event-detail.component.html',
-  styles: [`
-    .error { color: red; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .actions { display: flex; gap: 0.5rem; }
-  `],
+  styleUrl: './event-detail.component.scss',
 })
 export class EventDetailComponent {
   private readonly eventService = inject(EventService);

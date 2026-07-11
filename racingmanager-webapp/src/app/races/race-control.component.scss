@@ -1,0 +1,47 @@
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
+.header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.error { color: var(--color-error); }
+.heats { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.heat-card { background: var(--color-bg-panel); border: 1px solid var(--color-border); border-radius: var(--radius-panel); padding: var(--space-4); }
+.heat-card.armed { border-color: var(--color-warning); }
+.heat-card.started { border-color: var(--color-lane-1); }
+.heat-card.finished { border-color: var(--color-success); }
+.heat-card.cancelled { border-color: var(--color-error); opacity: 0.7; }
+.heat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-3); }
+.heat-header strong { font-size: 15px; margin-right: var(--space-2); }
+
+/* Status chip (spec §3.5 — icon/label + color, never color alone) */
+.heat-status { font-weight: 600; padding: 2px var(--space-2); border-radius: 999px; font-size: 12px; border: 1px solid transparent; text-transform: capitalize; }
+.heat-status.armed { color: var(--color-warning); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); background: color-mix(in srgb, var(--color-warning) 14%, transparent); }
+.heat-status.started { color: var(--color-lane-1); border-color: color-mix(in srgb, var(--color-lane-1) 50%, transparent); background: color-mix(in srgb, var(--color-lane-1) 18%, transparent); }
+.heat-status.finished { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 40%, transparent); background: color-mix(in srgb, var(--color-success) 14%, transparent); }
+.heat-status.cancelled { color: var(--color-error); border-color: color-mix(in srgb, var(--color-error) 40%, transparent); background: color-mix(in srgb, var(--color-error) 14%, transparent); }
+.heat-status.planned { color: var(--color-text-secondary); border-color: var(--color-border); background: var(--color-bg-raised); }
+
+.lanes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-3); }
+/* Lane identity (spec §3.1, §5.4): Lane 1 blue, Lane 2 red */
+.lane-card { border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-3); text-align: center; background: var(--color-bg-raised); }
+.lane-card.lane-1 { background: linear-gradient(160deg, var(--color-lane-1), var(--color-lane-1-grad)); border-color: transparent; color: #fff; }
+.lane-card.lane-2 { background: linear-gradient(160deg, var(--color-lane-2), var(--color-lane-2-grad)); border-color: transparent; color: #fff; }
+.lane-card.dnf { outline: 2px solid var(--color-warning); outline-offset: -2px; }
+.lane-card.finished { outline: 2px solid var(--color-success); outline-offset: -2px; }
+.lane-number { font-size: 20px; font-weight: 700; opacity: 0.85; }
+.lane-name { font-weight: 500; }
+.lane-time { font-size: 18px; font-weight: 600; margin-top: var(--space-1); }
+.lane-outcome { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; opacity: 0.9; }
+
+.actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+button { height: var(--control-height-compact); padding: 0 var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-control); cursor: pointer; font-size: 14px; background: var(--color-bg-raised); color: var(--color-text-primary); }
+button:hover { border-color: var(--color-text-muted); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary { background: var(--color-action); color: #08130b; border-color: var(--color-action); font-weight: 600; }
+button.danger { background: var(--color-error); color: #fff; border-color: var(--color-error); }
+button.success { background: var(--color-success); color: #08130b; border-color: var(--color-success); font-weight: 600; }
+button.warning { background: var(--color-warning); color: #1a1305; border-color: var(--color-warning); font-weight: 600; }
+
+.create-section { margin-bottom: var(--space-4); padding: var(--space-4); border: 1px dashed var(--color-border); border-radius: var(--radius-panel); background: var(--color-bg-panel); }
+.create-section h3 { margin-top: 0; font-size: 15px; font-weight: 600; }
+.create-section label { display: inline-flex; align-items: center; gap: var(--space-1); margin-right: var(--space-3); margin-bottom: var(--space-2); }
+.empty { padding: var(--space-8); text-align: center; color: var(--color-text-secondary); }
+.timestamps { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--color-text-muted); text-align: right; }

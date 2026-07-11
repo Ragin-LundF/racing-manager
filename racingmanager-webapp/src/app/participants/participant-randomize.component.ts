@@ -7,12 +7,7 @@ import { catchError, of } from 'rxjs';
   selector: 'app-participant-randomize',
   standalone: true,
   templateUrl: './participant-randomize.component.html',
-  styles: [`
-    .error { color: red; }
-    .success { color: green; }
-    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; margin-bottom: 1rem; }
-  `],
+  styleUrl: './participant-randomize.component.scss',
 })
 export class ParticipantRandomizeComponent {
   private readonly participantService = inject(ParticipantService);

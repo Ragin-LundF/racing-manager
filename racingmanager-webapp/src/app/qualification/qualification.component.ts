@@ -15,39 +15,7 @@ import { HeatResponse } from '../races/heat.models';
   standalone: true,
   imports: [RouterLink],
   templateUrl: './qualification.component.html',
-  styles: [`
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .error { color: red; }
-    .success { color: green; }
-    .section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
-    .section h3 { margin-top: 0; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #eee; }
-    th { font-weight: 600; background: #f5f5f5; }
-    .rank-1 { background: #fff8e1; }
-    .heat-list { display: flex; flex-direction: column; gap: 0.5rem; }
-    .heat-item { display: flex; justify-content: space-between; padding: 0.5rem; border: 1px solid #eee; border-radius: 4px; }
-    .heat-item.finished { background: #e8f5e9; }
-    .heat-item.in-progress { background: #e3f2fd; }
-    .heat-item.planned { background: #fafafa; }
-    .heat-item.cancelled { background: #ffebee; opacity: 0.6; }
-    .progress-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
-    .progress-card { text-align: center; padding: 1rem; border: 1px solid #eee; border-radius: 4px; }
-    .progress-value { font-size: 2rem; font-weight: 700; }
-    .progress-label { font-size: 0.8rem; color: #666; }
-    .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
-    button { padding: 0.4rem 0.8rem; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 0.875rem; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    button.primary { background: #1976d2; color: white; border-color: #1976d2; }
-    button.danger { background: #f44336; color: white; border-color: #f44336; }
-    button.success { background: #4caf50; color: white; border-color: #4caf50; }
-    button.warning { background: #ff9800; color: white; border-color: #ff9800; }
-    .empty { padding: 2rem; text-align: center; color: #666; }
-    .lane-info { font-size: 0.85rem; color: #555; }
-    .setup-form { display: flex; gap: 0.5rem; align-items: center; }
-    .setup-form input { width: 60px; padding: 0.3rem; }
-    .confirm-dialog { margin-top: 1rem; padding: 1rem; border: 1px solid #ff9800; border-radius: 8px; background: #fff8e1; }
-  `],
+  styleUrl: './qualification.component.scss',
 })
 export class QualificationComponent {
   private readonly qualificationService = inject(QualificationService);

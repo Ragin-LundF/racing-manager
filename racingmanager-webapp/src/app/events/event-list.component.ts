@@ -9,15 +9,7 @@ import { DatePipe } from '@angular/common';
   standalone: true,
   imports: [RouterLink, DatePipe],
   templateUrl: './event-list.component.html',
-  styles: [
-    `
-      .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-      .empty { padding: 2rem; text-align: center; color: #666; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
-      th { font-weight: 600; }
-    `,
-  ],
+  styleUrl: './event-list.component.scss',
 })
 export class EventListComponent {
   private readonly eventService = inject(EventService);

@@ -1,1 +1,128 @@
-/* You can add global styles to this file, and also import other style files */
+/* PineCar Race Timer — global design system (spec §3, §9).
+   Component styles are view-encapsulated, but these CSS custom properties
+   inherit through encapsulation, so every component consumes them via var(). */
+
+:root {
+  /* Surfaces */
+  --color-bg-canvas: #0d1117;
+  --color-bg-nav: #0b1016;
+  --color-bg-panel: #171e26;
+  --color-bg-raised: #1d2630;
+  --color-border: #2a3542;
+
+  /* Text */
+  --color-text-primary: #f5f7fa;
+  --color-text-secondary: #aab4c0;
+  --color-text-muted: #75808d;
+
+  /* Status / action */
+  --color-success: #69d46f;
+  --color-action: #4fae5b;
+  --color-warning: #f0b84b;
+  --color-error: #d9534f;
+  --color-focus: #77bdfb;
+
+  /* Lane identity */
+  --color-lane-1: #1767b2;
+  --color-lane-1-grad: #0e315a;
+  --color-lane-2: #b53036;
+  --color-lane-2-grad: #5a161b;
+
+  /* Shape */
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --radius-spectator: 12px;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Sizing */
+  --control-height: 40px;
+  --control-height-compact: 36px;
+
+  /* Typography */
+  --font-ui: 'Inter', 'Aptos', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Timing values and other numeric columns opt in via .tnum (spec §3.2). */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Keyboard focus is always visible (spec §3.1, §7). */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Dark defaults for native controls so they don't render bright on the canvas. */
+input,
+select,
+textarea {
+  background: var(--color-bg-raised);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-3);
+  height: var(--control-height-compact);
+  font: inherit;
+}
+
+textarea {
+  padding: var(--space-2) var(--space-3);
+  height: auto;
+}
+
+select option {
+  background: var(--color-bg-raised);
+  color: var(--color-text-primary);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: var(--color-focus);
+}
+
+/* Dark scrollbars. */
+* {
+  scrollbar-color: var(--color-border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 6px;
+}

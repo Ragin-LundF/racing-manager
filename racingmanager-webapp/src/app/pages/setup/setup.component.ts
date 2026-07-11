@@ -80,12 +80,7 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
       </button>
     </form>
   `,
-  styles: [
-    `
-      .error { color: red; }
-      small { color: red; display: block; }
-    `,
-  ],
+  styleUrl: './setup.component.scss',
 })
 export class SetupComponent {
   private readonly authService = inject(AuthService);

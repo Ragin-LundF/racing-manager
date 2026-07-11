@@ -1,0 +1,7 @@
+.error { color: var(--color-error); }
+.success { color: var(--color-success); }
+label { display: block; margin-bottom: var(--space-2); }
+textarea { display: block; width: 100%; max-width: 600px; height: 200px; margin-top: var(--space-1); font-family: monospace; }
+.actions { margin-top: var(--space-4); display: flex; gap: var(--space-2); }
+.errors { margin-top: var(--space-4); }
+.errors li { color: var(--color-error); }

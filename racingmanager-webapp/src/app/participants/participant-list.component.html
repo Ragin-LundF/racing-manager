@@ -2,7 +2,7 @@
   <div class="header">
     <h2 i18n="@@participants.list.title">Participants</h2>
     <div class="toolbar">
-      <button routerLink="participants/new" i18n="@@participants.list.add">Add Participant</button>
+      <button class="primary" routerLink="participants/new" i18n="@@participants.list.add">Add Participant</button>
       <button routerLink="participants/import" i18n="@@participants.list.import">Import CSV</button>
       <button routerLink="participants/randomize" i18n="@@participants.list.randomize">Randomize</button>
     </div>
@@ -33,19 +33,26 @@
       <tbody>
         @for (p of participants; track p.id) {
           <tr [class.inactive]="p.status === 'INACTIVE'">
-            <td>{{ p.startNumber }}</td>
+            <td class="num tnum">{{ p.startNumber }}</td>
             <td>{{ p.firstName }} {{ p.lastName }}</td>
             <td>{{ p.club }}</td>
             <td>{{ p.vehicle?.name ?? '-' }}</td>
-            <td>{{ p.status }}</td>
-            <td>{{ p.sortOrder }}</td>
+            <td>
+              <span
+                class="chip"
+                [class.chip-success]="p.status === 'ACTIVE'"
+                [class.chip-muted]="p.status !== 'ACTIVE'"
+                >{{ p.status }}</span
+              >
+            </td>
+            <td class="num tnum">{{ p.sortOrder }}</td>
             <td>{{ p.createdAt | date:'short' }}</td>
             <td class="actions">
               <a [routerLink]="['participants', p.id]" i18n="@@participants.list.edit">Edit</a>
               @if (p.status === 'ACTIVE') {
-                <button (click)="onDeactivate(p.id)" i18n="@@participants.list.deactivate">Deactivate</button>
+                <button class="destructive" (click)="onDeactivate(p.id)" i18n="@@participants.list.deactivate">Deactivate</button>
               } @else {
-                <button (click)="onReactivate(p.id)" i18n="@@participants.list.reactivate">Reactivate</button>
+                <button class="neutral" (click)="onReactivate(p.id)" i18n="@@participants.list.reactivate">Reactivate</button>
               }
             </td>
           </tr>

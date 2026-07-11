@@ -1,0 +1,35 @@
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); gap: var(--space-4); }
+.header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.toolbar { display: flex; gap: var(--space-2); align-items: center; }
+.error { color: var(--color-error); }
+.empty { padding: var(--space-8); text-align: center; color: var(--color-text-secondary); background: var(--color-bg-panel); border: 1px solid var(--color-border); border-radius: var(--radius-panel); }
+
+table { width: 100%; border-collapse: collapse; background: var(--color-bg-panel); border: 1px solid var(--color-border); border-radius: var(--radius-panel); overflow: hidden; font-size: 14px; }
+thead th { position: sticky; top: 0; z-index: 1; background: var(--color-bg-raised); color: var(--color-text-secondary); font-weight: 600; font-size: 13px; }
+th, td { padding: 0 var(--space-4); height: 44px; text-align: left; border-bottom: 1px solid var(--color-border); }
+tbody tr { transition: background 120ms ease; }
+tbody tr:hover { background: var(--color-bg-raised); }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; }
+.inactive { color: var(--color-text-muted); }
+.inactive .chip-muted { opacity: 0.7; }
+
+/* Status chip (spec §3.5 — never color only, label always shown) */
+.chip { display: inline-flex; align-items: center; padding: 2px var(--space-2); border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
+.chip-success { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 40%, transparent); background: color-mix(in srgb, var(--color-success) 14%, transparent); }
+.chip-muted { color: var(--color-text-muted); border-color: var(--color-border); background: var(--color-bg-raised); }
+
+/* Row actions (spec §4.6) */
+.actions { display: flex; gap: var(--space-2); align-items: center; }
+.actions a { color: var(--color-focus); text-decoration: none; }
+.actions a:hover { text-decoration: underline; }
+.actions button { height: 28px; padding: 0 var(--space-3); border-radius: var(--radius-control); border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); font-size: 13px; }
+.actions button.destructive { color: var(--color-error); }
+.actions button.destructive:hover { border-color: var(--color-error); }
+.actions button.neutral:hover { border-color: var(--color-text-muted); }
+
+/* Toolbar buttons */
+.toolbar button { height: var(--control-height-compact); padding: 0 var(--space-3); border-radius: var(--radius-control); border: 1px solid var(--color-border); background: var(--color-bg-raised); color: var(--color-text-primary); }
+.toolbar button:hover { border-color: var(--color-text-muted); }
+.toolbar button.primary { background: var(--color-action); border-color: var(--color-action); color: #08130b; font-weight: 600; }
+.toolbar button.primary:hover { filter: brightness(1.08); }

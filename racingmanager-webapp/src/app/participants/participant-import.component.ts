@@ -10,15 +10,7 @@ import { catchError, of } from 'rxjs';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './participant-import.component.html',
-  styles: [`
-    .error { color: red; }
-    .success { color: green; }
-    label { display: block; margin-bottom: 0.5rem; }
-    textarea { display: block; width: 100%; max-width: 600px; height: 200px; margin-top: 0.25rem; font-family: monospace; }
-    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    .errors { margin-top: 1rem; }
-    .errors li { color: red; }
-  `],
+  styleUrl: './participant-import.component.scss',
 })
 export class ParticipantImportComponent {
   private readonly participantService = inject(ParticipantService);

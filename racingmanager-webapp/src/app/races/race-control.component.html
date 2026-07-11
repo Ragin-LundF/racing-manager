@@ -47,10 +47,10 @@
         <div class="lanes">
           @for (lane of heat.lanes; track lane.lane) {
             @let measurement = getLaneMeasurement(heat, lane.lane);
-            <div class="lane-card" [class.finished]="measurement?.outcome === 'FINISHED'" [class.dnf]="measurement?.outcome === 'DNF'">
+            <div class="lane-card" [class.lane-1]="lane.lane === 1" [class.lane-2]="lane.lane === 2" [class.finished]="measurement?.outcome === 'FINISHED'" [class.dnf]="measurement?.outcome === 'DNF'">
               <div class="lane-number">{{ lane.lane }}</div>
               <div class="lane-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</div>
-              <div class="lane-time">{{ measurement ? formatNanos(measurement.durationNanos) : '-' }}</div>
+              <div class="lane-time tnum">{{ measurement ? formatNanos(measurement.durationNanos) : '-' }}</div>
               @if (measurement) {
                 <div class="lane-outcome">{{ measurement.outcome }}</div>
               }

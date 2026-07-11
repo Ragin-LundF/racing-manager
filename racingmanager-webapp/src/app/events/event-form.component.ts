@@ -11,16 +11,7 @@ import { catchError, of } from 'rxjs';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './event-form.component.html',
-  styles: [
-    `
-      .error { color: red; }
-      .conflict { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; margin-bottom: 1rem; }
-      small { color: red; display: block; }
-      label { display: block; margin-bottom: 0.5rem; }
-      input, select, textarea { display: block; width: 100%; max-width: 400px; margin-top: 0.25rem; }
-      .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    `,
-  ],
+  styleUrl: './event-form.component.scss',
 })
 export class EventFormComponent {
   private readonly eventService = inject(EventService);

@@ -9,16 +9,7 @@ import { DatePipe } from '@angular/common';
   standalone: true,
   imports: [RouterLink, DatePipe],
   templateUrl: './participant-list.component.html',
-  styles: [`
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .empty { padding: 2rem; text-align: center; color: #666; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
-    th { font-weight: 600; }
-    .inactive { opacity: 0.5; }
-    .actions { display: flex; gap: 0.25rem; }
-    .toolbar { display: flex; gap: 0.5rem; align-items: center; }
-  `],
+  styleUrl: './participant-list.component.scss',
 })
 export class ParticipantListComponent {
   private readonly participantService = inject(ParticipantService);

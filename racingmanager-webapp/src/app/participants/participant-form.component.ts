@@ -9,13 +9,7 @@ import { catchError, of } from 'rxjs';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './participant-form.component.html',
-  styles: [`
-    .error { color: red; }
-    small { color: red; display: block; }
-    label { display: block; margin-bottom: 0.5rem; }
-    input, select { display: block; width: 100%; max-width: 400px; margin-top: 0.25rem; }
-    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-  `],
+  styleUrl: './participant-form.component.scss',
 })
 export class ParticipantFormComponent {
   private readonly participantService = inject(ParticipantService);

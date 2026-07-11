@@ -51,12 +51,7 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
       </button>
     </form>
   `,
-  styles: [
-    `
-      .error { color: red; }
-      small { color: red; display: block; }
-    `,
-  ],
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   private readonly authService = inject(AuthService);
