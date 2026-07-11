@@ -149,6 +149,98 @@ class KnockoutService(
         return GeneratePairingsResult.Success(tournament.copy(status = KnockoutStatus.IN_PROGRESS, updatedAt = now))
     }
 
+    fun getQualifiedParticipants(eventId: UUID): List<QualificationRanking> {
+        return getQualificationRankings(eventId)
+    }
+
+    fun setManualPairings(eventId: UUID, pairings: List<Pair<UUID, UUID?>>, actorId: UUID): SetManualPairingsResult {
+        val tournament = knockoutRepository.findByEventId(eventId)
+            ?: return SetManualPairingsResult.TournamentNotFound
+
+        if (tournament.status != KnockoutStatus.PAIRING) {
+            return SetManualPairingsResult.InvalidStatus(tournament.status)
+        }
+
+        if (tournament.pairingMode != PairingMode.MANUAL) {
+            return SetManualPairingsResult.WrongPairingMode
+        }
+
+        val existingMatches = knockoutRepository.findMatchesByTournamentId(tournament.id)
+        if (existingMatches.isNotEmpty()) {
+            return SetManualPairingsResult.PairingsAlreadyExist
+        }
+
+        if (pairings.size < 1) {
+            return SetManualPairingsResult.NotEnoughParticipants
+        }
+
+        val now = clock.now()
+        val matches = mutableListOf<KnockoutMatchEntity>()
+
+        for ((index, pairing) in pairings.withIndex()) {
+            val (p1, p2) = pairing
+            val isBye = p2 == null
+            matches.add(
+                KnockoutMatchEntity(
+                    id = UUID.randomUUID(),
+                    tournamentId = tournament.id,
+                    roundNumber = 1,
+                    matchNumber = index + 1,
+                    participant1Id = p1,
+                    participant2Id = p2,
+                    status = if (isBye) KnockoutMatchStatus.COMPLETED else KnockoutMatchStatus.PLANNED,
+                    winnerId = if (isBye) p1 else null,
+                    createdAt = now,
+                ),
+            )
+        }
+
+        for (match in matches) {
+            knockoutRepository.insertMatch(match)
+        }
+
+        var currentRoundSize = matches.size
+        var roundNumber = 2
+        while (currentRoundSize > 1) {
+            val roundMatches = (1..currentRoundSize / 2).map { matchIndex ->
+                KnockoutMatchEntity(
+                    id = UUID.randomUUID(),
+                    tournamentId = tournament.id,
+                    roundNumber = roundNumber,
+                    matchNumber = matchIndex,
+                    status = KnockoutMatchStatus.PLANNED,
+                    createdAt = now,
+                )
+            }
+            for (m in roundMatches) {
+                knockoutRepository.insertMatch(m)
+            }
+            matches.addAll(roundMatches)
+            currentRoundSize = currentRoundSize / 2 + (if (currentRoundSize % 2 != 0) 1 else 0)
+            roundNumber++
+        }
+
+        knockoutRepository.updateStatus(
+            id = tournament.id,
+            status = KnockoutStatus.IN_PROGRESS,
+            updatedAt = now,
+        )
+
+        auditRepository.insert(
+            AuditEntryEntity(
+                id = UUID.randomUUID(),
+                actorId = actorId,
+                action = "KNOCKOUT_MANUAL_PAIRINGS",
+                targetType = "KnockoutTournament",
+                targetId = tournament.id,
+                summary = "Manual pairings set: ${matches.size} total matches",
+                occurredAt = clock.now(),
+            ),
+        )
+
+        return SetManualPairingsResult.Success(tournament.copy(status = KnockoutStatus.IN_PROGRESS, updatedAt = now))
+    }
+
     fun createHeatForMatch(eventId: UUID, matchId: UUID, actorId: UUID): CreateHeatForMatchResult {
         val tournament = knockoutRepository.findByEventId(eventId)
             ?: return CreateHeatForMatchResult.TournamentNotFound

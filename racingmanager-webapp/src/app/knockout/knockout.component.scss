@@ -13,10 +13,12 @@
 .match-card.finished { border-color: var(--color-success); }
 .match-card.in-progress { border-color: var(--color-lane-1); }
 .match-card.planned { opacity: 0.85; }
-.match-participant { display: flex; align-items: center; padding: var(--space-1) 0; font-size: 14px; }
+.match-participant { display: flex; align-items: center; justify-content: space-between; padding: var(--space-1) 0; font-size: 14px; }
 .match-participant.winner { font-weight: 600; color: var(--color-success); }
 .match-vs { font-size: 11px; color: var(--color-text-secondary); text-align: center; }
 .match-status { font-size: 11px; color: var(--color-text-secondary); text-align: center; margin-top: var(--space-1); }
+.match-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); justify-content: center; }
+.bye-badge { font-size: 10px; background: var(--color-warning); color: #08130b; padding: 1px 6px; border-radius: 3px; font-weight: 600; margin-left: var(--space-2); }
 .podium { display: flex; gap: var(--space-4); justify-content: center; padding: var(--space-4); }
 .podium-step { text-align: center; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-panel); min-width: 140px; background: var(--color-bg-raised); }
 .podium-step.gold { border-color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
@@ -25,10 +27,18 @@
 .podium-rank { font-size: 2rem; font-weight: 700; }
 .podium-name { font-size: 16px; font-weight: 600; margin-top: var(--space-2); }
 .podium-club { font-size: 13px; color: var(--color-text-secondary); margin-top: var(--space-1); }
-.actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+.manual-editor { display: flex; flex-direction: column; gap: var(--space-3); }
+.manual-form { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.manual-form select { height: var(--control-height-compact); padding: 0 var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-bg-raised); color: var(--color-text-primary); font-size: 14px; min-width: 180px; }
+.manual-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.manual-pairing-row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-bg-raised); font-size: 14px; }
+.manual-pairing-row .vs { font-size: 11px; color: var(--color-text-secondary); }
 button { height: var(--control-height-compact); padding: 0 var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-control); cursor: pointer; font-size: 14px; background: var(--color-bg-raised); color: var(--color-text-primary); }
 button:hover { border-color: var(--color-text-muted); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary { background: var(--color-action); color: #08130b; border-color: var(--color-action); font-weight: 600; }
 button.success { background: var(--color-success); color: #08130b; border-color: var(--color-success); font-weight: 600; }
+button.small { height: 26px; padding: 0 var(--space-2); font-size: 12px; }
+button.danger-small { height: 26px; width: 26px; padding: 0; font-size: 12px; border-color: var(--color-error); color: var(--color-error); margin-left: auto; }
+.small-link { font-size: 12px; }
 .confirm-dialog { margin-top: var(--space-4); padding: var(--space-4); border: 1px solid var(--color-warning); border-radius: var(--radius-panel); background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-panel)); }

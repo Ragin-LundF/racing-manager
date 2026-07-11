@@ -22,6 +22,15 @@ sealed interface GeneratePairingsResult {
     data object NotEnoughParticipants : GeneratePairingsResult
 }
 
+sealed interface SetManualPairingsResult {
+    data class Success(val tournament: KnockoutTournamentEntity) : SetManualPairingsResult
+    data object TournamentNotFound : SetManualPairingsResult
+    data class InvalidStatus(val status: KnockoutStatus) : SetManualPairingsResult
+    data object PairingsAlreadyExist : SetManualPairingsResult
+    data object NotEnoughParticipants : SetManualPairingsResult
+    data object WrongPairingMode : SetManualPairingsResult
+}
+
 sealed interface CreateHeatForMatchResult {
     data class Success(val heat: HeatEntity) : CreateHeatForMatchResult
     data object TournamentNotFound : CreateHeatForMatchResult

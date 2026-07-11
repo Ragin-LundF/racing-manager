@@ -34,9 +34,50 @@
       <p><strong>{{ 'knockout.pairingMode' | translate }}</strong> {{ 'knockout.mode' + t.pairingMode | translate }}</p>
 
       @if (t.status === 'PAIRING') {
-        <button class="primary" (click)="onGeneratePairings()" [disabled]="loading()">{{ 'knockout.generatePairings' | translate }}</button>
+        @if (t.pairingMode === 'MANUAL') {
+          <button class="primary" (click)="loadQualifiedParticipants(); showManualEditor.set(true)" [disabled]="loading()">{{ 'knockout.manualPairings' | translate }}</button>
+        } @else {
+          <button class="primary" (click)="onGeneratePairings()" [disabled]="loading()">{{ 'knockout.generatePairings' | translate }}</button>
+        }
       }
     </div>
+
+    @if (showManualEditor()) {
+      <div class="section">
+        <h3>{{ 'knockout.manualPairingsTitle' | translate }}</h3>
+        <div class="manual-editor">
+          <div class="manual-form">
+            <select [value]="selectedP1()" (change)="selectedP1.set($any($event.target).value)">
+              <option value="">{{ 'knockout.selectParticipant' | translate }}</option>
+              @for (q of availableQualified(); track q.participantId) {
+                <option [value]="q.participantId">#{{ q.startNumber }} {{ q.firstName }} {{ q.lastName }}</option>
+              }
+            </select>
+            <select [value]="selectedP2()" (change)="selectedP2.set($any($event.target).value)">
+              <option value="">{{ 'knockout.selectParticipantOrBye' | translate }}</option>
+              <option value="__BYE__">{{ 'knockout.bye' | translate }}</option>
+              @for (q of availableQualified(); track q.participantId) {
+                <option [value]="q.participantId">#{{ q.startNumber }} {{ q.firstName }} {{ q.lastName }}</option>
+              }
+            </select>
+            <button class="primary" (click)="addManualPairing()" [disabled]="!selectedP1()">{{ 'knockout.addPairing' | translate }}</button>
+          </div>
+          <div class="manual-list">
+            @for (pairing of manualPairings(); track $index) {
+              <div class="manual-pairing-row">
+                <span>{{ getQualifiedName(pairing.p1) }}</span>
+                <span class="vs">vs</span>
+                <span>{{ pairing.p2 ? getQualifiedName(pairing.p2) : ('knockout.bye' | translate) }}</span>
+                <button class="danger-small" (click)="removeManualPairing($index)">✕</button>
+              </div>
+            }
+          </div>
+          @if (manualPairings().length > 0) {
+            <button class="success" (click)="submitManualPairings()" [disabled]="loading()">{{ 'knockout.savePairings' | translate }}</button>
+          }
+        </div>
+      </div>
+    }
 
     @if (matches().length > 0) {
       <div class="section">
@@ -47,14 +88,29 @@
               <div class="round-header">{{ 'knockout.roundLabel' | translate: { number: round } }}</div>
               @for (match of matchesByRound(round); track match.id) {
                 <div class="match-card" [class]="matchStatusClass(match.status)">
-                  <div class="match-participant" [class.winner]="match.winnerId === match.participant1Id">
-                    <span class="participant-name">{{ getParticipantName(match, match.participant1Id) }}</span>
-                  </div>
-                  <div class="match-vs">vs</div>
-                  <div class="match-participant" [class.winner]="match.winnerId === match.participant2Id">
-                    <span class="participant-name">{{ getParticipantName(match, match.participant2Id) }}</span>
-                  </div>
+                  @if (isBye(match)) {
+                    <div class="match-participant winner">
+                      <span class="participant-name">{{ getParticipantName(match.participant1Id) }}</span>
+                      <span class="bye-badge">{{ 'knockout.bye' | translate }}</span>
+                    </div>
+                  } @else {
+                    <div class="match-participant" [class.winner]="match.winnerId === match.participant1Id">
+                      <span class="participant-name">{{ getParticipantName(match.participant1Id) }}</span>
+                    </div>
+                    <div class="match-vs">vs</div>
+                    <div class="match-participant" [class.winner]="match.winnerId === match.participant2Id">
+                      <span class="participant-name">{{ getParticipantName(match.participant2Id) }}</span>
+                    </div>
+                  }
                   <div class="match-status">{{ match.status }}</div>
+                  <div class="match-actions">
+                    @if (match.status === 'PLANNED' && match.participant1Id) {
+                      <button class="small" (click)="onCreateHeat(match)" [disabled]="loading()">{{ 'knockout.createHeat' | translate }}</button>
+                    }
+                    @if (match.heatId) {
+                      <a class="small-link" [routerLink]="['../race-control']">{{ 'knockout.goToRaceControl' | translate }}</a>
+                    }
+                  </div>
                 </div>
               }
             </div>

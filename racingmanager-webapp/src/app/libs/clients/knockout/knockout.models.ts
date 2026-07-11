@@ -45,3 +45,21 @@ export interface KnockoutResultEntryResponse {
   startNumber: number;
   club: string | null;
 }
+
+export interface QualifiedParticipantResponse {
+  participantId: string;
+  startNumber: number;
+  firstName: string;
+  lastName: string;
+  club: string | null;
+  qualificationRank: number;
+}
+
+export interface ManualPairingEntry {
+  participant1Id: string;
+  participant2Id: string | null;
+}
+
+export interface SetManualPairingsRequest {
+  pairings: ManualPairingEntry[];
+}

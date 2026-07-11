@@ -9,6 +9,8 @@ import {
   RecordMatchResultRequest,
   CreateHeatForMatchRequest,
   KnockoutResultEntryResponse,
+  QualifiedParticipantResponse,
+  SetManualPairingsRequest,
 } from './knockout.models';
 
 @Injectable({ providedIn: 'root' })
@@ -46,5 +48,13 @@ export class KnockoutClient {
 
   getResults(eventId: string): Observable<KnockoutResultEntryResponse[]> {
     return this.http.get<KnockoutResultEntryResponse[]>(`${this.baseUrl}/api/v1/events/${eventId}/knockout/results`);
+  }
+
+  getQualifiedParticipants(eventId: string): Observable<QualifiedParticipantResponse[]> {
+    return this.http.get<QualifiedParticipantResponse[]>(`${this.baseUrl}/api/v1/events/${eventId}/knockout/qualified-participants`);
+  }
+
+  setManualPairings(eventId: string, request: SetManualPairingsRequest): Observable<KnockoutTournamentResponse> {
+    return this.http.post<KnockoutTournamentResponse>(`${this.baseUrl}/api/v1/events/${eventId}/knockout/manual-pairings`, request);
   }
 }

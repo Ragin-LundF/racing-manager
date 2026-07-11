@@ -47,6 +47,27 @@ data class CreateHeatForMatchRequestModel(
 )
 
 @Serializable
+data class SetManualPairingsRequestModel(
+    val pairings: List<ManualPairingEntryModel>,
+)
+
+@Serializable
+data class ManualPairingEntryModel(
+    val participant1Id: String,
+    val participant2Id: String? = null,
+)
+
+@Serializable
+data class QualifiedParticipantResponseModel(
+    val participantId: String,
+    val startNumber: Int,
+    val firstName: String,
+    val lastName: String,
+    val club: String? = null,
+    val qualificationRank: Int,
+)
+
+@Serializable
 data class KnockoutResultEntryResponseModel(
     val rank: Int,
     val participantId: String,

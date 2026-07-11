@@ -196,6 +196,7 @@ class ParticipantService(
 
         val participants = participantRepository.findByEventId(eventId)
             .filter { it.status == ParticipantStatus.ACTIVE }
+            .sortedBy { it.id }
 
         val shuffled = participants.shuffled(random)
         val updates = shuffled.mapIndexed { index, p -> p.id to index }

@@ -162,12 +162,12 @@ class ParticipantServiceTest {
         participantService.create(eventId, 3, "C", "C", null, null, null, actorId)
 
         participantService.randomize(eventId, actorId)
-        val firstOrder = participantService.findByEventId(eventId).map { it.id to it.sortOrder }.toMap()
+        val firstMap = participantService.findByEventId(eventId).associateBy({ it.id }, { it.sortOrder })
 
         participantService.randomize(eventId, actorId, force = true)
-        val secondOrder = participantService.findByEventId(eventId).map { it.id to it.sortOrder }.toMap()
+        val secondMap = participantService.findByEventId(eventId).associateBy({ it.id }, { it.sortOrder })
 
-        assertEquals(firstOrder, secondOrder)
+        assertEquals(firstMap, secondMap)
     }
 
     @Test

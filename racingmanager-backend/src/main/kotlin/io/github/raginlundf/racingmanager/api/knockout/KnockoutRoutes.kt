@@ -5,7 +5,9 @@ import io.github.raginlundf.racingmanager.api.knockout.models.CreateHeatForMatch
 import io.github.raginlundf.racingmanager.api.knockout.models.KnockoutMatchResponseModel
 import io.github.raginlundf.racingmanager.api.knockout.models.KnockoutResultEntryResponseModel
 import io.github.raginlundf.racingmanager.api.knockout.models.KnockoutTournamentResponseModel
+import io.github.raginlundf.racingmanager.api.knockout.models.QualifiedParticipantResponseModel
 import io.github.raginlundf.racingmanager.api.knockout.models.RecordMatchResultRequestModel
+import io.github.raginlundf.racingmanager.api.knockout.models.SetManualPairingsRequestModel
 import io.github.raginlundf.racingmanager.api.knockout.models.SetupKnockoutRequestModel
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.SessionResult
@@ -15,10 +17,12 @@ import io.github.raginlundf.racingmanager.application.knockout.GeneratePairingsR
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutResultEntry
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.knockout.RecordMatchResult
+import io.github.raginlundf.racingmanager.application.knockout.SetManualPairingsResult
 import io.github.raginlundf.racingmanager.application.knockout.SetupKnockoutResult
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchEntity
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutTournamentEntity
 import io.github.raginlundf.racingmanager.domain.knockout.PairingMode
+import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
@@ -72,6 +76,43 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
                 message = ErrorResponseModel("KNOCKOUT_NOT_FOUND", "Knockout not found"),
             )
         call.respond(tournament.toResponseModel())
+    }
+
+    get("/api/v1/events/{eventId}/knockout/qualified-participants") {
+        val session = authenticateRequest(call, authService) ?: return@get
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        val participants = knockoutService.getQualifiedParticipants(eventId)
+        call.respond(participants.map { it.toQualifiedResponseModel() })
+    }
+
+    post("/api/v1/events/{eventId}/knockout/manual-pairings") {
+        val session = authenticateRequest(call, authService) ?: return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        val request = call.receive<SetManualPairingsRequestModel>()
+        val pairings = request.pairings.map { p ->
+            Pair(UUID.fromString(p.participant1Id), p.participant2Id?.let { UUID.fromString(it) })
+        }
+
+        when (val result = knockoutService.setManualPairings(eventId, pairings, session.user.id)) {
+            is SetManualPairingsResult.Success -> {
+                call.respond(result.tournament.toResponseModel())
+            }
+            is SetManualPairingsResult.TournamentNotFound -> {
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("KNOCKOUT_NOT_FOUND", "Knockout not found"))
+            }
+            is SetManualPairingsResult.InvalidStatus -> {
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Knockout must be PAIRING"))
+            }
+            is SetManualPairingsResult.PairingsAlreadyExist -> {
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("PAIRINGS_ALREADY_EXIST", "Pairings already generated"))
+            }
+            is SetManualPairingsResult.NotEnoughParticipants -> {
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("NOT_ENOUGH_PARTICIPANTS", "At least 1 pairing required"))
+            }
+            is SetManualPairingsResult.WrongPairingMode -> {
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("WRONG_PAIRING_MODE", "Knockout must be in MANUAL mode"))
+            }
+        }
     }
 
     post("/api/v1/events/{eventId}/knockout/pairings") {
@@ -236,4 +277,13 @@ private fun KnockoutResultEntry.toResponseModel() = KnockoutResultEntryResponseM
     lastName = lastName,
     startNumber = startNumber,
     club = club,
+)
+
+private fun QualificationRanking.toQualifiedResponseModel() = QualifiedParticipantResponseModel(
+    participantId = participantId.toString(),
+    startNumber = startNumber,
+    firstName = firstName,
+    lastName = lastName,
+    club = club,
+    qualificationRank = rank,
 )
