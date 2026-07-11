@@ -76,10 +76,10 @@
                 <strong>{{ 'qualification.heatLabel' | translate: { number: heat.heatNumber } }}</strong>
                 <span class="lane-info"> — {{ getLaneNames(heat) }}</span>
               </div>
-              <div>
+              <div class="heat-actions">
                 <span>{{ heat.status }}</span>
                 @if (heat.status === 'PLANNED') {
-                  <a [routerLink]="['../race-control']">{{ 'qualification.goToRaceControl' | translate }}</a>
+                  <button class="primary" [routerLink]="['../race-control']">{{ 'qualification.goToRaceControl' | translate }}</button>
                 }
               </div>
             </div>

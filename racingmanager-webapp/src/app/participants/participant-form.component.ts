@@ -36,6 +36,14 @@ export class ParticipantFormComponent {
     }
   }
 
+  /** Returns to the participant list. The participant routes span two URL
+      segments (participants/new, participants/:participantId), so a relative
+      ['..'] would land on a non-existent '.../participants' route — navigate to
+      the event's list root by id instead. */
+  protected backToList(): void {
+    this.router.navigate(['/', 'racemanager', this.route.snapshot.paramMap.get('id')]);
+  }
+
   private loadParticipant(id: string): void {
     const eventId = this.route.snapshot.paramMap.get('id')!;
     this.participantService.findById(eventId, id).subscribe({
@@ -70,7 +78,7 @@ export class ParticipantFormComponent {
         }),
       ).subscribe((res) => {
         if (res) {
-          this.router.navigate(['..'], { relativeTo: this.route });
+          this.backToList();
         }
       });
     } else {
@@ -88,7 +96,7 @@ export class ParticipantFormComponent {
         }),
       ).subscribe((res) => {
         if (res) {
-          this.router.navigate(['..'], { relativeTo: this.route });
+          this.backToList();
         }
       });
     }

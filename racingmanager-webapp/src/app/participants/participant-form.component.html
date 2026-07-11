@@ -51,7 +51,7 @@
       <button type="submit" [disabled]="form.invalid">
         {{ (isEdit() ? 'participants.form.save.edit' : 'participants.form.save.create') | translate }}
       </button>
-      <button type="button" (click)="router.navigate(['..'], { relativeTo: route })">{{ 'participants.form.cancel' | translate }}</button>
+      <button type="button" (click)="backToList()">{{ 'participants.form.cancel' | translate }}</button>
     </div>
   </form>
 </div>
