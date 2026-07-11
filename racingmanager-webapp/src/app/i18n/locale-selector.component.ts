@@ -1,21 +1,35 @@
 import { Component, inject } from '@angular/core';
-import { Locale, LocaleService } from './locale.service';
+import { LocaleService } from './locale.service';
 
 @Component({
   selector: 'app-locale-selector',
   standalone: true,
   template: `
-    <select [value]="localeService.currentLocale()" (change)="onChange($event)">
-      <option value="de">Deutsch</option>
-      <option value="en">English</option>
-    </select>
+    <div class="locale-switch" role="group" aria-label="Language">
+      <button
+        type="button"
+        class="flag"
+        [class.active]="localeService.currentLocale() === 'de'"
+        (click)="localeService.setLocale('de')"
+        title="Deutsch"
+        aria-label="Deutsch"
+      >
+        <span class="flag-emoji">🇩🇪</span><span class="flag-code">DE</span>
+      </button>
+      <button
+        type="button"
+        class="flag"
+        [class.active]="localeService.currentLocale() === 'en'"
+        (click)="localeService.setLocale('en')"
+        title="English"
+        aria-label="English"
+      >
+        <span class="flag-emoji">🇬🇧</span><span class="flag-code">EN</span>
+      </button>
+    </div>
   `,
+  styleUrl: './locale-selector.component.scss',
 })
 export class LocaleSelectorComponent {
   protected readonly localeService = inject(LocaleService);
-
-  protected onChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as Locale;
-    this.localeService.setLocale(value);
-  }
 }

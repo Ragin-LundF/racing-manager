@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="create-heat-lanes-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="heat_lanes"/></not>
+        </preConditions>
+        <createTable tableName="heat_lanes">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="heat_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_heat_lanes_heat" references="heats(id)"/>
+            </column>
+            <column name="lane" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="participant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_heat_lanes_participant" references="participants(id)"/>
+            </column>
+            <column name="participant_start_number" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="participant_first_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="participant_last_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

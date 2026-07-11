@@ -1,9 +1,11 @@
 package io.github.raginlundf.racingmanager
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.raginlundf.racingmanager.api.configureRouting
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
 import io.github.raginlundf.racingmanager.application.auth.AuthService
+import io.github.raginlundf.racingmanager.application.auth.SetupResult
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
@@ -22,7 +24,23 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.UserReposi
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.ktor.server.application.Application
 
+private val logger = KotlinLogging.logger {}
+
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+
+/** In the "demo" profile, seed a default admin (admin/admin) on first run so the
+    app is usable out of the box. No-op once any user exists. Switch the profile
+    (config `racingmanager.profile` or env `RACINGMANAGER_PROFILE`) away from "demo"
+    to disable. */
+private fun Application.seedDemoAdmin(authService: AuthService) {
+    val profile = environment.config.propertyOrNull("racingmanager.profile")?.getString() ?: "demo"
+    if (profile != "demo") return
+    when (authService.setupAdmin(username = "admin", password = "admin", displayName = "Administrator")) {
+        is SetupResult.Success ->
+            logger.warn { "[demo profile] Seeded default admin 'admin' / 'admin' — change these credentials." }
+        SetupResult.AlreadySetup -> Unit
+    }
+}
 
 fun Application.module() {
     val userRepository = UserRepository()
@@ -44,6 +62,7 @@ fun Application.module() {
     configureSerialization()
     configureStatusPages()
     configureDatabase()
+    seedDemoAdmin(authService)
     configureWebSockets()
     configureRouting(authService, eventService, participantService, heatService, qualificationService)
 }
