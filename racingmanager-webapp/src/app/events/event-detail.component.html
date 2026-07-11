@@ -8,17 +8,17 @@
       <div>
         <h2>{{ e.name }}</h2>
         <p>{{ e.description }}</p>
-        <p i18n="@@events.detail.info">Status: {{ e.status }} | Lanes: {{ e.settings.laneType }} | Measurement: {{ e.settings.measurementType }}</p>
+        <p>{{ 'events.detail.info' | translate: { status: e.status, lanes: ('enum.' + e.settings.laneType | translate), measurement: ('enum.' + e.settings.measurementType | translate) } }}</p>
       </div>
       <div class="actions">
         @if (e.status === 'DRAFT') {
-          <button (click)="onActivate()" i18n="@@events.detail.activate">Activate</button>
-          <a [routerLink]="['edit']" i18n="@@events.detail.edit">Edit</a>
+          <button (click)="onActivate()">{{ 'events.detail.activate' | translate }}</button>
+          <a [routerLink]="['edit']">{{ 'events.detail.edit' | translate }}</a>
         }
         @if (e.status === 'ACTIVE') {
-          <a [routerLink]="['race-control']" i18n="@@events.detail.raceControl">Race Control</a>
-          <a [routerLink]="['qualification']" i18n="@@events.detail.qualification">Qualification</a>
-          <button (click)="onArchive()" i18n="@@events.detail.archive">Archive</button>
+          <button [routerLink]="['race-control']">{{ 'events.detail.raceControl' | translate }}</button>
+          <button [routerLink]="['qualification']">{{ 'events.detail.qualification' | translate }}</button>
+          <button (click)="onArchive()">{{ 'events.detail.archive' | translate }}</button>
         }
       </div>
     </div>

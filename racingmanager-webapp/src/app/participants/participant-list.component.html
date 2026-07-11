@@ -1,10 +1,10 @@
 <div class="participant-list">
   <div class="header">
-    <h2 i18n="@@participants.list.title">Participants</h2>
+    <h2>{{ 'participants.list.title' | translate }}</h2>
     <div class="toolbar">
-      <button class="primary" routerLink="participants/new" i18n="@@participants.list.add">Add Participant</button>
-      <button routerLink="participants/import" i18n="@@participants.list.import">Import CSV</button>
-      <button routerLink="participants/randomize" i18n="@@participants.list.randomize">Randomize</button>
+      <button class="primary" routerLink="participants/new">{{ 'participants.list.add' | translate }}</button>
+      <button routerLink="participants/import">{{ 'participants.list.import' | translate }}</button>
+      <button routerLink="participants/randomize">{{ 'participants.list.randomize' | translate }}</button>
     </div>
   </div>
 
@@ -13,20 +13,18 @@
   }
 
   @if (participants.length === 0) {
-    <div class="empty" i18n="@@participants.list.empty">
-      No participants yet. Add participants to get started.
-    </div>
+    <div class="empty">{{ 'participants.list.empty' | translate }}</div>
   } @else {
     <table>
       <thead>
         <tr>
-          <th i18n="@@participants.list.startNumber">#</th>
-          <th i18n="@@participants.list.name">Name</th>
-          <th i18n="@@participants.list.club">Club</th>
-          <th i18n="@@participants.list.vehicle">Vehicle</th>
-          <th i18n="@@participants.list.status">Status</th>
-          <th i18n="@@participants.list.sortOrder">Sort Order</th>
-          <th i18n="@@participants.list.created">Created</th>
+          <th>{{ 'participants.list.startNumber' | translate }}</th>
+          <th>{{ 'participants.list.name' | translate }}</th>
+          <th>{{ 'participants.list.club' | translate }}</th>
+          <th>{{ 'participants.list.vehicle' | translate }}</th>
+          <th>{{ 'participants.list.status' | translate }}</th>
+          <th>{{ 'participants.list.sortOrder' | translate }}</th>
+          <th>{{ 'participants.list.created' | translate }}</th>
           <th></th>
         </tr>
       </thead>
@@ -48,11 +46,11 @@
             <td class="num tnum">{{ p.sortOrder }}</td>
             <td>{{ p.createdAt | date:'short' }}</td>
             <td class="actions">
-              <a [routerLink]="['participants', p.id]" i18n="@@participants.list.edit">Edit</a>
+              <button class="edit" [routerLink]="['participants', p.id]">{{ 'participants.list.edit' | translate }}</button>
               @if (p.status === 'ACTIVE') {
-                <button class="destructive" (click)="onDeactivate(p.id)" i18n="@@participants.list.deactivate">Deactivate</button>
+                <button class="destructive" (click)="onDeactivate(p.id)">{{ 'participants.list.deactivate' | translate }}</button>
               } @else {
-                <button class="neutral" (click)="onReactivate(p.id)" i18n="@@participants.list.reactivate">Reactivate</button>
+                <button class="neutral" (click)="onReactivate(p.id)">{{ 'participants.list.reactivate' | translate }}</button>
               }
             </td>
           </tr>

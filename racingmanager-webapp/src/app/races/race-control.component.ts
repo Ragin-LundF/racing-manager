@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { HeatClient } from '../libs/clients/heat/heat.client';
@@ -9,7 +10,7 @@ import { ParticipantResponse } from '../libs/clients/participant/participant.mod
 @Component({
   selector: 'app-race-control',
   standalone: true,
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, TranslatePipe],
   templateUrl: './race-control.component.html',
   styleUrl: './race-control.component.scss',
 })

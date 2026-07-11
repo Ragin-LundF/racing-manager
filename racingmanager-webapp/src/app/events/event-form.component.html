@@ -1,5 +1,5 @@
 <div class="event-form">
-  <h2 i18n="@@events.form.title">{{ isEdit() ? 'Edit Event' : 'Create Event' }}</h2>
+  <h2>{{ (isEdit() ? 'events.form.title.edit' : 'events.form.title.create') | translate }}</h2>
 
   @if (error()) {
     <p class="error">{{ error() }}</p>
@@ -7,57 +7,55 @@
 
   @if (conflict(); as c) {
     <div class="conflict">
-      <strong i18n="@@events.form.conflict.title">Version Conflict</strong>
-      <p i18n="@@events.form.conflict.message">This event was modified by another user. Refresh and try again.</p>
-      <p i18n="@@events.form.conflict.detail">Expected version {{ c.expectedVersion }}, actual version {{ c.actualVersion }}.</p>
-      <button (click)="onDismissConflict()" i18n="@@events.form.conflict.reload">Reload</button>
+      <strong>{{ 'events.form.conflict.title' | translate }}</strong>
+      <p>{{ 'events.form.conflict.message' | translate }}</p>
+      <p>{{ 'events.form.conflict.detail' | translate: { expected: c.expectedVersion, actual: c.actualVersion } }}</p>
+      <button (click)="onDismissConflict()">{{ 'events.form.conflict.reload' | translate }}</button>
     </div>
   }
 
   <form #form="ngForm" (ngSubmit)="onSubmit()">
-    <label i18n="@@events.form.name">
-      Name
+    <label>
+      <span>{{ 'events.form.name.label' | translate }}</span>
       <input name="name" [(ngModel)]="name" required minlength="1" #nameField="ngModel" />
     </label>
     @if (nameField.invalid && nameField.touched) {
-      <small i18n="@@events.form.name.required">Name is required.</small>
+      <small>{{ 'events.form.name.required' | translate }}</small>
     }
 
-    <label i18n="@@events.form.description">
-      Description
+    <label>
+      <span>{{ 'events.form.description' | translate }}</span>
       <textarea name="description" [(ngModel)]="description"></textarea>
     </label>
 
-    <label i18n="@@events.form.lanes">
-      Lanes
+    <label>
+      <span>{{ 'events.form.lanes' | translate }}</span>
       <select name="laneType" [(ngModel)]="laneType">
         @for (lane of laneTypes; track lane) {
-          <option [value]="lane">{{ lane }}</option>
+          <option [value]="lane">{{ 'enum.' + lane | translate }}</option>
         }
       </select>
     </label>
 
-    <label i18n="@@events.form.measurement">
-      Measurement
+    <label>
+      <span>{{ 'events.form.measurement' | translate }}</span>
       <select name="measurementType" [(ngModel)]="measurementType">
         @for (m of measurementTypes; track m) {
-          <option [value]="m">{{ m }}</option>
+          <option [value]="m">{{ 'enum.' + m | translate }}</option>
         }
       </select>
     </label>
 
-    <label i18n="@@events.form.maxParticipants">
-      Max Participants (optional)
+    <label>
+      <span>{{ 'events.form.maxParticipants' | translate }}</span>
       <input type="number" name="maxParticipants" [(ngModel)]="maxParticipants" min="1" />
     </label>
 
     <div class="actions">
-      <button type="submit" [disabled]="form.invalid" i18n="@@events.form.save">
-        {{ isEdit() ? 'Save Changes' : 'Create Event' }}
+      <button type="submit" [disabled]="form.invalid">
+        {{ (isEdit() ? 'events.form.save.edit' : 'events.form.save.create') | translate }}
       </button>
-      <button type="button" (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@events.form.cancel">
-        Cancel
-      </button>
+      <button type="button" (click)="router.navigate(['..'], { relativeTo: route })">{{ 'events.form.cancel' | translate }}</button>
     </div>
   </form>
 </div>

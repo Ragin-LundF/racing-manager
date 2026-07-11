@@ -1,6 +1,6 @@
 <div class="qualification">
   <div class="header">
-    <h2 i18n="@@qualification.title">Qualification</h2>
+    <h2>{{ 'qualification.title' | translate }}</h2>
   </div>
 
   @if (error()) {
@@ -12,55 +12,55 @@
 
   @if (!qualification()) {
     <div class="section">
-      <h3 i18n="@@qualification.setupTitle">Setup Qualification</h3>
-      <p i18n="@@qualification.setupDescription">Configure and start the qualification phase. Each participant will race in multiple runs.</p>
+      <h3>{{ 'qualification.setupTitle' | translate }}</h3>
+      <p>{{ 'qualification.setupDescription' | translate }}</p>
       <div class="setup-form">
-        <label for="runs" i18n="@@qualification.numberOfRuns">Number of runs:</label>
+        <label for="runs">{{ 'qualification.numberOfRuns' | translate }}</label>
         <input id="runs" type="number" min="1" max="10" [value]="numberOfRuns()" (input)="numberOfRuns.set(+$any($event.target).value)" />
-        <button class="primary" (click)="onSetup()" [disabled]="loading()" i18n="@@qualification.setupButton">Setup</button>
+        <button class="primary" (click)="onSetup()" [disabled]="loading()">{{ 'qualification.setupButton' | translate }}</button>
       </div>
     </div>
   }
 
   @if (qualification(); as q) {
     <div class="section">
-      <h3 i18n="@@qualification.statusTitle">Qualification Status</h3>
-      <p><strong i18n="@@qualification.status">Status:</strong> {{ q.status }}</p>
-      <p><strong i18n="@@qualification.seed">Seed:</strong> {{ q.seed }}</p>
-      <p><strong i18n="@@qualification.runs">Runs:</strong> {{ q.numberOfRuns }}</p>
+      <h3>{{ 'qualification.statusTitle' | translate }}</h3>
+      <p><strong>{{ 'qualification.status' | translate }}</strong> {{ q.status }}</p>
+      <p><strong>{{ 'qualification.seed' | translate }}</strong> {{ q.seed }}</p>
+      <p><strong>{{ 'qualification.runs' | translate }}</strong> {{ q.numberOfRuns }}</p>
 
       @if (q.status === 'PENDING') {
-        <button class="primary" (click)="onGenerateSchedule()" [disabled]="loading()" i18n="@@qualification.generateSchedule">Generate Schedule</button>
+        <button class="primary" (click)="onGenerateSchedule()" [disabled]="loading()">{{ 'qualification.generateSchedule' | translate }}</button>
       }
     </div>
 
     @if (progress(); as p) {
       <div class="section">
-        <h3 i18n="@@qualification.progressTitle">Progress</h3>
+        <h3>{{ 'qualification.progressTitle' | translate }}</h3>
         <div class="progress-grid">
           <div class="progress-card">
             <div class="progress-value">{{ p.totalHeats }}</div>
-            <div class="progress-label" i18n="@@qualification.totalHeats">Total Heats</div>
+            <div class="progress-label">{{ 'qualification.totalHeats' | translate }}</div>
           </div>
           <div class="progress-card">
             <div class="progress-value">{{ p.completedHeats }}</div>
-            <div class="progress-label" i18n="@@qualification.completedHeats">Completed</div>
+            <div class="progress-label">{{ 'qualification.completedHeats' | translate }}</div>
           </div>
           <div class="progress-card">
             <div class="progress-value">{{ p.inProgressHeats }}</div>
-            <div class="progress-label" i18n="@@qualification.inProgressHeats">In Progress</div>
+            <div class="progress-label">{{ 'qualification.inProgressHeats' | translate }}</div>
           </div>
           <div class="progress-card">
             <div class="progress-value">{{ p.plannedHeats }}</div>
-            <div class="progress-label" i18n="@@qualification.plannedHeats">Planned</div>
+            <div class="progress-label">{{ 'qualification.plannedHeats' | translate }}</div>
           </div>
           <div class="progress-card">
             <div class="progress-value">{{ p.cancelledHeats }}</div>
-            <div class="progress-label" i18n="@@qualification.cancelledHeats">Cancelled</div>
+            <div class="progress-label">{{ 'qualification.cancelledHeats' | translate }}</div>
           </div>
           <div class="progress-card">
             <div class="progress-value">{{ p.participantsWithResults }} / {{ p.totalParticipants }}</div>
-            <div class="progress-label" i18n="@@qualification.participantsWithResults">With Results</div>
+            <div class="progress-label">{{ 'qualification.participantsWithResults' | translate }}</div>
           </div>
         </div>
       </div>
@@ -68,18 +68,18 @@
 
     @if (schedule().length > 0) {
       <div class="section">
-        <h3 i18n="@@qualification.scheduleTitle">Schedule</h3>
+        <h3>{{ 'qualification.scheduleTitle' | translate }}</h3>
         <div class="heat-list">
           @for (heat of schedule(); track heat.id) {
             <div class="heat-item" [class]="heatStatusClass(heat.status)">
               <div>
-                <strong i18n="@@qualification.heatLabel">Heat #{{ heat.heatNumber }}</strong>
+                <strong>{{ 'qualification.heatLabel' | translate: { number: heat.heatNumber } }}</strong>
                 <span class="lane-info"> — {{ getLaneNames(heat) }}</span>
               </div>
               <div>
                 <span>{{ heat.status }}</span>
                 @if (heat.status === 'PLANNED') {
-                  <a [routerLink]="['../race-control']" i18n="@@qualification.goToRaceControl">Run</a>
+                  <a [routerLink]="['../race-control']">{{ 'qualification.goToRaceControl' | translate }}</a>
                 }
               </div>
             </div>
@@ -90,17 +90,17 @@
 
     @if (rankings().length > 0) {
       <div class="section">
-        <h3 i18n="@@qualification.rankingsTitle">Rankings</h3>
+        <h3>{{ 'qualification.rankingsTitle' | translate }}</h3>
         <table>
           <thead>
             <tr>
-              <th i18n="@@qualification.rank">Rank</th>
-              <th i18n="@@qualification.startNumber">#</th>
-              <th i18n="@@qualification.name">Name</th>
-              <th i18n="@@qualification.club">Club</th>
-              <th i18n="@@qualification.bestTime">Best Time</th>
-              <th i18n="@@qualification.completedRuns">Runs</th>
-              <th i18n="@@qualification.dnf">DNF</th>
+              <th>{{ 'qualification.rank' | translate }}</th>
+              <th>{{ 'qualification.startNumber' | translate }}</th>
+              <th>{{ 'qualification.name' | translate }}</th>
+              <th>{{ 'qualification.club' | translate }}</th>
+              <th>{{ 'qualification.bestTime' | translate }}</th>
+              <th>{{ 'qualification.completedRuns' | translate }}</th>
+              <th>{{ 'qualification.dnf' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -122,16 +122,16 @@
 
     @if (q.status === 'SCHEDULED' || q.status === 'IN_PROGRESS') {
       <div class="section">
-        <h3 i18n="@@qualification.actionsTitle">Actions</h3>
-        <p i18n="@@qualification.finalizeHint">All heats must be completed before finalizing.</p>
+        <h3>{{ 'qualification.actionsTitle' | translate }}</h3>
+        <p>{{ 'qualification.finalizeHint' | translate }}</p>
         @if (!showFinalizeConfirm()) {
-          <button class="success" (click)="showFinalizeConfirm.set(true)" i18n="@@qualification.finalizeButton">Finalize</button>
+          <button class="success" (click)="showFinalizeConfirm.set(true)">{{ 'qualification.finalizeButton' | translate }}</button>
         }
         @if (showFinalizeConfirm()) {
           <div class="confirm-dialog">
-            <p i18n="@@qualification.finalizeConfirm">Are you sure? This will lock the rankings.</p>
-            <button class="success" (click)="onFinalize()" [disabled]="loading()" i18n="@@qualification.confirmFinalize">Yes, Finalize</button>
-            <button (click)="showFinalizeConfirm.set(false)" i18n="@@qualification.cancel">Cancel</button>
+            <p>{{ 'qualification.finalizeConfirm' | translate }}</p>
+            <button class="success" (click)="onFinalize()" [disabled]="loading()">{{ 'qualification.confirmFinalize' | translate }}</button>
+            <button (click)="showFinalizeConfirm.set(false)">{{ 'qualification.cancel' | translate }}</button>
           </div>
         }
       </div>
@@ -139,16 +139,16 @@
 
     @if (q.status === 'FINALIZED') {
       <div class="section">
-        <h3 i18n="@@qualification.finalizedTitle">Finalized</h3>
-        <p i18n="@@qualification.finalizedMessage">Qualification is finalized. Rankings are locked.</p>
+        <h3>{{ 'qualification.finalizedTitle' | translate }}</h3>
+        <p>{{ 'qualification.finalizedMessage' | translate }}</p>
         @if (!showReopenConfirm()) {
-          <button class="warning" (click)="showReopenConfirm.set(true)" i18n="@@qualification.reopenButton">Reopen</button>
+          <button class="warning" (click)="showReopenConfirm.set(true)">{{ 'qualification.reopenButton' | translate }}</button>
         }
         @if (showReopenConfirm()) {
           <div class="confirm-dialog">
-            <p i18n="@@qualification.reopenConfirm">Reopen qualification to allow more runs?</p>
-            <button class="warning" (click)="onReopen()" [disabled]="loading()" i18n="@@qualification.confirmReopen">Yes, Reopen</button>
-            <button (click)="showReopenConfirm.set(false)" i18n="@@qualification.cancel">Cancel</button>
+            <p>{{ 'qualification.reopenConfirm' | translate }}</p>
+            <button class="warning" (click)="onReopen()" [disabled]="loading()">{{ 'qualification.confirmReopen' | translate }}</button>
+            <button (click)="showReopenConfirm.set(false)">{{ 'qualification.cancel' | translate }}</button>
           </div>
         }
       </div>

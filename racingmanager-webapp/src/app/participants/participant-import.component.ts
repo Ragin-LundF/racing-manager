@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
@@ -8,7 +9,7 @@ import { catchError, of } from 'rxjs';
 @Component({
   selector: 'app-participant-import',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './participant-import.component.html',
   styleUrl: './participant-import.component.scss',
 })

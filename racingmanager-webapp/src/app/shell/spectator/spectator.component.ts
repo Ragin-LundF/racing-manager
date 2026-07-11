@@ -1,11 +1,13 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-spectator-shell',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
-    <h2 i18n="@@spectator.shell.title">Spectator View</h2>
-    <p i18n="@@spectator.shell.placeholder">Live race results will appear here.</p>
+    <h2>{{ 'spectator.shell.title' | translate }}</h2>
+    <p>{{ 'spectator.shell.placeholder' | translate }}</p>
   `,
 })
 export class SpectatorShellComponent {}

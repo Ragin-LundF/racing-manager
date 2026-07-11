@@ -1,91 +1,70 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth.service';
-import { LocaleService } from '../../i18n/locale.service';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 
 @Component({
   selector: 'app-setup',
   standalone: true,
-  imports: [FormsModule, LocaleSelectorComponent],
+  imports: [FormsModule, LocaleSelectorComponent, TranslatePipe],
   template: `
-    <app-locale-selector />
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-locale"><app-locale-selector /></div>
 
-    <h2 i18n="@@setup.title">Administrator Setup</h2>
+        <h2>{{ 'setup.title' | translate }}</h2>
 
-    @if (error()) {
-      <p class="error" i18n="@@setup.error.generic">Setup failed. Please try again.</p>
-    }
+        @if (error()) {
+          <p class="error">{{ 'setup.error.generic' | translate }}</p>
+        }
 
-    <form #form="ngForm" (ngSubmit)="onSubmit()">
-      <label i18n="@@setup.username">
-        Username
-        <input
-          name="username"
-          [(ngModel)]="username"
-          required
-          minlength="3"
-          #usernameField="ngModel"
-        />
-      </label>
-      @if (usernameField.invalid && usernameField.touched) {
-        <small i18n="@@setup.username.required">Username is required (min. 3 characters).</small>
-      }
+        <form #form="ngForm" (ngSubmit)="onSubmit()">
+          <label>
+            <span>{{ 'setup.username.label' | translate }}</span>
+            <input name="username" [(ngModel)]="username" required minlength="3" #usernameField="ngModel" />
+          </label>
+          @if (usernameField.invalid && usernameField.touched) {
+            <small>{{ 'setup.username.required' | translate }}</small>
+          }
 
-      <label i18n="@@setup.displayName">
-        Display Name
-        <input
-          name="displayName"
-          [(ngModel)]="displayName"
-          required
-          #displayNameField="ngModel"
-        />
-      </label>
-      @if (displayNameField.invalid && displayNameField.touched) {
-        <small i18n="@@setup.displayName.required">Display name is required.</small>
-      }
+          <label>
+            <span>{{ 'setup.displayName.label' | translate }}</span>
+            <input name="displayName" [(ngModel)]="displayName" required #displayNameField="ngModel" />
+          </label>
+          @if (displayNameField.invalid && displayNameField.touched) {
+            <small>{{ 'setup.displayName.required' | translate }}</small>
+          }
 
-      <label i18n="@@setup.password">
-        Password
-        <input
-          type="password"
-          name="password"
-          [(ngModel)]="password"
-          required
-          minlength="8"
-          #passwordField="ngModel"
-        />
-      </label>
-      @if (passwordField.invalid && passwordField.touched) {
-        <small i18n="@@setup.password.required">Password is required (min. 8 characters).</small>
-      }
+          <label>
+            <span>{{ 'setup.password.label' | translate }}</span>
+            <input type="password" name="password" [(ngModel)]="password" required minlength="8" #passwordField="ngModel" />
+          </label>
+          @if (passwordField.invalid && passwordField.touched) {
+            <small>{{ 'setup.password.required' | translate }}</small>
+          }
 
-      <label i18n="@@setup.confirmPassword">
-        Confirm Password
-        <input
-          type="password"
-          name="confirmPassword"
-          [(ngModel)]="confirmPassword"
-          required
-          #confirmField="ngModel"
-        />
-      </label>
-      @if (confirmField.touched && password !== confirmPassword) {
-        <small i18n="@@setup.password.mismatch">Passwords do not match.</small>
-      }
+          <label>
+            <span>{{ 'setup.confirmPassword' | translate }}</span>
+            <input type="password" name="confirmPassword" [(ngModel)]="confirmPassword" required #confirmField="ngModel" />
+          </label>
+          @if (confirmField.touched && password !== confirmPassword) {
+            <small>{{ 'setup.password.mismatch' | translate }}</small>
+          }
 
-      <button type="submit" [disabled]="form.invalid || password !== confirmPassword" i18n="@@setup.submit">
-        Create Administrator
-      </button>
-    </form>
+          <button type="submit" [disabled]="form.invalid || password !== confirmPassword">
+            {{ 'setup.submit' | translate }}
+          </button>
+        </form>
+      </div>
+    </div>
   `,
   styleUrl: './setup.component.scss',
 })
 export class SetupComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly localeService = inject(LocaleService);
 
   protected username = '';
   protected displayName = '';
@@ -105,10 +84,7 @@ export class SetupComponent {
         if ('code' in res) {
           this.error.set(true);
         } else {
-          this.router.navigate([
-            this.localeService.currentLocale(),
-            'login',
-          ]);
+          this.router.navigate(['/login']);
         }
       });
   }

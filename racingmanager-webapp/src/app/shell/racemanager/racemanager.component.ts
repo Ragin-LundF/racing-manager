@@ -1,8 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth.service';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
-import { LocaleService } from '../../i18n/locale.service';
 import { EventClient } from '../../libs/clients/event/event.client';
 import { EventResponse } from '../../libs/clients/event/event.models';
 import { QualificationClient } from '../../libs/clients/qualification/qualification.client';
@@ -16,7 +18,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-racemanager-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LocaleSelectorComponent, FormsModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LocaleSelectorComponent, FormsModule, TranslatePipe],
   templateUrl: './racemanager.component.html',
   styleUrl: './racemanager.component.scss',
 })
@@ -25,7 +27,6 @@ export class RaceManagerShellComponent {
   private readonly eventService = inject(EventClient);
   private readonly qualificationService = inject(QualificationClient);
   private readonly router = inject(Router);
-  protected readonly localeService = inject(LocaleService);
 
   protected events: EventResponse[] = [];
   protected activeEvent: EventResponse | null = null;
@@ -37,29 +38,63 @@ export class RaceManagerShellComponent {
 
   constructor() {
     this.loadEvents();
+    // The selected event follows wherever you are — opening an event (including
+    // right after creating it) auto-selects it, so no separate top-bar step.
+    this.router.events
+      .pipe(
+        filter((e) => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.syncActiveEventFromUrl());
+    this.syncActiveEventFromUrl();
   }
 
   private loadEvents(): void {
     this.eventService.findAll().subscribe((events) => {
       this.events = events;
-      this.activeEvent = events.find((e) => e.status === 'ACTIVE') ?? null;
-      if (this.activeEvent) {
-        this.selectedEventId = this.activeEvent.id;
-        this.loadContext(this.activeEvent.id);
+      // Reconcile with the current route first; fall back to the ACTIVE event.
+      if (!this.syncActiveEventFromUrl()) {
+        this.selectEvent(events.find((e) => e.status === 'ACTIVE') ?? null);
       }
     });
   }
 
+  /** Selects the event whose id is in the current URL, if any. Returns true when
+      an event route was matched. */
+  private syncActiveEventFromUrl(): boolean {
+    const id = this.router.url.match(/\/racemanager\/([0-9a-fA-F-]{36})/)?.[1];
+    if (!id) return false;
+    if (id === this.selectedEventId && this.activeEvent) return true;
+
+    const known = this.events.find((e) => e.id === id);
+    if (known) {
+      this.selectEvent(known);
+    } else {
+      this.eventService.findById(id).subscribe({
+        next: (e) => this.selectEvent(e),
+        error: () => undefined,
+      });
+    }
+    return true;
+  }
+
+  private selectEvent(event: EventResponse | null): void {
+    this.activeEvent = event;
+    this.selectedEventId = event?.id ?? '';
+    if (event) {
+      this.loadContext(event.id);
+    } else {
+      this.clearContext();
+    }
+  }
+
   protected onEventSelect(): void {
     if (!this.selectedEventId) {
-      this.activeEvent = null;
-      this.clearContext();
+      this.selectEvent(null);
+      this.router.navigate(['/', 'racemanager']);
       return;
     }
-    this.activeEvent = this.events.find((e) => e.id === this.selectedEventId) ?? null;
-    if (this.activeEvent) {
-      this.loadContext(this.activeEvent.id);
-    }
+    this.router.navigate(['/', 'racemanager', this.selectedEventId]);
   }
 
   /** Loads the context-sidebar data. Failures degrade to empty panels
@@ -96,7 +131,7 @@ export class RaceManagerShellComponent {
 
   protected onLogout(): void {
     this.authService.logout().subscribe(() => {
-      this.router.navigate([this.localeService.currentLocale(), 'login']);
+      this.router.navigate(['/login']);
     });
   }
 }

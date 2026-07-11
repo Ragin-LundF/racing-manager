@@ -17,24 +17,12 @@
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
-      "i18n": {
-        "sourceLocale": {
-          "code": "en",
-          "baseHref": ""
-        },
-        "locales": {
-          "de": {
-            "translation": "src/locale/messages.de.xlf",
-            "baseHref": ""
-          }
-        }
-      },
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
-            "polyfills": ["@angular/localize/init"],
+            "polyfills": [],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -59,20 +47,12 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all",
-              "localize": ["en", "de"]
+              "outputHashing": "all"
             },
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true,
-              "localize": ["en"]
-            },
-            "development-de": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true,
-              "localize": ["de"]
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
@@ -88,22 +68,12 @@
             },
             "development": {
               "buildTarget": "racingmanager-webapp:build:development"
-            },
-            "development-de": {
-              "buildTarget": "racingmanager-webapp:build:development-de"
             }
           },
           "defaultConfiguration": "development"
         },
         "test": {
           "builder": "@angular/build:unit-test"
-        },
-        "extract-i18n": {
-          "builder": "@angular/build:extract-i18n",
-          "options": {
-            "format": "xlf",
-            "outputPath": "src/locale"
-          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

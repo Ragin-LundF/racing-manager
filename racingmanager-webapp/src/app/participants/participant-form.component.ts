@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
@@ -7,7 +8,7 @@ import { catchError, of } from 'rxjs';
 @Component({
   selector: 'app-participant-form',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './participant-form.component.html',
   styleUrl: './participant-form.component.scss',
 })
@@ -60,8 +61,8 @@ export class ParticipantFormComponent {
         lastName: this.lastName,
         club: this.club || null,
       }).pipe(
-        catchError(() => {
-          this.error.set('Update failed.');
+        catchError((err) => {
+          this.error.set(err?.error?.message ?? 'Update failed.');
           return of(null);
         }),
       ).subscribe((res) => {
@@ -78,8 +79,8 @@ export class ParticipantFormComponent {
         vehicleName: this.vehicleName || null,
         vehicleCategory: this.vehicleCategory || null,
       }).pipe(
-        catchError(() => {
-          this.error.set('Create failed.');
+        catchError((err) => {
+          this.error.set(err?.error?.message ?? 'Create failed.');
           return of(null);
         }),
       ).subscribe((res) => {

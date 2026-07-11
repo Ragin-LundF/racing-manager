@@ -1,56 +1,49 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth.service';
-import { LocaleService } from '../../i18n/locale.service';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, LocaleSelectorComponent],
+  imports: [FormsModule, LocaleSelectorComponent, TranslatePipe],
   template: `
     <div class="auth-page">
       <div class="auth-card">
         <div class="auth-locale"><app-locale-selector /></div>
 
-        <h2 i18n="@@login.title">Login</h2>
+        <h2>{{ 'login.title' | translate }}</h2>
 
         @if (errorMessage(); as msg) {
           <p class="error">{{ msg }}</p>
         }
 
         <form #form="ngForm" (ngSubmit)="onSubmit()">
-      <label i18n="@@login.username">
-        Username
-        <input
-          name="username"
-          [(ngModel)]="username"
-          required
-          #usernameField="ngModel"
-        />
-      </label>
-      @if (usernameField.invalid && usernameField.touched) {
-        <small i18n="@@login.username.required">Username is required.</small>
-      }
+          <label>
+            <span>{{ 'login.username.label' | translate }}</span>
+            <input name="username" [(ngModel)]="username" required #usernameField="ngModel" />
+          </label>
+          @if (usernameField.invalid && usernameField.touched) {
+            <small>{{ 'login.username.required' | translate }}</small>
+          }
 
-      <label i18n="@@login.password">
-        Password
-        <input
-          type="password"
-          name="password"
-          [(ngModel)]="password"
-          required
-          #passwordField="ngModel"
-        />
-      </label>
-      @if (passwordField.invalid && passwordField.touched) {
-        <small i18n="@@login.password.required">Password is required.</small>
-      }
+          <label>
+            <span>{{ 'login.password.label' | translate }}</span>
+            <input
+              type="password"
+              name="password"
+              [(ngModel)]="password"
+              required
+              #passwordField="ngModel"
+            />
+          </label>
+          @if (passwordField.invalid && passwordField.touched) {
+            <small>{{ 'login.password.required' | translate }}</small>
+          }
 
-      <button type="submit" [disabled]="form.invalid" i18n="@@login.submit">
-        Log In
-      </button>
+          <button type="submit" [disabled]="form.invalid">{{ 'login.submit' | translate }}</button>
         </form>
       </div>
     </div>
@@ -60,7 +53,7 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly localeService = inject(LocaleService);
+  private readonly translate = inject(TranslateService);
 
   protected username = '';
   protected password = '';
@@ -74,20 +67,13 @@ export class LoginComponent {
         if ('code' in res) {
           this.errorMessage.set(this.localizeError(res.code));
         } else {
-          this.router.navigate([
-            this.localeService.currentLocale(),
-            'racemanager',
-          ]);
+          this.router.navigate(['/racemanager']);
         }
       });
   }
 
   private localizeError(code: string): string {
-    switch (code) {
-      case 'INVALID_CREDENTIALS':
-        return $localize`:@@login.error.invalidCredentials:Invalid username or password.`;
-      default:
-        return $localize`:@@login.error.generic:Login failed. Please try again.`;
-    }
+    const key = code === 'INVALID_CREDENTIALS' ? 'login.error.invalidCredentials' : 'login.error.generic';
+    return this.translate.instant(key);
   }
 }

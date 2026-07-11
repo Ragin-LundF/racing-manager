@@ -1,59 +1,57 @@
 <div class="participant-form">
-  <h2 i18n="@@participants.form.title">{{ isEdit() ? 'Edit Participant' : 'Add Participant' }}</h2>
+  <h2>{{ (isEdit() ? 'participants.form.title.edit' : 'participants.form.title.create') | translate }}</h2>
 
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
 
   <form #form="ngForm" (ngSubmit)="onSubmit()">
-    <label i18n="@@participants.form.startNumber">
-      Start Number
+    <label>
+      <span>{{ 'participants.form.startNumber.label' | translate }}</span>
       <input type="number" name="startNumber" [(ngModel)]="startNumber" required min="1" #snField="ngModel" />
     </label>
     @if (snField.invalid && snField.touched) {
-      <small i18n="@@participants.form.startNumber.required">Start number is required.</small>
+      <small>{{ 'participants.form.startNumber.required' | translate }}</small>
     }
 
-    <label i18n="@@participants.form.firstName">
-      First Name
+    <label>
+      <span>{{ 'participants.form.firstName.label' | translate }}</span>
       <input name="firstName" [(ngModel)]="firstName" required minlength="1" #fnField="ngModel" />
     </label>
     @if (fnField.invalid && fnField.touched) {
-      <small i18n="@@participants.form.firstName.required">First name is required.</small>
+      <small>{{ 'participants.form.firstName.required' | translate }}</small>
     }
 
-    <label i18n="@@participants.form.lastName">
-      Last Name
+    <label>
+      <span>{{ 'participants.form.lastName.label' | translate }}</span>
       <input name="lastName" [(ngModel)]="lastName" required minlength="1" #lnField="ngModel" />
     </label>
     @if (lnField.invalid && lnField.touched) {
-      <small i18n="@@participants.form.lastName.required">Last name is required.</small>
+      <small>{{ 'participants.form.lastName.required' | translate }}</small>
     }
 
-    <label i18n="@@participants.form.club">
-      Club
+    <label>
+      <span>{{ 'participants.form.club' | translate }}</span>
       <input name="club" [(ngModel)]="club" />
     </label>
 
     @if (!isEdit()) {
-      <label i18n="@@participants.form.vehicleName">
-        Vehicle Name
+      <label>
+        <span>{{ 'participants.form.vehicleName' | translate }}</span>
         <input name="vehicleName" [(ngModel)]="vehicleName" />
       </label>
 
-      <label i18n="@@participants.form.vehicleCategory">
-        Vehicle Category
+      <label>
+        <span>{{ 'participants.form.vehicleCategory' | translate }}</span>
         <input name="vehicleCategory" [(ngModel)]="vehicleCategory" />
       </label>
     }
 
     <div class="actions">
-      <button type="submit" [disabled]="form.invalid" i18n="@@participants.form.save">
-        {{ isEdit() ? 'Save Changes' : 'Add Participant' }}
+      <button type="submit" [disabled]="form.invalid">
+        {{ (isEdit() ? 'participants.form.save.edit' : 'participants.form.save.create') | translate }}
       </button>
-      <button type="button" (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.form.cancel">
-        Cancel
-      </button>
+      <button type="button" (click)="router.navigate(['..'], { relativeTo: route })">{{ 'participants.form.cancel' | translate }}</button>
     </div>
   </form>
 </div>

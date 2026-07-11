@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideTestTranslate } from '../testing/translate.testing';
 import { ParticipantListComponent } from './participant-list.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -7,7 +8,9 @@ describe('ParticipantListComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ParticipantListComponent],
-      providers: [provideHttpClient(), provideRouter([])],
+      providers: [
+        provideTestTranslate(),provideHttpClient(), provideRouter([
+      ])],
     }).compileComponents();
   });
 

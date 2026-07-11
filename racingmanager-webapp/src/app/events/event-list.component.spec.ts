@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideTestTranslate } from '../testing/translate.testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -11,9 +12,11 @@ describe('EventListComponent', () => {
     await TestBed.configureTestingModule({
       imports: [EventListComponent],
       providers: [
+        provideTestTranslate(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([
+      ]),
       ],
     }).compileComponents();
 

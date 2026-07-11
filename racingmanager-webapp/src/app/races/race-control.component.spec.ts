@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideTestTranslate } from '../testing/translate.testing';
 import { RaceControlComponent } from './race-control.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -7,7 +8,9 @@ describe('RaceControlComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RaceControlComponent],
-      providers: [provideHttpClient(), provideRouter([])],
+      providers: [
+        provideTestTranslate(),provideHttpClient(), provideRouter([
+      ])],
     }).compileComponents();
   });
 

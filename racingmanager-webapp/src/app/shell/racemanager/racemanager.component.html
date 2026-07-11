@@ -2,54 +2,50 @@
   <aside class="nav-rail">
     <div class="brand">
       <span class="brand-mark">🏁</span>
-      <span class="brand-name" i18n="@@racemanager.brand">PineCar Race Timer</span>
+      <span class="brand-name">{{ 'racemanager.brand' | translate }}</span>
     </div>
 
     <nav class="nav-items">
       <a
         class="nav-item"
-        [routerLink]="['/', localeService.currentLocale(), 'racemanager']"
+        [routerLink]="['/', 'racemanager']"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
-        i18n="@@racemanager.nav.overview"
       >
         <span class="nav-icon">▦</span>
-        <span>Overview</span>
+        <span>{{ 'racemanager.nav.overview' | translate }}</span>
       </a>
 
       @if (activeEvent) {
         <a
           class="nav-item"
-          [routerLink]="['/', localeService.currentLocale(), 'racemanager', activeEvent.id]"
+          [routerLink]="['/', 'racemanager', activeEvent.id]"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
-          i18n="@@racemanager.nav.participants"
         >
           <span class="nav-icon">▤</span>
-          <span>Participants</span>
+          <span>{{ 'racemanager.nav.participants' | translate }}</span>
         </a>
         <a
           class="nav-item"
-          [routerLink]="['/', localeService.currentLocale(), 'racemanager', activeEvent.id, 'qualification']"
+          [routerLink]="['/', 'racemanager', activeEvent.id, 'qualification']"
           routerLinkActive="active"
-          i18n="@@racemanager.nav.preliminary"
         >
           <span class="nav-icon">◔</span>
-          <span>Preliminary Rounds</span>
+          <span>{{ 'racemanager.nav.preliminary' | translate }}</span>
         </a>
         <a
           class="nav-item"
-          [routerLink]="['/', localeService.currentLocale(), 'racemanager', activeEvent.id, 'race-control']"
+          [routerLink]="['/', 'racemanager', activeEvent.id, 'race-control']"
           routerLinkActive="active"
-          i18n="@@racemanager.nav.races"
         >
           <span class="nav-icon">⚑</span>
-          <span>Races</span>
+          <span>{{ 'racemanager.nav.races' | translate }}</span>
         </a>
       } @else {
-        <span class="nav-item disabled"><span class="nav-icon">▤</span><span i18n="@@racemanager.nav.participants">Participants</span></span>
-        <span class="nav-item disabled"><span class="nav-icon">◔</span><span i18n="@@racemanager.nav.preliminary">Preliminary Rounds</span></span>
-        <span class="nav-item disabled"><span class="nav-icon">⚑</span><span i18n="@@racemanager.nav.races">Races</span></span>
+        <span class="nav-item disabled"><span class="nav-icon">▤</span><span>{{ 'racemanager.nav.participants' | translate }}</span></span>
+        <span class="nav-item disabled"><span class="nav-icon">◔</span><span>{{ 'racemanager.nav.preliminary' | translate }}</span></span>
+        <span class="nav-item disabled"><span class="nav-icon">⚑</span><span>{{ 'racemanager.nav.races' | translate }}</span></span>
       }
     </nav>
 
@@ -67,10 +63,10 @@
 
     <div class="top-actions">
       <div class="active-event">
-        <span i18n="@@racemanager.activeEvent">Active Event:</span>
+        <span>{{ 'racemanager.activeEvent.label' | translate }}</span>
         @if (events.length > 0) {
           <select [(ngModel)]="selectedEventId" (ngModelChange)="onEventSelect()">
-            <option value="" i18n="@@racemanager.activeEvent.none">None</option>
+            <option value="">{{ 'racemanager.activeEvent.none' | translate }}</option>
             @for (event of events; track event.id) {
               <option [value]="event.id" [disabled]="event.status === 'ARCHIVED'">
                 {{ event.name }} ({{ event.status }})
@@ -78,13 +74,13 @@
             }
           </select>
         } @else {
-          <span i18n="@@racemanager.activeEvent.noEvents">No events</span>
+          <span>{{ 'racemanager.activeEvent.noEvents' | translate }}</span>
         }
       </div>
 
       <app-locale-selector />
       <span class="user">{{ authService.session()?.displayName }}</span>
-      <button (click)="onLogout()" i18n="@@racemanager.logout">Log Out</button>
+      <button (click)="onLogout()">{{ 'racemanager.logout' | translate }}</button>
     </div>
   </header>
 
@@ -97,24 +93,24 @@
       <aside class="context-sidebar">
         <!-- Preliminary-Round Summary (spec §4.7) -->
         <section class="panel">
-          <h2 class="panel-title" i18n="@@racemanager.summary.title">Preliminary Round Overview</h2>
+          <h2 class="panel-title">{{ 'racemanager.summary.title' | translate }}</h2>
           @if (qualification(); as q) {
             <div class="kv">
-              <span class="k" i18n="@@racemanager.summary.mode">Mode</span>
+              <span class="k">{{ 'racemanager.summary.mode' | translate }}</span>
               <span class="v">{{ q.status }}</span>
             </div>
             <div class="kv">
-              <span class="k" i18n="@@racemanager.summary.runs">Runs per Participant</span>
+              <span class="k">{{ 'racemanager.summary.runs' | translate }}</span>
               <span class="v tnum">{{ q.numberOfRuns }}</span>
             </div>
           } @else {
-            <p class="muted" i18n="@@racemanager.summary.notSetUp">Preliminary round not set up yet.</p>
+            <p class="muted">{{ 'racemanager.summary.notSetUp' | translate }}</p>
           }
 
           @if (progress(); as p) {
             <div class="progress">
               <div class="progress-head">
-                <span class="tnum">{{ p.completedHeats }} / {{ p.totalHeats }} heats</span>
+                <span class="tnum">{{ p.completedHeats }} / {{ p.totalHeats }} {{ 'racemanager.summary.heatsWord' | translate }}</span>
                 <span class="tnum">{{ progressPercent() }}%</span>
               </div>
               <div class="progress-track">
@@ -126,24 +122,24 @@
 
         <!-- Upcoming Heats (spec §4.8) -->
         <section class="panel">
-          <h2 class="panel-title" i18n="@@racemanager.upcoming.title">Upcoming Heats</h2>
+          <h2 class="panel-title">{{ 'racemanager.upcoming.title' | translate }}</h2>
           @if (upcomingHeats().length > 0) {
             @for (heat of upcomingHeats(); track heat.id) {
               <div class="heat-mini">
-                <div class="heat-mini-no">Heat {{ heat.heatNumber }}</div>
+                <div class="heat-mini-no">{{ 'racemanager.upcoming.heat' | translate: { number: heat.heatNumber } }}</div>
                 <div class="heat-mini-row">
                   <span>{{ heat.lanes[0]?.participantFirstName }} {{ heat.lanes[0]?.participantLastName }}</span>
                   @if (heat.lanes.length > 1) {
                     <span class="vs">VS</span>
                     <span>{{ heat.lanes[1]?.participantFirstName }} {{ heat.lanes[1]?.participantLastName }}</span>
                   } @else {
-                    <span class="vs" i18n="@@racemanager.upcoming.solo">SOLO RUN</span>
+                    <span class="vs">{{ 'racemanager.upcoming.solo' | translate }}</span>
                   }
                 </div>
               </div>
             }
           } @else {
-            <p class="muted" i18n="@@racemanager.upcoming.none">No upcoming heats.</p>
+            <p class="muted">{{ 'racemanager.upcoming.none' | translate }}</p>
           }
         </section>
       </aside>

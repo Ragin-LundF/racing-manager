@@ -14,40 +14,16 @@ import { ParticipantRandomizeComponent } from './participants/participant-random
 import { RaceControlComponent } from './races/race-control.component';
 import { QualificationComponent } from './qualification/qualification.component';
 
+// Language is a runtime concern (ngx-translate + localStorage), so routes carry
+// no locale prefix.
 export const routes: Routes = [
-  { path: '', redirectTo: 'en/racemanager', pathMatch: 'full' },
+  { path: '', redirectTo: 'racemanager', pathMatch: 'full' },
 
-  { path: 'de/setup', component: SetupComponent, canActivate: [redirectIfAuthenticatedGuard] },
-  { path: 'en/setup', component: SetupComponent, canActivate: [redirectIfAuthenticatedGuard] },
-
-  { path: 'de/login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
-  { path: 'en/login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'setup', component: SetupComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
 
   {
-    path: 'de/racemanager',
-    component: RaceManagerShellComponent,
-    canActivate: [authGuard],
-    children: [
-      { path: '', component: EventListComponent },
-      { path: 'new', component: EventFormComponent },
-      {
-        path: ':id',
-        component: EventDetailComponent,
-        children: [
-          { path: '', component: ParticipantListComponent },
-          { path: 'edit', component: EventFormComponent },
-          { path: 'participants/new', component: ParticipantFormComponent },
-          { path: 'participants/import', component: ParticipantImportComponent },
-          { path: 'participants/randomize', component: ParticipantRandomizeComponent },
-          { path: 'participants/:participantId', component: ParticipantFormComponent },
-          { path: 'race-control', component: RaceControlComponent },
-          { path: 'qualification', component: QualificationComponent },
-        ],
-      },
-    ],
-  },
-  {
-    path: 'en/racemanager',
+    path: 'racemanager',
     component: RaceManagerShellComponent,
     canActivate: [authGuard],
     children: [
@@ -70,6 +46,5 @@ export const routes: Routes = [
     ],
   },
 
-  { path: 'de/spectator', component: SpectatorShellComponent },
-  { path: 'en/spectator', component: SpectatorShellComponent },
+  { path: 'spectator', component: SpectatorShellComponent },
 ];

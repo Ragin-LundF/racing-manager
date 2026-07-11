@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideTestTranslate } from '../testing/translate.testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { QualificationComponent } from './qualification.component';
@@ -7,7 +8,9 @@ describe('QualificationComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [QualificationComponent],
-      providers: [provideHttpClient(), provideRouter([])],
+      providers: [
+        provideTestTranslate(),provideHttpClient(), provideRouter([
+      ])],
     }).compileComponents();
   });
 

@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { QualificationClient } from '../libs/clients/qualification/qualification.client';
 import { HeatClient } from '../libs/clients/heat/heat.client';
@@ -13,7 +14,7 @@ import { HeatResponse } from '../libs/clients/heat/heat.models';
 @Component({
   selector: 'app-qualification',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './qualification.component.html',
   styleUrl: './qualification.component.scss',
 })

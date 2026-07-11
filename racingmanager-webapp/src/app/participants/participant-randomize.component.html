@@ -1,31 +1,31 @@
 <div class="participant-randomize">
-  <h2 i18n="@@participants.randomize.title">Randomize Participants</h2>
+  <h2>{{ 'participants.randomize.title' | translate }}</h2>
 
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
 
   @if (result(); as r) {
-    <p class="success" i18n="@@participants.randomize.success">Participants randomized with seed {{ r.seed }}.</p>
+    <p class="success">{{ 'participants.randomize.success' | translate: { seed: r.seed } }}</p>
     <div class="actions">
-      <button (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.randomize.back">Back to Participants</button>
+      <button (click)="router.navigate(['..'], { relativeTo: route })">{{ 'participants.randomize.back' | translate }}</button>
     </div>
   } @else if (alreadyRandomized()) {
     <div class="warning">
-      <strong i18n="@@participants.randomize.already.title">Already Randomized</strong>
-      <p i18n="@@participants.randomize.already.message">Participants have already been randomized. Re-randomization will change the sort order.</p>
+      <strong>{{ 'participants.randomize.already.title' | translate }}</strong>
+      <p>{{ 'participants.randomize.already.message' | translate }}</p>
       <div class="actions">
-        <button (click)="onForceRandomize()" i18n="@@participants.randomize.already.confirm">Re-randomize</button>
-        <button (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.randomize.already.cancel">Cancel</button>
+        <button (click)="onForceRandomize()">{{ 'participants.randomize.already.confirm' | translate }}</button>
+        <button (click)="router.navigate(['..'], { relativeTo: route })">{{ 'participants.randomize.already.cancel' | translate }}</button>
       </div>
     </div>
   } @else {
-    <p i18n="@@participants.randomize.hint">Randomize the sort order of all participants.</p>
+    <p>{{ 'participants.randomize.hint' | translate }}</p>
     <div class="actions">
-      <button (click)="onRandomize()" [disabled]="loading()" i18n="@@participants.randomize.start">
-        {{ loading() ? 'Randomizing...' : 'Randomize' }}
+      <button (click)="onRandomize()" [disabled]="loading()">
+        {{ (loading() ? 'participants.randomize.loading' : 'participants.randomize.start') | translate }}
       </button>
-      <button (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.randomize.cancel">Cancel</button>
+      <button (click)="router.navigate(['..'], { relativeTo: route })">{{ 'participants.randomize.cancel' | translate }}</button>
     </div>
   }
 </div>

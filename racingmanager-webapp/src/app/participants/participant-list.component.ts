@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
 import { ParticipantResponse } from '../libs/clients/participant/participant.models';
@@ -7,7 +8,7 @@ import { DatePipe } from '@angular/common';
 @Component({
   selector: 'app-participant-list',
   standalone: true,
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, TranslatePipe],
   templateUrl: './participant-list.component.html',
   styleUrl: './participant-list.component.scss',
 })

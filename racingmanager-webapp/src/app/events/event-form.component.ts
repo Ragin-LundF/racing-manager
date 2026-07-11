@@ -4,12 +4,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { ConflictResponse } from '../libs/clients/event/event.models';
 import { LocaleService } from '../i18n/locale.service';
+import { TranslatePipe } from '@ngx-translate/core';
 import { catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-event-form',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './event-form.component.html',
   styleUrl: './event-form.component.scss',
 })
@@ -91,13 +92,15 @@ export class EventFormComponent {
         measurementType: this.measurementType,
         maxParticipants: this.maxParticipants,
       }).pipe(
-        catchError(() => {
-          this.error.set('Create failed.');
+        catchError((err) => {
+          this.error.set(err?.error?.message ?? 'Create failed.');
           return of(null);
         }),
       ).subscribe((res) => {
         if (res) {
-          this.router.navigate(['..'], { relativeTo: this.route });
+          // Open the newly created event directly — the shell then auto-selects
+          // it, so there is no separate "select on top" step.
+          this.router.navigate(['..', res.id], { relativeTo: this.route });
         }
       });
     }

@@ -1,6 +1,6 @@
 <div class="race-control">
   <div class="header">
-    <h2 i18n="@@races.control.title">Race Control</h2>
+    <h2>{{ 'races.control.title' | translate }}</h2>
   </div>
 
   @if (error()) {
@@ -8,7 +8,7 @@
   }
 
   <div class="create-section">
-    <h3 i18n="@@races.control.createHeat">Create New Heat</h3>
+    <h3>{{ 'races.control.createHeat' | translate }}</h3>
     <div>
       @for (p of participants(); track p.id) {
         <label>
@@ -18,15 +18,13 @@
       }
     </div>
     @if (participants().length === 0) {
-      <p class="empty" i18n="@@races.control.noParticipants">No active participants available.</p>
+      <p class="empty">{{ 'races.control.noParticipants' | translate }}</p>
     }
-    <button class="primary" (click)="onCreateHeat()" [disabled]="selectedParticipantIds().length < 2 || creating()" i18n="@@races.control.create">
-      Create Heat
-    </button>
+    <button class="primary" (click)="onCreateHeat()" [disabled]="selectedParticipantIds().length < 2 || creating()">{{ 'races.control.create' | translate }}</button>
   </div>
 
   @if (heats().length === 0) {
-    <div class="empty" i18n="@@races.control.noHeats">No heats yet. Create a heat to get started.</div>
+    <div class="empty">{{ 'races.control.noHeats' | translate }}</div>
   }
 
   <div class="heats">
@@ -34,13 +32,13 @@
       <div class="heat-card" [class.armed]="heat.status === 'ARMED'" [class.started]="heat.status === 'STARTED'" [class.finished]="heat.status === 'FINISHED'" [class.cancelled]="heat.status === 'CANCELLED'">
         <div class="heat-header">
           <div>
-            <strong i18n="@@races.control.heatLabel">Heat #{{ heat.heatNumber }}</strong>
+            <strong>{{ 'races.control.heatLabel' | translate: { number: heat.heatNumber } }}</strong>
             <span class="heat-status" [class]="statusClass(heat.status)">{{ heat.status }}</span>
           </div>
           <div class="timestamps">
-            @if (heat.armedAt) { <span i18n="@@races.control.armedAt">Armed: {{ heat.armedAt | date:'HH:mm:ss' }}</span> }
-            @if (heat.startedAt) { <span i18n="@@races.control.startedAt">Started: {{ heat.startedAt | date:'HH:mm:ss' }}</span> }
-            @if (heat.finishedAt) { <span i18n="@@races.control.finishedAt">Finished: {{ heat.finishedAt | date:'HH:mm:ss' }}</span> }
+            @if (heat.armedAt) { <span>{{ 'races.control.armedAt' | translate: { time: (heat.armedAt | date: 'HH:mm:ss') } }}</span> }
+            @if (heat.startedAt) { <span>{{ 'races.control.startedAt' | translate: { time: (heat.startedAt | date: 'HH:mm:ss') } }}</span> }
+            @if (heat.finishedAt) { <span>{{ 'races.control.finishedAt' | translate: { time: (heat.finishedAt | date: 'HH:mm:ss') } }}</span> }
           </div>
         </div>
 
@@ -60,23 +58,23 @@
 
         <div class="actions">
           @if (heat.status === 'PLANNED') {
-            <button class="primary" (click)="onArm(heat)" i18n="@@races.control.arm">Arm</button>
+            <button class="primary" (click)="onArm(heat)">{{ 'races.control.arm' | translate }}</button>
           }
           @if (heat.status === 'ARMED') {
-            <button class="success" (click)="onStart(heat)" i18n="@@races.control.start">Start</button>
-            <button class="danger" (click)="onCancel(heat)" i18n="@@races.control.cancel">Cancel</button>
+            <button class="success" (click)="onStart(heat)">{{ 'races.control.start' | translate }}</button>
+            <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
           }
           @if (heat.status === 'STARTED') {
-            <button class="warning" (click)="onFinish(heat)" i18n="@@races.control.finish">Finish</button>
-            <button class="danger" (click)="onCancel(heat)" i18n="@@races.control.cancel">Cancel</button>
+            <button class="warning" (click)="onFinish(heat)">{{ 'races.control.finish' | translate }}</button>
+            <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
           }
           @if (heat.status === 'FINISHED' || heat.status === 'TIMEOUT') {
-            <button class="success" (click)="onAccept(heat)" i18n="@@races.control.accept">Accept</button>
-            <button class="danger" (click)="onReject(heat)" i18n="@@races.control.reject">Reject</button>
-            <button (click)="onRepeat(heat)" i18n="@@races.control.repeat">Repeat</button>
+            <button class="success" (click)="onAccept(heat)">{{ 'races.control.accept' | translate }}</button>
+            <button class="danger" (click)="onReject(heat)">{{ 'races.control.reject' | translate }}</button>
+            <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
           }
           @if (heat.status === 'CANCELLED' || heat.status === 'TECHNICAL_ERROR') {
-            <button (click)="onRepeat(heat)" i18n="@@races.control.repeat">Repeat</button>
+            <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
           }
         </div>
       </div>

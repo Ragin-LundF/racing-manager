@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
 import { catchError, of } from 'rxjs';
@@ -6,6 +7,7 @@ import { catchError, of } from 'rxjs';
 @Component({
   selector: 'app-participant-randomize',
   standalone: true,
+  imports: [TranslatePipe],
   templateUrl: './participant-randomize.component.html',
   styleUrl: './participant-randomize.component.scss',
 })

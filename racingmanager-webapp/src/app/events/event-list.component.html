@@ -1,22 +1,20 @@
 <div class="event-list">
   <div class="header">
-    <h2 i18n="@@events.list.title">Events</h2>
-    <button routerLink="new" i18n="@@events.list.create">Create Event</button>
+    <h2>{{ 'events.list.title' | translate }}</h2>
+    <button routerLink="new">{{ 'events.list.create' | translate }}</button>
   </div>
 
   @if (events.length === 0) {
-    <div class="empty" i18n="@@events.list.empty">
-      No events yet. Create your first event to get started.
-    </div>
+    <div class="empty">{{ 'events.list.empty' | translate }}</div>
   } @else {
     <table>
       <thead>
         <tr>
-          <th i18n="@@events.list.name">Name</th>
-          <th i18n="@@events.list.status">Status</th>
-          <th i18n="@@events.list.lanes">Lanes</th>
-          <th i18n="@@events.list.measurement">Measurement</th>
-          <th i18n="@@events.list.created">Created</th>
+          <th>{{ 'events.list.name' | translate }}</th>
+          <th>{{ 'events.list.status' | translate }}</th>
+          <th>{{ 'events.list.lanes' | translate }}</th>
+          <th>{{ 'events.list.measurement' | translate }}</th>
+          <th>{{ 'events.list.created' | translate }}</th>
           <th></th>
         </tr>
       </thead>
@@ -29,7 +27,7 @@
             <td>{{ event.settings.measurementType }}</td>
             <td>{{ event.createdAt | date:'short' }}</td>
             <td>
-              <a [routerLink]="event.id" i18n="@@events.list.view">View</a>
+              <a [routerLink]="event.id">{{ 'events.list.view' | translate }}</a>
             </td>
           </tr>
         }

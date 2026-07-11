@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideTestTranslate } from '../testing/translate.testing';
 import { ParticipantRandomizeComponent } from './participant-randomize.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -7,7 +8,9 @@ describe('ParticipantRandomizeComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ParticipantRandomizeComponent],
-      providers: [provideHttpClient(), provideRouter([])],
+      providers: [
+        provideTestTranslate(),provideHttpClient(), provideRouter([
+      ])],
     }).compileComponents();
   });
 
