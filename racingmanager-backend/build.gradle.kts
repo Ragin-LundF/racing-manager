@@ -35,6 +35,9 @@ dependencies {
     implementation(libs.sqlite.jdbc)
     implementation(libs.hikaricp)
 
+    // Security
+    implementation(libs.bcrypt)
+
     // Logging
     implementation(libs.kotlin.logging)
     implementation(libs.log4j.core)
