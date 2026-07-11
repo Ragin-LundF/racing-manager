@@ -2,8 +2,14 @@ package io.github.raginlundf.racingmanager.infrastructure.repositories
 
 import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.infrastructure.tables.AuditEntryTable
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.util.UUID
 
 class AuditRepository {
 
@@ -19,5 +25,37 @@ class AuditRepository {
             it[correlationId] = entry.correlationId
             it[occurredAt] = entry.occurredAt
         }
+    }
+
+    fun query(
+        action: String? = null,
+        targetType: String? = null,
+        targetId: UUID? = null,
+        actorId: UUID? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+    ): List<AuditEntryEntity> = transaction {
+        var query: Query = AuditEntryTable.selectAll()
+        if (action != null) query = query.adjustWhere { it?.and(AuditEntryTable.action eq action) ?: (AuditEntryTable.action eq action) }
+        if (targetType != null) query = query.adjustWhere { it?.and(AuditEntryTable.targetType eq targetType) ?: (AuditEntryTable.targetType eq targetType) }
+        if (targetId != null) query = query.adjustWhere { it?.and(AuditEntryTable.targetId eq targetId) ?: (AuditEntryTable.targetId eq targetId) }
+        if (actorId != null) query = query.adjustWhere { it?.and(AuditEntryTable.actorId eq actorId) ?: (AuditEntryTable.actorId eq actorId) }
+        query
+            .orderBy(AuditEntryTable.occurredAt to SortOrder.DESC)
+            .limit(limit)
+            .offset(offset.toLong())
+            .map { row ->
+                AuditEntryEntity(
+                    id = row[AuditEntryTable.id],
+                    actorId = row[AuditEntryTable.actorId],
+                    action = row[AuditEntryTable.action],
+                    targetType = row[AuditEntryTable.targetType],
+                    targetId = row[AuditEntryTable.targetId],
+                    summary = row[AuditEntryTable.summary],
+                    details = row[AuditEntryTable.details],
+                    correlationId = row[AuditEntryTable.correlationId],
+                    occurredAt = row[AuditEntryTable.occurredAt],
+                )
+            }
     }
 }

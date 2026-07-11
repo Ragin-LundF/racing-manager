@@ -11,6 +11,7 @@ import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
+import io.github.raginlundf.racingmanager.application.results.ResultsService
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.infrastructure.configureDatabase
 import io.github.raginlundf.racingmanager.infrastructure.configureLogging
@@ -63,6 +64,7 @@ fun Application.module() {
     val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
     val knockoutRepository = KnockoutRepository()
     val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
+    val resultsService = ResultsService(eventRepository, participantRepository, heatRepository, qualificationRepository, knockoutRepository, auditRepository)
     val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
     val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
 
@@ -73,5 +75,5 @@ fun Application.module() {
     seedDemoAdmin(authService)
     configureWebSockets()
     spectatorWebSocketService.start()
-    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, spectatorService, eventRepository, spectatorWebSocketService)
+    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService)
 }
