@@ -8,6 +8,7 @@ import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.SetupResult
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
+import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
 import io.github.raginlundf.racingmanager.infrastructure.configureDatabase
@@ -18,6 +19,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepos
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.KnockoutRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
@@ -57,6 +59,8 @@ fun Application.module() {
     val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository, measurementGateway)
     val qualificationRepository = QualificationRepository()
     val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
+    val knockoutRepository = KnockoutRepository()
+    val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
 
     configureLogging()
     configureSerialization()
@@ -64,5 +68,5 @@ fun Application.module() {
     configureDatabase()
     seedDemoAdmin(authService)
     configureWebSockets()
-    configureRouting(authService, eventService, participantService, heatService, qualificationService)
+    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService)
 }

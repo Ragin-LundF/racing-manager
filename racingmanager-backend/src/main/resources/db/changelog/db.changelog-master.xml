@@ -16,4 +16,6 @@
     <include file="changesets/009-create-heats-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/010-create-heat-lanes-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/011-create-measurements-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/012-create-knockout-tournaments-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/013-create-knockout-matches-table.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

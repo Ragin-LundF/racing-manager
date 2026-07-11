@@ -42,6 +42,8 @@ object DatabaseTestHelper {
             exec("DROP TABLE IF EXISTS measurements")
             exec("DROP TABLE IF EXISTS heat_lanes")
             exec("DROP TABLE IF EXISTS heats")
+            exec("DROP TABLE IF EXISTS knockout_matches")
+            exec("DROP TABLE IF EXISTS knockout_tournaments")
             exec("DROP TABLE IF EXISTS qualifications")
             exec("DROP TABLE IF EXISTS event_seeds")
             exec("DROP TABLE IF EXISTS vehicles")

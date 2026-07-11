@@ -8,8 +8,10 @@ import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
+import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
+import io.github.raginlundf.racingmanager.infrastructure.repositories.KnockoutRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
@@ -49,6 +51,8 @@ class AuthRoutesTest {
     private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository)
     private val qualificationRepository = QualificationRepository()
     private val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
+    private val knockoutRepository = KnockoutRepository()
+    private val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
 
     @BeforeTest
     fun setUp() {
@@ -235,7 +239,7 @@ class AuthRoutesTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, eventService, participantService, heatService, qualificationService)
+        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService)
     }
 
     private fun extractSessionId(body: String): String {
