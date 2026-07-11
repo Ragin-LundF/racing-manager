@@ -10,15 +10,17 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
   standalone: true,
   imports: [FormsModule, LocaleSelectorComponent],
   template: `
-    <app-locale-selector />
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-locale"><app-locale-selector /></div>
 
-    <h2 i18n="@@login.title">Login</h2>
+        <h2 i18n="@@login.title">Login</h2>
 
-    @if (errorMessage(); as msg) {
-      <p class="error">{{ msg }}</p>
-    }
+        @if (errorMessage(); as msg) {
+          <p class="error">{{ msg }}</p>
+        }
 
-    <form #form="ngForm" (ngSubmit)="onSubmit()">
+        <form #form="ngForm" (ngSubmit)="onSubmit()">
       <label i18n="@@login.username">
         Username
         <input
@@ -49,7 +51,9 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
       <button type="submit" [disabled]="form.invalid" i18n="@@login.submit">
         Log In
       </button>
-    </form>
+        </form>
+      </div>
+    </div>
   `,
   styleUrl: './login.component.scss',
 })

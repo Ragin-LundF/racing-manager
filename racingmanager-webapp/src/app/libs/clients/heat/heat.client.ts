@@ -59,7 +59,18 @@ export class HeatClient {
 
   connectLive(eventId: string): WebSocket {
     const sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
-    const wsBase = this.baseUrl.replace(/^http/, 'ws');
-    return new WebSocket(`${wsBase}/api/v1/events/${eventId}/live?X-Session-Id=${sessionId}`);
+    // Derive the ws origin from the API base, or from the page when same-origin
+    // (dev proxy). The session id is NOT put in the URL (it would leak into
+    // access logs); it is sent as the first message once the socket opens.
+    const wsBase = this.baseUrl
+      ? this.baseUrl.replace(/^http/, 'ws')
+      : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
+    const ws = new WebSocket(`${wsBase}/api/v1/events/${eventId}/live`);
+    ws.addEventListener('open', () => {
+      if (sessionId) {
+        ws.send(JSON.stringify({ type: 'auth', sessionId }));
+      }
+    });
+    return ws;
   }
 }

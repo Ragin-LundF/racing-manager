@@ -36,9 +36,15 @@ import io.ktor.websocket.readText
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
+
+@Serializable
+private data class WsAuthMessage(val type: String? = null, val sessionId: String)
 
 fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     get("/api/v1/events/{eventId}/heats") {
@@ -178,7 +184,15 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
 
     webSocket("/api/v1/events/{eventId}/live") {
         try {
-            val sessionId = call.request.headers["X-Session-Id"]
+            val json = Json { ignoreUnknownKeys = true }
+
+            // Authenticate via the first message so the session id never appears
+            // in the request URL (and thus never lands in access logs). No event
+            // data is sent until the client proves a valid session.
+            val authFrame = withTimeoutOrNull(5_000) { incoming.receive() } as? Frame.Text
+            val sessionId = authFrame?.let {
+                runCatching { json.decodeFromString<WsAuthMessage>(it.readText()).sessionId }.getOrNull()
+            }
             if (sessionId == null) {
                 close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Session required"))
                 return@webSocket
@@ -189,7 +203,6 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
                 return@webSocket
             }
 
-            val json = Json { ignoreUnknownKeys = true }
             val job = launch {
                 heatService.events
                     .catch { /* ignore */ }
