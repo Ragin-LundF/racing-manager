@@ -1,0 +1,274 @@
+{
+  "app": {
+    "health": {
+      "available": "Backend ist verfügbar.",
+      "unavailable": "Backend ist nicht verfügbar.",
+      "unexpected": "Unerwarteter Gesundheitsstatus."
+    }
+  },
+  "enum": {
+    "EIGHT_LANE": "Acht Spuren",
+    "ELECTRONIC": "Elektronisch",
+    "FOUR_LANE": "Vier Spuren",
+    "MANUAL": "Manuell",
+    "SIMULATED": "Simuliert",
+    "SIX_LANE": "Sechs Spuren",
+    "TWO_LANE": "Zwei Spuren"
+  },
+  "events": {
+    "detail": {
+      "activate": "Aktivieren",
+      "archive": "Archivieren",
+      "edit": "Bearbeiten",
+      "info": "Status: {{status}} | Spuren: {{lanes}} | Messung: {{measurement}}",
+      "qualification": "Qualifikation",
+      "raceControl": "Rennsteuerung"
+    },
+    "form": {
+      "cancel": "Abbrechen",
+      "conflict": {
+        "detail": "Erwartete Version {{expected}}, tatsächliche Version {{actual}}.",
+        "message": "Diese Veranstaltung wurde von einem anderen Benutzer geändert. Aktualisieren und erneut versuchen.",
+        "reload": "Neu laden",
+        "title": "Versionskonflikt"
+      },
+      "description": "Beschreibung",
+      "lanes": "Bahnen",
+      "maxParticipants": "Max. Teilnehmer (optional)",
+      "measurement": "Messung",
+      "name": {
+        "label": "Name",
+        "required": "Name ist erforderlich."
+      },
+      "save": {
+        "create": "Veranstaltung erstellen",
+        "edit": "Änderungen speichern"
+      },
+      "title": {
+        "create": "Veranstaltung erstellen",
+        "edit": "Veranstaltung bearbeiten"
+      }
+    },
+    "list": {
+      "create": "Veranstaltung erstellen",
+      "created": "Erstellt",
+      "edit": "Bearbeiten",
+      "empty": "Noch keine Veranstaltungen. Erstellen Sie Ihre erste Veranstaltung.",
+      "lanes": "Bahnen",
+      "measurement": "Messung",
+      "name": "Name",
+      "status": "Status",
+      "title": "Veranstaltungen",
+      "view": "Anzeigen"
+    }
+  },
+  "login": {
+    "error": {
+      "generic": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "invalidCredentials": "Ungültiger Benutzername oder Passwort."
+    },
+    "password": {
+      "label": "Passwort",
+      "required": "Passwort ist erforderlich."
+    },
+    "submit": "Anmelden",
+    "title": "Anmelden",
+    "username": {
+      "label": "Benutzername",
+      "required": "Benutzername ist erforderlich."
+    }
+  },
+  "participants": {
+    "form": {
+      "cancel": "Abbrechen",
+      "club": "Verein",
+      "firstName": {
+        "label": "Vorname",
+        "required": "Vorname ist erforderlich."
+      },
+      "lastName": {
+        "label": "Nachname",
+        "required": "Nachname ist erforderlich."
+      },
+      "save": {
+        "create": "Teilnehmer hinzufügen",
+        "edit": "Änderungen speichern"
+      },
+      "startNumber": {
+        "label": "Startnummer",
+        "required": "Startnummer ist erforderlich."
+      },
+      "title": {
+        "create": "Teilnehmer hinzufügen",
+        "edit": "Teilnehmer bearbeiten"
+      },
+      "vehicleCategory": "Fahrzeugkategorie",
+      "vehicleName": "Fahrzeugname"
+    },
+    "import": {
+      "back": "Zurück zu den Teilnehmern",
+      "cancel": "Abbrechen",
+      "created": "{{count}} Teilnehmer erstellt.",
+      "csvData": "CSV-Daten",
+      "errorRow": "Zeile {{row}}: {{message}}",
+      "errors": "Fehler:",
+      "hint": "CSV-Daten unten einfügen. Format: Startnummer, Vorname, Nachname, Verein, Fahrzeugname, Fahrzeugkategorie",
+      "submit": "Importieren",
+      "title": "Teilnehmer importieren (CSV)"
+    },
+    "list": {
+      "add": "Teilnehmer hinzufügen",
+      "club": "Verein",
+      "created": "Erstellt",
+      "deactivate": "Deaktivieren",
+      "edit": "Bearbeiten",
+      "empty": "Noch keine Teilnehmer. Fügen Sie Teilnehmer hinzu.",
+      "import": "CSV importieren",
+      "name": "Name",
+      "randomize": "Randomisieren",
+      "reactivate": "Reaktivieren",
+      "sortOrder": "Sortierreihenfolge",
+      "startNumber": "#",
+      "status": "Status",
+      "title": "Teilnehmer",
+      "vehicle": "Fahrzeug"
+    },
+    "randomize": {
+      "already": {
+        "cancel": "Abbrechen",
+        "confirm": "Erneut randomisieren",
+        "message": "Teilnehmer wurden bereits randomisiert. Erneutes Randomisieren ändert die Sortierreihenfolge.",
+        "title": "Bereits randomisiert"
+      },
+      "back": "Zurück zu den Teilnehmern",
+      "cancel": "Abbrechen",
+      "hint": "Die Sortierreihenfolge aller Teilnehmer randomisieren.",
+      "loading": "Randomisiere...",
+      "start": "Randomisieren",
+      "success": "Teilnehmer mit Seed {{seed}} randomisiert.",
+      "title": "Teilnehmer randomisieren"
+    }
+  },
+  "qualification": {
+    "actionsTitle": "Aktionen",
+    "bestTime": "Beste Zeit",
+    "cancel": "Abbrechen",
+    "cancelledHeats": "Abgebrochen",
+    "club": "Verein",
+    "completedHeats": "Abgeschlossen",
+    "completedRuns": "Läufe",
+    "confirmFinalize": "Ja, finalisieren",
+    "confirmReopen": "Ja, wieder öffnen",
+    "dnf": "DNF",
+    "finalizeButton": "Finalisieren",
+    "finalizeConfirm": "Sind Sie sicher? Dies sperrt die Rangliste.",
+    "finalizeHint": "Alle Läufe müssen abgeschlossen sein, bevor finalisiert wird.",
+    "finalizedMessage": "Qualifikation ist finalisiert. Rangliste ist gesperrt.",
+    "finalizedTitle": "Finalisiert",
+    "generateSchedule": "Zeitplan erstellen",
+    "goToRaceControl": "Durchführen",
+    "heatLabel": "Lauf #{{number}}",
+    "inProgressHeats": "In Bearbeitung",
+    "name": "Name",
+    "numberOfRuns": "Anzahl der Läufe:",
+    "participantsWithResults": "Mit Ergebnissen",
+    "plannedHeats": "Geplant",
+    "progressTitle": "Fortschritt",
+    "rank": "Rang",
+    "rankingsTitle": "Rangliste",
+    "reopenButton": "Wieder öffnen",
+    "reopenConfirm": "Qualifikation wieder öffnen, um weitere Läufe zu ermöglichen?",
+    "runs": "Läufe:",
+    "scheduleTitle": "Zeitplan",
+    "seed": "Seed:",
+    "setupButton": "Einrichten",
+    "setupDescription": "Qualifikationsphase konfigurieren und starten. Jeder Teilnehmer fährt mehrere Läufe.",
+    "setupTitle": "Qualifikation einrichten",
+    "startNumber": "#",
+    "status": "Status:",
+    "statusTitle": "Qualifikationsstatus",
+    "title": "Qualifikation",
+    "totalHeats": "Läufe gesamt"
+  },
+  "racemanager": {
+    "activeEvent": {
+      "label": "Aktive Veranstaltung:",
+      "noEvents": "Keine Veranstaltungen",
+      "none": "Keine"
+    },
+    "brand": "PineCar Race Timer",
+    "logout": "Abmelden",
+    "nav": {
+      "events": "Veranstaltungen",
+      "newEvent": "Neue Veranstaltung",
+      "overview": "Übersicht",
+      "participants": "Teilnehmer",
+      "preliminary": "Vorrunden",
+      "races": "Rennen"
+    },
+    "shell": {
+      "placeholder": "Eventverwaltung erscheint hier.",
+      "title": "Rennmanager"
+    },
+    "summary": {
+      "heatsWord": "Läufe",
+      "mode": "Modus",
+      "notSetUp": "Vorrunde noch nicht eingerichtet.",
+      "runs": "Läufe pro Teilnehmer",
+      "title": "Vorrunden-Überblick"
+    },
+    "upcoming": {
+      "heat": "Lauf {{number}}",
+      "none": "Keine anstehenden Läufe.",
+      "solo": "EINZELLAUF",
+      "title": "Nächste Läufe"
+    }
+  },
+  "races": {
+    "control": {
+      "accept": "Akzeptieren",
+      "arm": "Schärfen",
+      "armedAt": "Geschärft: {{time}}",
+      "cancel": "Abbrechen",
+      "create": "Lauf erstellen",
+      "createHeat": "Neuen Lauf erstellen",
+      "finish": "Beenden",
+      "finishedAt": "Beendet: {{time}}",
+      "heatLabel": "Lauf #{{number}}",
+      "noHeats": "Noch keine Läufe. Erstellen Sie einen Lauf, um zu beginnen.",
+      "noParticipants": "Keine aktiven Teilnehmer verfügbar.",
+      "reject": "Ablehnen",
+      "repeat": "Wiederholen",
+      "start": "Starten",
+      "startedAt": "Gestartet: {{time}}",
+      "title": "Rennsteuerung"
+    }
+  },
+  "setup": {
+    "confirmPassword": "Passwort bestätigen",
+    "displayName": {
+      "label": "Anzeigename",
+      "required": "Anzeigename ist erforderlich."
+    },
+    "error": {
+      "generic": "Einrichtung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "password": {
+      "label": "Passwort",
+      "mismatch": "Passwörter stimmen nicht überein.",
+      "required": "Passwort ist erforderlich (min. 8 Zeichen)."
+    },
+    "submit": "Administrator erstellen",
+    "title": "Administrator-Einrichtung",
+    "username": {
+      "label": "Benutzername",
+      "required": "Benutzername ist erforderlich (min. 3 Zeichen)."
+    }
+  },
+  "spectator": {
+    "shell": {
+      "placeholder": "Live-Rennergebnisse erscheinen hier.",
+      "title": "Zuschaueransicht"
+    }
+  }
+}

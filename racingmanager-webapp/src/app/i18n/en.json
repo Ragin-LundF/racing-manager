@@ -1,0 +1,274 @@
+{
+  "app": {
+    "health": {
+      "available": "Backend is available.",
+      "unavailable": "Backend is unavailable.",
+      "unexpected": "Unexpected health status."
+    }
+  },
+  "enum": {
+    "EIGHT_LANE": "Eight Lanes",
+    "ELECTRONIC": "Electronic",
+    "FOUR_LANE": "Four Lanes",
+    "MANUAL": "Manual",
+    "SIMULATED": "Simulated",
+    "SIX_LANE": "Six Lanes",
+    "TWO_LANE": "Two Lanes"
+  },
+  "events": {
+    "detail": {
+      "activate": "Activate",
+      "archive": "Archive",
+      "edit": "Edit",
+      "info": "Status: {{status}} | Lanes: {{lanes}} | Measurement: {{measurement}}",
+      "qualification": "Qualification",
+      "raceControl": "Race Control"
+    },
+    "form": {
+      "cancel": "Cancel",
+      "conflict": {
+        "detail": "Expected version {{expected}}, actual version {{actual}}.",
+        "message": "This event was modified by another user. Refresh and try again.",
+        "reload": "Reload",
+        "title": "Version Conflict"
+      },
+      "description": "Description",
+      "lanes": "Lanes",
+      "maxParticipants": "Max Participants (optional)",
+      "measurement": "Measurement",
+      "name": {
+        "label": "Name",
+        "required": "Name is required."
+      },
+      "save": {
+        "create": "Create Event",
+        "edit": "Save Changes"
+      },
+      "title": {
+        "create": "Create Event",
+        "edit": "Edit Event"
+      }
+    },
+    "list": {
+      "create": "Create Event",
+      "created": "Created",
+      "edit": "Edit",
+      "empty": "No events yet. Create your first event to get started.",
+      "lanes": "Lanes",
+      "measurement": "Measurement",
+      "name": "Name",
+      "status": "Status",
+      "title": "Events",
+      "view": "View"
+    }
+  },
+  "login": {
+    "error": {
+      "generic": "Login failed. Please try again.",
+      "invalidCredentials": "Invalid username or password."
+    },
+    "password": {
+      "label": "Password",
+      "required": "Password is required."
+    },
+    "submit": "Log In",
+    "title": "Login",
+    "username": {
+      "label": "Username",
+      "required": "Username is required."
+    }
+  },
+  "participants": {
+    "form": {
+      "cancel": "Cancel",
+      "club": "Club",
+      "firstName": {
+        "label": "First Name",
+        "required": "First name is required."
+      },
+      "lastName": {
+        "label": "Last Name",
+        "required": "Last name is required."
+      },
+      "save": {
+        "create": "Add Participant",
+        "edit": "Save Changes"
+      },
+      "startNumber": {
+        "label": "Start Number",
+        "required": "Start number is required."
+      },
+      "title": {
+        "create": "Add Participant",
+        "edit": "Edit Participant"
+      },
+      "vehicleCategory": "Vehicle Category",
+      "vehicleName": "Vehicle Name"
+    },
+    "import": {
+      "back": "Back to Participants",
+      "cancel": "Cancel",
+      "created": "{{count}} participants created.",
+      "csvData": "CSV Data",
+      "errorRow": "Row {{row}}: {{message}}",
+      "errors": "Errors:",
+      "hint": "Paste CSV data below. Format: startNumber, firstName, lastName, club, vehicleName, vehicleCategory",
+      "submit": "Import",
+      "title": "Import Participants (CSV)"
+    },
+    "list": {
+      "add": "Add Participant",
+      "club": "Club",
+      "created": "Created",
+      "deactivate": "Deactivate",
+      "edit": "Edit",
+      "empty": "No participants yet. Add participants to get started.",
+      "import": "Import CSV",
+      "name": "Name",
+      "randomize": "Randomize",
+      "reactivate": "Reactivate",
+      "sortOrder": "Sort Order",
+      "startNumber": "#",
+      "status": "Status",
+      "title": "Participants",
+      "vehicle": "Vehicle"
+    },
+    "randomize": {
+      "already": {
+        "cancel": "Cancel",
+        "confirm": "Re-randomize",
+        "message": "Participants have already been randomized. Re-randomization will change the sort order.",
+        "title": "Already Randomized"
+      },
+      "back": "Back to Participants",
+      "cancel": "Cancel",
+      "hint": "Randomize the sort order of all participants.",
+      "loading": "Randomizing...",
+      "start": "Randomize",
+      "success": "Participants randomized with seed {{seed}}.",
+      "title": "Randomize Participants"
+    }
+  },
+  "qualification": {
+    "actionsTitle": "Actions",
+    "bestTime": "Best Time",
+    "cancel": "Cancel",
+    "cancelledHeats": "Cancelled",
+    "club": "Club",
+    "completedHeats": "Completed",
+    "completedRuns": "Runs",
+    "confirmFinalize": "Yes, Finalize",
+    "confirmReopen": "Yes, Reopen",
+    "dnf": "DNF",
+    "finalizeButton": "Finalize",
+    "finalizeConfirm": "Are you sure? This will lock the rankings.",
+    "finalizeHint": "All heats must be completed before finalizing.",
+    "finalizedMessage": "Qualification is finalized. Rankings are locked.",
+    "finalizedTitle": "Finalized",
+    "generateSchedule": "Generate Schedule",
+    "goToRaceControl": "Run",
+    "heatLabel": "Heat #{{number}}",
+    "inProgressHeats": "In Progress",
+    "name": "Name",
+    "numberOfRuns": "Number of runs:",
+    "participantsWithResults": "With Results",
+    "plannedHeats": "Planned",
+    "progressTitle": "Progress",
+    "rank": "Rank",
+    "rankingsTitle": "Rankings",
+    "reopenButton": "Reopen",
+    "reopenConfirm": "Reopen qualification to allow more runs?",
+    "runs": "Runs:",
+    "scheduleTitle": "Schedule",
+    "seed": "Seed:",
+    "setupButton": "Setup",
+    "setupDescription": "Configure and start the qualification phase. Each participant will race in multiple runs.",
+    "setupTitle": "Setup Qualification",
+    "startNumber": "#",
+    "status": "Status:",
+    "statusTitle": "Qualification Status",
+    "title": "Qualification",
+    "totalHeats": "Total Heats"
+  },
+  "racemanager": {
+    "activeEvent": {
+      "label": "Active Event:",
+      "noEvents": "No events",
+      "none": "None"
+    },
+    "brand": "PineCar Race Timer",
+    "logout": "Log Out",
+    "nav": {
+      "events": "Events",
+      "newEvent": "New Event",
+      "overview": "Overview",
+      "participants": "Participants",
+      "preliminary": "Preliminary Rounds",
+      "races": "Races"
+    },
+    "shell": {
+      "placeholder": "Event management will appear here.",
+      "title": "Race Manager"
+    },
+    "summary": {
+      "heatsWord": "heats",
+      "mode": "Mode",
+      "notSetUp": "Preliminary round not set up yet.",
+      "runs": "Runs per Participant",
+      "title": "Preliminary Round Overview"
+    },
+    "upcoming": {
+      "heat": "Heat {{number}}",
+      "none": "No upcoming heats.",
+      "solo": "SOLO RUN",
+      "title": "Upcoming Heats"
+    }
+  },
+  "races": {
+    "control": {
+      "accept": "Accept",
+      "arm": "Arm",
+      "armedAt": "Armed: {{time}}",
+      "cancel": "Cancel",
+      "create": "Create Heat",
+      "createHeat": "Create New Heat",
+      "finish": "Finish",
+      "finishedAt": "Finished: {{time}}",
+      "heatLabel": "Heat #{{number}}",
+      "noHeats": "No heats yet. Create a heat to get started.",
+      "noParticipants": "No active participants available.",
+      "reject": "Reject",
+      "repeat": "Repeat",
+      "start": "Start",
+      "startedAt": "Started: {{time}}",
+      "title": "Race Control"
+    }
+  },
+  "setup": {
+    "confirmPassword": "Confirm Password",
+    "displayName": {
+      "label": "Display Name",
+      "required": "Display name is required."
+    },
+    "error": {
+      "generic": "Setup failed. Please try again."
+    },
+    "password": {
+      "label": "Password",
+      "mismatch": "Passwords do not match.",
+      "required": "Password is required (min. 8 characters)."
+    },
+    "submit": "Create Administrator",
+    "title": "Administrator Setup",
+    "username": {
+      "label": "Username",
+      "required": "Username is required (min. 3 characters)."
+    }
+  },
+  "spectator": {
+    "shell": {
+      "placeholder": "Live race results will appear here.",
+      "title": "Spectator View"
+    }
+  }
+}
