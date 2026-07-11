@@ -1,0 +1,32 @@
+<header>
+  <nav>
+    <a [routerLink]="['/', localeService.currentLocale(), 'racemanager']" i18n="@@racemanager.nav.events">Events</a>
+    <a [routerLink]="['/', localeService.currentLocale(), 'racemanager', 'new']" i18n="@@racemanager.nav.newEvent">New Event</a>
+  </nav>
+
+  <div class="active-event">
+    <span i18n="@@racemanager.activeEvent">Active Event:</span>
+    @if (events.length > 0) {
+      <select [(ngModel)]="selectedEventId" (ngModelChange)="onEventSelect()">
+        <option value="" i18n="@@racemanager.activeEvent.none">None</option>
+        @for (event of events; track event.id) {
+          <option [value]="event.id" [disabled]="event.status === 'ARCHIVED'">
+            {{ event.name }} ({{ event.status }})
+          </option>
+        }
+      </select>
+    } @else {
+      <span i18n="@@racemanager.activeEvent.noEvents">No events</span>
+    }
+  </div>
+
+  <div>
+    <app-locale-selector />
+    <span>{{ authService.session()?.displayName }}</span>
+    <button (click)="onLogout()" i18n="@@racemanager.logout">Log Out</button>
+  </div>
+</header>
+
+<main>
+  <router-outlet />
+</main>

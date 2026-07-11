@@ -1,0 +1,63 @@
+<div class="event-form">
+  <h2 i18n="@@events.form.title">{{ isEdit() ? 'Edit Event' : 'Create Event' }}</h2>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (conflict(); as c) {
+    <div class="conflict">
+      <strong i18n="@@events.form.conflict.title">Version Conflict</strong>
+      <p i18n="@@events.form.conflict.message">This event was modified by another user. Refresh and try again.</p>
+      <p i18n="@@events.form.conflict.detail">Expected version {{ c.expectedVersion }}, actual version {{ c.actualVersion }}.</p>
+      <button (click)="onDismissConflict()" i18n="@@events.form.conflict.reload">Reload</button>
+    </div>
+  }
+
+  <form #form="ngForm" (ngSubmit)="onSubmit()">
+    <label i18n="@@events.form.name">
+      Name
+      <input name="name" [(ngModel)]="name" required minlength="1" #nameField="ngModel" />
+    </label>
+    @if (nameField.invalid && nameField.touched) {
+      <small i18n="@@events.form.name.required">Name is required.</small>
+    }
+
+    <label i18n="@@events.form.description">
+      Description
+      <textarea name="description" [(ngModel)]="description"></textarea>
+    </label>
+
+    <label i18n="@@events.form.lanes">
+      Lanes
+      <select name="laneType" [(ngModel)]="laneType">
+        @for (lane of laneTypes; track lane) {
+          <option [value]="lane">{{ lane }}</option>
+        }
+      </select>
+    </label>
+
+    <label i18n="@@events.form.measurement">
+      Measurement
+      <select name="measurementType" [(ngModel)]="measurementType">
+        @for (m of measurementTypes; track m) {
+          <option [value]="m">{{ m }}</option>
+        }
+      </select>
+    </label>
+
+    <label i18n="@@events.form.maxParticipants">
+      Max Participants (optional)
+      <input type="number" name="maxParticipants" [(ngModel)]="maxParticipants" min="1" />
+    </label>
+
+    <div class="actions">
+      <button type="submit" [disabled]="form.invalid" i18n="@@events.form.save">
+        {{ isEdit() ? 'Save Changes' : 'Create Event' }}
+      </button>
+      <button type="button" (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@events.form.cancel">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,120 @@
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { EventService } from './event.service';
+import { ConflictResponse } from './event.models';
+import { LocaleService } from '../i18n/locale.service';
+import { catchError, of } from 'rxjs';
+
+@Component({
+  selector: 'app-event-form',
+  standalone: true,
+  imports: [FormsModule],
+  templateUrl: './event-form.component.html',
+  styles: [
+    `
+      .error { color: red; }
+      .conflict { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; margin-bottom: 1rem; }
+      small { color: red; display: block; }
+      label { display: block; margin-bottom: 0.5rem; }
+      input, select, textarea { display: block; width: 100%; max-width: 400px; margin-top: 0.25rem; }
+      .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    `,
+  ],
+})
+export class EventFormComponent {
+  private readonly eventService = inject(EventService);
+  protected readonly router = inject(Router);
+  protected readonly route = inject(ActivatedRoute);
+  private readonly localeService = inject(LocaleService);
+
+  protected isEdit = signal(false);
+  protected name = '';
+  protected description = '';
+  protected laneType = 'TWO_LANE';
+  protected measurementType = 'SIMULATED';
+  protected maxParticipants: number | null = null;
+  protected version = 0;
+  protected error = signal('');
+  protected conflict = signal<ConflictResponse | null>(null);
+
+  protected readonly laneTypes = ['TWO_LANE', 'FOUR_LANE', 'SIX_LANE', 'EIGHT_LANE'];
+  protected readonly measurementTypes = ['SIMULATED', 'MANUAL', 'ELECTRONIC'];
+
+  constructor() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id && id !== 'new') {
+      this.isEdit.set(true);
+      this.loadEvent(id);
+    }
+  }
+
+  private loadEvent(id: string): void {
+    this.eventService.findById(id).subscribe({
+      next: (event) => {
+        this.name = event.name;
+        this.description = event.description ?? '';
+        this.laneType = event.settings.laneType;
+        this.measurementType = event.settings.measurementType;
+        this.maxParticipants = event.settings.maxParticipants;
+        this.version = event.version;
+      },
+      error: () => {
+        this.error.set('Failed to load event.');
+      },
+    });
+  }
+
+  protected onSubmit(): void {
+    this.error.set('');
+    this.conflict.set(null);
+
+    if (this.isEdit()) {
+      this.eventService.update(this.route.snapshot.paramMap.get('id')!, {
+        name: this.name,
+        description: this.description || null,
+        laneType: this.laneType,
+        measurementType: this.measurementType,
+        maxParticipants: this.maxParticipants,
+        expectedVersion: this.version,
+      }).pipe(
+        catchError((err) => {
+          const body = err.error as ConflictResponse;
+          if (body && body.expectedVersion !== undefined) {
+            this.conflict.set(body);
+          } else {
+            this.error.set('Update failed.');
+          }
+          return of(null);
+        }),
+      ).subscribe((res) => {
+        if (res) {
+          this.router.navigate(['..'], { relativeTo: this.route });
+        }
+      });
+    } else {
+      this.eventService.create({
+        name: this.name,
+        description: this.description || null,
+        laneType: this.laneType,
+        measurementType: this.measurementType,
+        maxParticipants: this.maxParticipants,
+      }).pipe(
+        catchError(() => {
+          this.error.set('Create failed.');
+          return of(null);
+        }),
+      ).subscribe((res) => {
+        if (res) {
+          this.router.navigate(['..'], { relativeTo: this.route });
+        }
+      });
+    }
+  }
+
+  protected onDismissConflict(): void {
+    this.conflict.set(null);
+    const id = this.route.snapshot.paramMap.get('id')!;
+    this.loadEvent(id);
+  }
+}

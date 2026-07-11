@@ -110,6 +110,114 @@
         <source>Login failed. Please try again.</source>
         <target>Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
       </trans-unit>
+      <trans-unit id="events.list.title">
+        <source>Events</source>
+        <target>Veranstaltungen</target>
+      </trans-unit>
+      <trans-unit id="events.list.create">
+        <source>Create Event</source>
+        <target>Veranstaltung erstellen</target>
+      </trans-unit>
+      <trans-unit id="events.list.empty">
+        <source>No events yet. Create your first event to get started.</source>
+        <target>Noch keine Veranstaltungen. Erstellen Sie Ihre erste Veranstaltung.</target>
+      </trans-unit>
+      <trans-unit id="events.list.name">
+        <source>Name</source>
+        <target>Name</target>
+      </trans-unit>
+      <trans-unit id="events.list.status">
+        <source>Status</source>
+        <target>Status</target>
+      </trans-unit>
+      <trans-unit id="events.list.lanes">
+        <source>Lanes</source>
+        <target>Bahnen</target>
+      </trans-unit>
+      <trans-unit id="events.list.measurement">
+        <source>Measurement</source>
+        <target>Messung</target>
+      </trans-unit>
+      <trans-unit id="events.list.created">
+        <source>Created</source>
+        <target>Erstellt</target>
+      </trans-unit>
+      <trans-unit id="events.list.edit">
+        <source>Edit</source>
+        <target>Bearbeiten</target>
+      </trans-unit>
+      <trans-unit id="events.form.title">
+        <source>{{ isEdit() ? 'Edit Event' : 'Create Event' }}</source>
+        <target>{{ isEdit() ? 'Veranstaltung bearbeiten' : 'Veranstaltung erstellen' }}</target>
+      </trans-unit>
+      <trans-unit id="events.form.name">
+        <source>Name</source>
+        <target>Name</target>
+      </trans-unit>
+      <trans-unit id="events.form.name.required">
+        <source>Name is required.</source>
+        <target>Name ist erforderlich.</target>
+      </trans-unit>
+      <trans-unit id="events.form.description">
+        <source>Description</source>
+        <target>Beschreibung</target>
+      </trans-unit>
+      <trans-unit id="events.form.lanes">
+        <source>Lanes</source>
+        <target>Bahnen</target>
+      </trans-unit>
+      <trans-unit id="events.form.measurement">
+        <source>Measurement</source>
+        <target>Messung</target>
+      </trans-unit>
+      <trans-unit id="events.form.maxParticipants">
+        <source>Max Participants (optional)</source>
+        <target>Max. Teilnehmer (optional)</target>
+      </trans-unit>
+      <trans-unit id="events.form.save">
+        <source>{{ isEdit() ? 'Save Changes' : 'Create Event' }}</source>
+        <target>{{ isEdit() ? 'Änderungen speichern' : 'Veranstaltung erstellen' }}</target>
+      </trans-unit>
+      <trans-unit id="events.form.cancel">
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </trans-unit>
+      <trans-unit id="events.form.conflict.title">
+        <source>Version Conflict</source>
+        <target>Versionskonflikt</target>
+      </trans-unit>
+      <trans-unit id="events.form.conflict.message">
+        <source>This event was modified by another user. Refresh and try again.</source>
+        <target>Diese Veranstaltung wurde von einem anderen Benutzer geändert. Aktualisieren und erneut versuchen.</target>
+      </trans-unit>
+      <trans-unit id="events.form.conflict.detail">
+        <source>Expected version {{ c.expectedVersion }}, actual version {{ c.actualVersion }}.</source>
+        <target>Erwartete Version {{ c.expectedVersion }}, tatsächliche Version {{ c.actualVersion }}.</target>
+      </trans-unit>
+      <trans-unit id="events.form.conflict.reload">
+        <source>Reload</source>
+        <target>Neu laden</target>
+      </trans-unit>
+      <trans-unit id="racemanager.nav.events">
+        <source>Events</source>
+        <target>Veranstaltungen</target>
+      </trans-unit>
+      <trans-unit id="racemanager.nav.newEvent">
+        <source>New Event</source>
+        <target>Neue Veranstaltung</target>
+      </trans-unit>
+      <trans-unit id="racemanager.activeEvent">
+        <source>Active Event:</source>
+        <target>Aktive Veranstaltung:</target>
+      </trans-unit>
+      <trans-unit id="racemanager.activeEvent.none">
+        <source>None</source>
+        <target>Keine</target>
+      </trans-unit>
+      <trans-unit id="racemanager.activeEvent.noEvents">
+        <source>No events</source>
+        <target>Keine Veranstaltungen</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

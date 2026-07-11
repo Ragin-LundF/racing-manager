@@ -1,0 +1,39 @@
+<div class="event-list">
+  <div class="header">
+    <h2 i18n="@@events.list.title">Events</h2>
+    <button routerLink="new" i18n="@@events.list.create">Create Event</button>
+  </div>
+
+  @if (events.length === 0) {
+    <div class="empty" i18n="@@events.list.empty">
+      No events yet. Create your first event to get started.
+    </div>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th i18n="@@events.list.name">Name</th>
+          <th i18n="@@events.list.status">Status</th>
+          <th i18n="@@events.list.lanes">Lanes</th>
+          <th i18n="@@events.list.measurement">Measurement</th>
+          <th i18n="@@events.list.created">Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (event of events; track event.id) {
+          <tr>
+            <td>{{ event.name }}</td>
+            <td>{{ event.status }}</td>
+            <td>{{ event.settings.laneType }}</td>
+            <td>{{ event.settings.measurementType }}</td>
+            <td>{{ event.createdAt | date:'short' }}</td>
+            <td>
+              <a [routerLink]="event.id" i18n="@@events.list.edit">Edit</a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
