@@ -1,0 +1,34 @@
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
+.header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.error { color: var(--color-error); }
+.success { color: var(--color-success); }
+.section { background: var(--color-bg-panel); border: 1px solid var(--color-border); border-radius: var(--radius-panel); padding: var(--space-4); margin-bottom: var(--space-4); }
+.section h3 { margin-top: 0; font-size: 15px; font-weight: 600; }
+.setup-form { display: flex; gap: var(--space-2); align-items: center; }
+.setup-form select { height: var(--control-height-compact); padding: 0 var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-bg-raised); color: var(--color-text-primary); font-size: 14px; }
+.bracket { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-4); }
+.round-column { display: flex; flex-direction: column; gap: var(--space-3); min-width: 200px; }
+.round-header { font-weight: 600; font-size: 13px; color: var(--color-text-secondary); text-align: center; padding: var(--space-2); }
+.match-card { border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-2) var(--space-3); background: var(--color-bg-raised); }
+.match-card.finished { border-color: var(--color-success); }
+.match-card.in-progress { border-color: var(--color-lane-1); }
+.match-card.planned { opacity: 0.85; }
+.match-participant { display: flex; align-items: center; padding: var(--space-1) 0; font-size: 14px; }
+.match-participant.winner { font-weight: 600; color: var(--color-success); }
+.match-vs { font-size: 11px; color: var(--color-text-secondary); text-align: center; }
+.match-status { font-size: 11px; color: var(--color-text-secondary); text-align: center; margin-top: var(--space-1); }
+.podium { display: flex; gap: var(--space-4); justify-content: center; padding: var(--space-4); }
+.podium-step { text-align: center; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-panel); min-width: 140px; background: var(--color-bg-raised); }
+.podium-step.gold { border-color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
+.podium-step.silver { border-color: var(--color-text-secondary); background: color-mix(in srgb, var(--color-text-secondary) 8%, transparent); }
+.podium-step.bronze { border-color: var(--color-lane-3); background: color-mix(in srgb, var(--color-lane-3) 10%, transparent); }
+.podium-rank { font-size: 2rem; font-weight: 700; }
+.podium-name { font-size: 16px; font-weight: 600; margin-top: var(--space-2); }
+.podium-club { font-size: 13px; color: var(--color-text-secondary); margin-top: var(--space-1); }
+.actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+button { height: var(--control-height-compact); padding: 0 var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-control); cursor: pointer; font-size: 14px; background: var(--color-bg-raised); color: var(--color-text-primary); }
+button:hover { border-color: var(--color-text-muted); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary { background: var(--color-action); color: #08130b; border-color: var(--color-action); font-weight: 600; }
+button.success { background: var(--color-success); color: #08130b; border-color: var(--color-success); font-weight: 600; }
+.confirm-dialog { margin-top: var(--space-4); padding: var(--space-4); border: 1px solid var(--color-warning); border-radius: var(--radius-panel); background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-panel)); }

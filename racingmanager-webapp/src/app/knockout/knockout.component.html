@@ -1,0 +1,105 @@
+<div class="knockout">
+  <div class="header">
+    <h2>{{ 'knockout.title' | translate }}</h2>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (success()) {
+    <p class="success">{{ success() }}</p>
+  }
+
+  @if (!tournament()) {
+    <div class="section">
+      <h3>{{ 'knockout.setupTitle' | translate }}</h3>
+      <p>{{ 'knockout.setupDescription' | translate }}</p>
+      <div class="setup-form">
+        <label for="pairingMode">{{ 'knockout.pairingMode' | translate }}</label>
+        <select id="pairingMode" [value]="selectedPairingMode()" (change)="selectedPairingMode.set($any($event.target).value)">
+          <option value="FIRST_VS_LAST">{{ 'knockout.modeFirstVsLast' | translate }}</option>
+          <option value="ADJACENT">{{ 'knockout.modeAdjacent' | translate }}</option>
+          <option value="RANDOM">{{ 'knockout.modeRandom' | translate }}</option>
+          <option value="MANUAL">{{ 'knockout.modeManual' | translate }}</option>
+        </select>
+        <button class="primary" (click)="onSetup()" [disabled]="loading()">{{ 'knockout.setupButton' | translate }}</button>
+      </div>
+    </div>
+  }
+
+  @if (tournament(); as t) {
+    <div class="section">
+      <h3>{{ 'knockout.statusTitle' | translate }}</h3>
+      <p><strong>{{ 'knockout.status' | translate }}</strong> {{ t.status }}</p>
+      <p><strong>{{ 'knockout.pairingMode' | translate }}</strong> {{ 'knockout.mode' + t.pairingMode | translate }}</p>
+
+      @if (t.status === 'PAIRING') {
+        <button class="primary" (click)="onGeneratePairings()" [disabled]="loading()">{{ 'knockout.generatePairings' | translate }}</button>
+      }
+    </div>
+
+    @if (matches().length > 0) {
+      <div class="section">
+        <h3>{{ 'knockout.bracketTitle' | translate }}</h3>
+        <div class="bracket">
+          @for (round of getRounds(); track round) {
+            <div class="round-column">
+              <div class="round-header">{{ 'knockout.roundLabel' | translate: { number: round } }}</div>
+              @for (match of matchesByRound(round); track match.id) {
+                <div class="match-card" [class]="matchStatusClass(match.status)">
+                  <div class="match-participant" [class.winner]="match.winnerId === match.participant1Id">
+                    <span class="participant-name">{{ getParticipantName(match, match.participant1Id) }}</span>
+                  </div>
+                  <div class="match-vs">vs</div>
+                  <div class="match-participant" [class.winner]="match.winnerId === match.participant2Id">
+                    <span class="participant-name">{{ getParticipantName(match, match.participant2Id) }}</span>
+                  </div>
+                  <div class="match-status">{{ match.status }}</div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (results().length > 0) {
+      <div class="section">
+        <h3>{{ 'knockout.resultsTitle' | translate }}</h3>
+        <div class="podium">
+          @for (r of results(); track r.rank) {
+            <div class="podium-step" [class.gold]="r.rank === 1" [class.silver]="r.rank === 2" [class.bronze]="r.rank === 3">
+              <div class="podium-rank">{{ r.rank }}</div>
+              <div class="podium-name">{{ r.firstName }} {{ r.lastName }}</div>
+              <div class="podium-club">{{ r.club || '-' }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (t.status === 'IN_PROGRESS') {
+      <div class="section">
+        <h3>{{ 'knockout.actionsTitle' | translate }}</h3>
+        <p>{{ 'knockout.finalizeHint' | translate }}</p>
+        @if (!showFinalizeConfirm()) {
+          <button class="success" (click)="showFinalizeConfirm.set(true)">{{ 'knockout.finalizeButton' | translate }}</button>
+        }
+        @if (showFinalizeConfirm()) {
+          <div class="confirm-dialog">
+            <p>{{ 'knockout.finalizeConfirm' | translate }}</p>
+            <button class="success" (click)="onFinalize()" [disabled]="loading()">{{ 'knockout.confirmFinalize' | translate }}</button>
+            <button (click)="showFinalizeConfirm.set(false)">{{ 'knockout.cancel' | translate }}</button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (t.status === 'FINALIZED') {
+      <div class="section">
+        <h3>{{ 'knockout.finalizedTitle' | translate }}</h3>
+        <p>{{ 'knockout.finalizedMessage' | translate }}</p>
+      </div>
+    }
+  }
+</div>

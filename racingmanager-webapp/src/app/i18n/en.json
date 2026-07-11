@@ -21,6 +21,7 @@
       "archive": "Archive",
       "edit": "Edit",
       "info": "Status: {{status}} | Lanes: {{lanes}} | Measurement: {{measurement}}",
+      "knockout": "Knockout",
       "qualification": "Qualification",
       "raceControl": "Race Control"
     },
@@ -191,6 +192,31 @@
     "statusTitle": "Qualification Status",
     "title": "Qualification",
     "totalHeats": "Total Heats"
+  },
+  "knockout": {
+    "actionsTitle": "Actions",
+    "bracketTitle": "Bracket",
+    "cancel": "Cancel",
+    "confirmFinalize": "Yes, Finalize",
+    "finalizeButton": "Finalize",
+    "finalizeConfirm": "Are you sure? This will lock the knockout results.",
+    "finalizeHint": "All matches must be completed before finalizing.",
+    "finalizedMessage": "Knockout is finalized. Results are locked.",
+    "finalizedTitle": "Finalized",
+    "generatePairings": "Generate Pairings",
+    "modeAdjacent": "Adjacent (1v2, 3v4, ...)",
+    "modeFirstVsLast": "First vs Last (1vN, 2vN-1, ...)",
+    "modeManual": "Manual",
+    "modeRandom": "Random",
+    "pairingMode": "Pairing Mode:",
+    "resultsTitle": "Results",
+    "roundLabel": "Round {{number}}",
+    "setupButton": "Setup",
+    "setupDescription": "Configure and start the knockout phase. Pairings will be generated based on qualification rankings.",
+    "setupTitle": "Setup Knockout",
+    "status": "Status:",
+    "statusTitle": "Knockout Status",
+    "title": "Knockout"
   },
   "racemanager": {
     "activeEvent": {

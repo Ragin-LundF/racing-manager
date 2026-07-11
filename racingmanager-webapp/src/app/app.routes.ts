@@ -13,6 +13,7 @@ import { ParticipantImportComponent } from './participants/participant-import.co
 import { ParticipantRandomizeComponent } from './participants/participant-randomize.component';
 import { RaceControlComponent } from './races/race-control.component';
 import { QualificationComponent } from './qualification/qualification.component';
+import { KnockoutComponent } from './knockout/knockout.component';
 
 // Language is a runtime concern (ngx-translate + localStorage), so routes carry
 // no locale prefix.
@@ -41,6 +42,7 @@ export const routes: Routes = [
           { path: 'participants/:participantId', component: ParticipantFormComponent },
           { path: 'race-control', component: RaceControlComponent },
           { path: 'qualification', component: QualificationComponent },
+          { path: 'knockout', component: KnockoutComponent },
         ],
       },
     ],

@@ -18,6 +18,7 @@
         @if (e.status === 'ACTIVE') {
           <button [routerLink]="['race-control']">{{ 'events.detail.raceControl' | translate }}</button>
           <button [routerLink]="['qualification']">{{ 'events.detail.qualification' | translate }}</button>
+          <button [routerLink]="['knockout']">{{ 'events.detail.knockout' | translate }}</button>
           <button (click)="onArchive()">{{ 'events.detail.archive' | translate }}</button>
         }
       </div>

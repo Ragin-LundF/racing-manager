@@ -21,6 +21,7 @@
       "archive": "Archivieren",
       "edit": "Bearbeiten",
       "info": "Status: {{status}} | Spuren: {{lanes}} | Messung: {{measurement}}",
+      "knockout": "K.o.-Phase",
       "qualification": "Qualifikation",
       "raceControl": "Rennsteuerung"
     },
@@ -191,6 +192,31 @@
     "statusTitle": "Qualifikationsstatus",
     "title": "Qualifikation",
     "totalHeats": "Läufe gesamt"
+  },
+  "knockout": {
+    "actionsTitle": "Aktionen",
+    "bracketTitle": "Turnierbaum",
+    "cancel": "Abbrechen",
+    "confirmFinalize": "Ja, finalisieren",
+    "finalizeButton": "Finalisieren",
+    "finalizeConfirm": "Sind Sie sicher? Dies sperrt die K.o.-Ergebnisse.",
+    "finalizeHint": "Alle Begegnungen müssen abgeschlossen sein, bevor finalisiert wird.",
+    "finalizedMessage": "K.o.-Phase ist finalisiert. Ergebnisse sind gesperrt.",
+    "finalizedTitle": "Finalisiert",
+    "generatePairings": "Paarungen erstellen",
+    "modeAdjacent": "Benachbart (1v2, 3v4, ...)",
+    "modeFirstVsLast": "Erster gegen Letzter (1vN, 2vN-1, ...)",
+    "modeManual": "Manuell",
+    "modeRandom": "Zufällig",
+    "pairingMode": "Paarungsmodus:",
+    "resultsTitle": "Ergebnisse",
+    "roundLabel": "Runde {{number}}",
+    "setupButton": "Einrichten",
+    "setupDescription": "K.o.-Phase konfigurieren und starten. Paarungen werden basierend auf der Qualifikationsrangliste erstellt.",
+    "setupTitle": "K.o.-Phase einrichten",
+    "status": "Status:",
+    "statusTitle": "K.o.-Status",
+    "title": "K.o.-Phase"
   },
   "racemanager": {
     "activeEvent": {
