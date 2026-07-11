@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
@@ -19,6 +19,8 @@ export class EventFormComponent {
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
   private readonly localeService = inject(LocaleService);
+  // Zoneless CD: ngModel fields set in an async callback need an explicit nudge.
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected isEdit = signal(false);
   protected name = '';
@@ -50,6 +52,7 @@ export class EventFormComponent {
         this.measurementType = event.settings.measurementType;
         this.maxParticipants = event.settings.maxParticipants;
         this.version = event.version;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error.set('Failed to load event.');

@@ -37,7 +37,7 @@ class HeatServiceTest {
     private val participantRepository = ParticipantRepository()
     private val heatRepository = HeatRepository()
     private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
-    private val eventService = EventService(eventRepository, auditRepository)
+    private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
     private val measurementGateway = SimulationMeasurementGateway()
     private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository, measurementGateway)

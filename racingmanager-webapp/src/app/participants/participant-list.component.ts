@@ -16,7 +16,7 @@ export class ParticipantListComponent {
   private readonly participantService = inject(ParticipantClient);
   private readonly route = inject(ActivatedRoute);
 
-  protected participants: ParticipantResponse[] = [];
+  protected readonly participants = signal<ParticipantResponse[]>([]);
   protected error = signal('');
 
   private get eventId(): string {
@@ -30,7 +30,7 @@ export class ParticipantListComponent {
   private loadParticipants(): void {
     this.participantService.findByEventId(this.eventId).subscribe({
       next: (participants) => {
-        this.participants = participants;
+        this.participants.set(participants);
       },
       error: () => {
         this.error.set('Failed to load participants.');

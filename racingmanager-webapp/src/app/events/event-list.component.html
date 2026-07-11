@@ -4,7 +4,7 @@
     <button routerLink="new">{{ 'events.list.create' | translate }}</button>
   </div>
 
-  @if (events.length === 0) {
+  @if (events().length === 0) {
     <div class="empty">{{ 'events.list.empty' | translate }}</div>
   } @else {
     <table>
@@ -19,15 +19,16 @@
         </tr>
       </thead>
       <tbody>
-        @for (event of events; track event.id) {
+        @for (event of events(); track event.id) {
           <tr>
             <td>{{ event.name }}</td>
             <td>{{ event.status }}</td>
             <td>{{ event.settings.laneType }}</td>
             <td>{{ event.settings.measurementType }}</td>
             <td>{{ event.createdAt | date:'short' }}</td>
-            <td>
-              <a [routerLink]="event.id">{{ 'events.list.view' | translate }}</a>
+            <td class="actions">
+              <button class="btn-view" [routerLink]="event.id">{{ 'events.list.view' | translate }}</button>
+              <button class="btn-delete" (click)="onDelete(event)">{{ 'events.list.delete' | translate }}</button>
             </td>
           </tr>
         }

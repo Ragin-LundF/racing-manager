@@ -16,7 +16,7 @@
         <span>{{ 'racemanager.nav.overview' | translate }}</span>
       </a>
 
-      @if (activeEvent) {
+      @if (activeEvent(); as activeEvent) {
         <a
           class="nav-item"
           [routerLink]="['/', 'racemanager', activeEvent.id]"
@@ -50,7 +50,7 @@
     </nav>
 
     <div class="nav-footer">
-      @if (activeEvent) {
+      @if (activeEvent(); as activeEvent) {
         <div>{{ activeEvent.name }}</div>
       }
       <div class="meta-role">{{ authService.session()?.displayName }}</div>
@@ -59,15 +59,15 @@
 
   <header class="top-bar">
     <!-- ponytail: page title derives from the active event, not the child route -->
-    <h1 class="page-title">{{ activeEvent?.name ?? 'Race Director' }}</h1>
+    <h1 class="page-title">{{ activeEvent()?.name ?? 'Race Director' }}</h1>
 
     <div class="top-actions">
       <div class="active-event">
         <span>{{ 'racemanager.activeEvent.label' | translate }}</span>
-        @if (events.length > 0) {
-          <select [(ngModel)]="selectedEventId" (ngModelChange)="onEventSelect()">
+        @if (events().length > 0) {
+          <select [ngModel]="selectedEvent.selectedEventId()" (ngModelChange)="onEventSelect($event)">
             <option value="">{{ 'racemanager.activeEvent.none' | translate }}</option>
-            @for (event of events; track event.id) {
+            @for (event of events(); track event.id) {
               <option [value]="event.id" [disabled]="event.status === 'ARCHIVED'">
                 {{ event.name }} ({{ event.status }})
               </option>
@@ -84,12 +84,12 @@
     </div>
   </header>
 
-  <main class="workspace" [class.has-sidebar]="activeEvent">
+  <main class="workspace" [class.has-sidebar]="activeEvent()">
     <div class="content">
       <router-outlet />
     </div>
 
-    @if (activeEvent) {
+    @if (activeEvent(); as activeEvent) {
       <aside class="context-sidebar">
         <!-- Preliminary-Round Summary (spec §4.7) -->
         <section class="panel">

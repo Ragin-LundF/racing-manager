@@ -10,6 +10,7 @@ import io.github.raginlundf.racingmanager.infrastructure.tables.VehicleTable
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.deleteAll
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -21,36 +22,39 @@ import java.util.UUID
 class ParticipantRepository {
 
     fun findByEventId(eventId: UUID): List<ParticipantEntity> = transaction {
-        ParticipantTable.selectAll()
+        val rows = ParticipantTable.selectAll()
             .where { ParticipantTable.eventId eq eventId }
             .orderBy(ParticipantTable.sortOrder to SortOrder.ASC)
-            .map { row ->
-                val participantId = row[ParticipantTable.id]
-                val vehicle = VehicleTable.selectAll()
-                    .where { VehicleTable.participantId eq participantId }
-                    .singleOrNull()
-                    ?.let { v ->
-                        VehicleEntity(
-                            id = v[VehicleTable.id],
-                            participantId = v[VehicleTable.participantId],
-                            name = v[VehicleTable.name],
-                            category = v[VehicleTable.category],
-                        )
-                    }
-                ParticipantEntity(
-                    id = participantId,
-                    eventId = row[ParticipantTable.eventId],
-                    startNumber = row[ParticipantTable.startNumber],
-                    firstName = row[ParticipantTable.firstName],
-                    lastName = row[ParticipantTable.lastName],
-                    club = row[ParticipantTable.club],
-                    status = ParticipantStatus.valueOf(row[ParticipantTable.status]),
-                    sortOrder = row[ParticipantTable.sortOrder],
-                    vehicle = vehicle,
-                    createdAt = row[ParticipantTable.createdAt],
-                    updatedAt = row[ParticipantTable.updatedAt],
+            .toList()
+
+        // One query for all vehicles instead of one per participant (was an N+1).
+        val vehiclesByParticipant = VehicleTable.selectAll()
+            .where { VehicleTable.participantId inList rows.map { it[ParticipantTable.id] } }
+            .associate { v ->
+                v[VehicleTable.participantId] to VehicleEntity(
+                    id = v[VehicleTable.id],
+                    participantId = v[VehicleTable.participantId],
+                    name = v[VehicleTable.name],
+                    category = v[VehicleTable.category],
                 )
             }
+
+        rows.map { row ->
+            val participantId = row[ParticipantTable.id]
+            ParticipantEntity(
+                id = participantId,
+                eventId = row[ParticipantTable.eventId],
+                startNumber = row[ParticipantTable.startNumber],
+                firstName = row[ParticipantTable.firstName],
+                lastName = row[ParticipantTable.lastName],
+                club = row[ParticipantTable.club],
+                status = ParticipantStatus.valueOf(row[ParticipantTable.status]),
+                sortOrder = row[ParticipantTable.sortOrder],
+                vehicle = vehiclesByParticipant[participantId],
+                createdAt = row[ParticipantTable.createdAt],
+                updatedAt = row[ParticipantTable.updatedAt],
+            )
+        }
     }
 
     fun findById(id: UUID): ParticipantEntity? = transaction {

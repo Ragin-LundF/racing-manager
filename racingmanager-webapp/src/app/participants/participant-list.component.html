@@ -12,7 +12,7 @@
     <p class="error">{{ error() }}</p>
   }
 
-  @if (participants.length === 0) {
+  @if (participants().length === 0) {
     <div class="empty">{{ 'participants.list.empty' | translate }}</div>
   } @else {
     <table>
@@ -29,7 +29,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (p of participants; track p.id) {
+        @for (p of participants(); track p.id) {
           <tr [class.inactive]="p.status === 'INACTIVE'">
             <td class="num tnum">{{ p.startNumber }}</td>
             <td>{{ p.firstName }} {{ p.lastName }}</td>

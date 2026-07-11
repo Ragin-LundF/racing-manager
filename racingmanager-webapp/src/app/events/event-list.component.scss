@@ -6,3 +6,9 @@ th, td { padding: 0 var(--space-4); height: 44px; text-align: left; border-botto
 tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: var(--color-bg-raised); }
 th { font-weight: 600; font-size: 13px; color: var(--color-text-secondary); background: var(--color-bg-raised); }
+
+td.actions { display: flex; gap: var(--space-2); align-items: center; height: 44px; }
+td.actions button { padding: 0 var(--space-3); height: 30px; border-radius: var(--radius-control, 6px); border: 1px solid var(--color-border); background: var(--color-bg-raised); color: var(--color-text-primary); font-size: 13px; cursor: pointer; }
+td.actions button:hover { background: var(--color-bg-panel); }
+td.actions .btn-delete { border-color: var(--color-danger, #b3261e); color: var(--color-danger, #f2b8b5); }
+td.actions .btn-delete:hover { background: var(--color-danger, #b3261e); color: #fff; }

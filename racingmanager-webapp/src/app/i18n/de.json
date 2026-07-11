@@ -52,6 +52,8 @@
     "list": {
       "create": "Veranstaltung erstellen",
       "created": "Erstellt",
+      "delete": "Löschen",
+      "deleteConfirm": "Veranstaltung \"{{name}}\" löschen? Dies entfernt auch ihre Teilnehmer und kann nicht rückgängig gemacht werden.",
       "edit": "Bearbeiten",
       "empty": "Noch keine Veranstaltungen. Erstellen Sie Ihre erste Veranstaltung.",
       "lanes": "Bahnen",

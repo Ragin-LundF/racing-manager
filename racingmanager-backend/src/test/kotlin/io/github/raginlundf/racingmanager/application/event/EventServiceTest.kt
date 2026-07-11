@@ -8,6 +8,7 @@ import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
@@ -29,7 +30,7 @@ class EventServiceTest {
     private val passwordHasher = PasswordHasher()
     private val sessionRepository = SessionRepository()
     private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
-    private val eventService = EventService(eventRepository, auditRepository)
+    private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
 
     private lateinit var actorId: UUID
 
@@ -71,6 +72,22 @@ class EventServiceTest {
         assertEquals(MeasurementType.MANUAL, success.event.settings.measurementType)
         assertEquals(100, success.event.settings.maxParticipants)
         assertEquals("With description", success.event.description)
+    }
+
+    @Test
+    fun `delete removes the event`() {
+        val created = eventService.create("Doomed", null, EventSettings(), actorId)
+        val id = (created as CreateEventResult.Success).event.id
+
+        val result = eventService.delete(id, actorId)
+
+        assertIs<DeleteEventResult.Success>(result)
+        assertNull(eventService.findById(id))
+    }
+
+    @Test
+    fun `delete unknown event returns NotFound`() {
+        assertIs<DeleteEventResult.NotFound>(eventService.delete(UUID.randomUUID(), actorId))
     }
 
     @Test

@@ -7,11 +7,13 @@ import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import kotlin.time.Clock
 import java.util.UUID
 
 class EventService(
     private val eventRepository: EventRepository,
+    private val participantRepository: ParticipantRepository,
     private val auditRepository: AuditRepository,
 ) {
     private val clock: Clock = Clock.System
@@ -101,6 +103,30 @@ class EventService(
             ),
         )
         return UpdateEventResult.Success(updated)
+    }
+
+    fun delete(id: UUID, actorId: UUID): DeleteEventResult {
+        val existing = eventRepository.findById(id)
+            ?: return DeleteEventResult.NotFound
+
+        // Remove child participants (and their vehicles) first, then the event.
+        // ponytail: qualification/heat rows keyed by this event become orphaned but
+        // are unreachable once the event is gone — cascade them here if that matters.
+        participantRepository.deleteByEventId(id)
+        eventRepository.delete(id)
+
+        auditRepository.insert(
+            AuditEntryEntity(
+                id = UUID.randomUUID(),
+                actorId = actorId,
+                action = "EVENT_DELETED",
+                targetType = "Event",
+                targetId = id,
+                summary = "Event '${existing.name}' deleted",
+                occurredAt = clock.now(),
+            ),
+        )
+        return DeleteEventResult.Success
     }
 
     fun activate(id: UUID, expectedVersion: Long, actorId: UUID): ActivateEventResult {
@@ -194,6 +220,11 @@ sealed interface ActivateEventResult {
     data object NotFound : ActivateEventResult
     data class InvalidStatus(val current: EventStatus) : ActivateEventResult
     data class Conflict(val expected: Long, val actual: Long) : ActivateEventResult
+}
+
+sealed interface DeleteEventResult {
+    data object Success : DeleteEventResult
+    data object NotFound : DeleteEventResult
 }
 
 sealed interface ArchiveEventResult {

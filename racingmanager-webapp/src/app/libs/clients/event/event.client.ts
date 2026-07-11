@@ -25,6 +25,10 @@ export class EventClient {
     return this.http.put<EventResponse>(`${this.baseUrl}/api/v1/events/${id}`, request);
   }
 
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/v1/events/${id}`);
+  }
+
   activate(id: string): Observable<EventResponse> {
     return this.http.post<EventResponse>(`${this.baseUrl}/api/v1/events/${id}/activate`, {});
   }

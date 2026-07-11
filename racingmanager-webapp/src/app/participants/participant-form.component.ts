@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -16,6 +16,8 @@ export class ParticipantFormComponent {
   private readonly participantService = inject(ParticipantClient);
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
+  // Zoneless CD: ngModel fields set in an async callback need an explicit nudge.
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected isEdit = signal(false);
   protected startNumber: number | null = null;
@@ -44,6 +46,7 @@ export class ParticipantFormComponent {
         this.club = p.club ?? '';
         this.vehicleName = p.vehicle?.name ?? '';
         this.vehicleCategory = p.vehicle?.category ?? '';
+        this.cdr.markForCheck();
       },
       error: () => this.error.set('Failed to load participant.'),
     });

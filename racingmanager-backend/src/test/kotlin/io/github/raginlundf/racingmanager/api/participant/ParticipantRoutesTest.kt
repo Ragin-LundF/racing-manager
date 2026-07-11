@@ -44,7 +44,7 @@ class ParticipantRoutesTest {
     private val participantRepository = ParticipantRepository()
     private val passwordHasher = PasswordHasher()
     private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
-    private val eventService = EventService(eventRepository, auditRepository)
+    private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
     private val heatRepository = HeatRepository()
     private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository)

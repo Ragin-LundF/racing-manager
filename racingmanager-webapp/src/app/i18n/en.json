@@ -52,6 +52,8 @@
     "list": {
       "create": "Create Event",
       "created": "Created",
+      "delete": "Delete",
+      "deleteConfirm": "Delete event \"{{name}}\"? This also removes its participants and cannot be undone.",
       "edit": "Edit",
       "empty": "No events yet. Create your first event to get started.",
       "lanes": "Lanes",

@@ -24,7 +24,10 @@ fun Application.configureDatabase() {
     }
 
     val hikariConfig = HikariConfig().apply {
-        jdbcUrl = "jdbc:sqlite:$dbPath"
+        // WAL lets readers run concurrently with the single writer, and busy_timeout
+        // makes SQLite wait for a lock instead of failing fast — together they remove
+        // the request-serialization stalls that made list endpoints feel slow.
+        jdbcUrl = "jdbc:sqlite:$dbPath?journal_mode=WAL&synchronous=NORMAL&busy_timeout=5000"
         driverClassName = "org.sqlite.JDBC"
         maximumPoolSize = 5
         minimumIdle = 1

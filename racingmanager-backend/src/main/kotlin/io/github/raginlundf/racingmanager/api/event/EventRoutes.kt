@@ -11,6 +11,7 @@ import io.github.raginlundf.racingmanager.application.auth.SessionResult
 import io.github.raginlundf.racingmanager.application.event.ActivateEventResult
 import io.github.raginlundf.racingmanager.application.event.ArchiveEventResult
 import io.github.raginlundf.racingmanager.application.event.CreateEventResult
+import io.github.raginlundf.racingmanager.application.event.DeleteEventResult
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.event.UpdateEventResult
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
@@ -22,6 +23,7 @@ import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
@@ -106,6 +108,19 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
                     ),
                 )
             }
+        }
+    }
+
+    delete("/api/v1/events/{id}") {
+        val session = authenticateRequest(call, authService) ?: return@delete
+        val id = UUID.fromString(call.parameters["id"])
+
+        when (eventService.delete(id, session.user.id)) {
+            is DeleteEventResult.Success -> call.respond(status = HttpStatusCode.NoContent, message = Unit)
+            is DeleteEventResult.NotFound -> call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+            )
         }
     }
 

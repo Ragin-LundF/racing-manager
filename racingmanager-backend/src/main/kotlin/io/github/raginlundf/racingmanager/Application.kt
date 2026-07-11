@@ -51,7 +51,7 @@ fun Application.module() {
     val heatRepository = HeatRepository()
     val passwordHasher = PasswordHasher()
     val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
-    val eventService = EventService(eventRepository, auditRepository)
+    val eventService = EventService(eventRepository, participantRepository, auditRepository)
     val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
     val measurementGateway = SimulationMeasurementGateway()
     val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository, measurementGateway)
