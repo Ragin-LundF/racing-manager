@@ -34,6 +34,12 @@ class HeatRepository {
             .map { row -> mapRow(row) }
     }
 
+    fun findEventIdByHeatId(heatId: UUID): UUID? = transaction {
+        HeatTable.selectAll().where { HeatTable.id eq heatId }
+            .singleOrNull()
+            ?.let { row -> row[HeatTable.eventId] }
+    }
+
     fun findLatestByEventId(eventId: UUID): HeatEntity? = transaction {
         HeatTable.selectAll()
             .where { HeatTable.eventId eq eventId }

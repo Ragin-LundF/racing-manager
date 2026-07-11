@@ -1,0 +1,157 @@
+<div class="spectator-shell" [class.fullscreen]="fullscreen()">
+  <header class="top-bar">
+    <h1 class="event-name">{{ eventName() || ('spectator.shell.title' | translate) }}</h1>
+    <div class="top-actions">
+      <select [ngModel]="selectedEventId()" (ngModelChange)="onEventSelect($event)">
+        <option value="">{{ 'spectator.selectEvent' | translate }}</option>
+        @for (event of events(); track event.id) {
+          <option [value]="event.id" [disabled]="event.status !== 'ACTIVE'">
+            {{ event.name }}
+          </option>
+        }
+      </select>
+
+      <app-locale-selector />
+
+      <button (click)="toggleFullscreen()" [title]="'spectator.fullscreen' | translate">
+        {{ fullscreen() ? ('spectator.exitFullscreen' | translate) : ('spectator.fullscreen' | translate) }}
+      </button>
+
+      <button (click)="toggleReducedMotion()" [title]="'spectator.reducedMotion' | translate">
+        {{ reducedMotion() ? ('spectator.animationsOn' | translate) : ('spectator.reducedMotion' | translate) }}
+      </button>
+
+      @if (connected()) {
+        <span class="status live">{{ 'spectator.live' | translate }}</span>
+      } @else {
+        <span class="status polling">{{ 'spectator.polling' | translate }}</span>
+      }
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  @if (!hasLiveData()) {
+    <div class="placeholder">
+      <p>{{ 'spectator.shell.placeholder' | translate }}</p>
+    </div>
+  } @else {
+    <div class="dashboard">
+      <!-- Current Race Panel -->
+      <section class="panel current-race">
+        <h2>{{ 'spectator.currentRace' | translate }}</h2>
+        @if (currentHeat(); as heat) {
+          <div class="heat-header">
+            <span class="heat-label">{{ 'spectator.heatLabel' | translate: { number: heat.heatNumber } }}</span>
+            <span class="heat-status" [class]="heat.status">{{ heat.status }}</span>
+          </div>
+          <div class="lanes">
+            @for (lane of heat.lanes; track lane.lane) {
+              <div class="lane-row" [class.winner]="lane.outcome === 'FINISHED'">
+                <span class="lane-number">{{ lane.lane }}</span>
+                <span class="lane-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</span>
+                <span class="lane-time">{{ formatNanos(lane.durationNanos) }}</span>
+                @if (lane.outcome === 'DNF') {
+                  <span class="lane-dnf">{{ 'spectator.dnf' | translate }}</span>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="muted">{{ 'spectator.noCurrentRace' | translate }}</p>
+        }
+      </section>
+
+      <!-- Upcoming Races Panel -->
+      <section class="panel upcoming-races">
+        <h2>{{ 'spectator.upcomingRaces' | translate }}</h2>
+        @if (upcomingHeats().length > 0) {
+          @for (heat of upcomingHeats(); track heat.id) {
+            <div class="heat-card">
+              <span class="heat-label">{{ 'spectator.heatLabel' | translate: { number: heat.heatNumber } }}</span>
+              <div class="heat-participants">
+                @for (lane of heat.lanes; track lane.lane) {
+                  <span>{{ lane.participantFirstName }} {{ lane.participantLastName }}</span>
+                  @if (!$last) {
+                    <span class="vs">VS</span>
+                  }
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          <p class="muted">{{ 'spectator.noUpcomingRaces' | translate }}</p>
+        }
+      </section>
+
+      <!-- Qualification Leaderboard -->
+      @if (rankings().length > 0) {
+        <section class="panel leaderboard">
+          <h2>{{ 'spectator.leaderboard' | translate }}</h2>
+          @if (qualificationStatus() === 'FINALIZED') {
+            <span class="finalized-badge">{{ 'spectator.finalized' | translate }}</span>
+          }
+          <table>
+            <thead>
+              <tr>
+                <th>{{ 'spectator.rank' | translate }}</th>
+                <th>{{ 'spectator.name' | translate }}</th>
+                <th>{{ 'spectator.bestTime' | translate }}</th>
+                <th>{{ 'spectator.runs' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of rankings(); track entry.participantId) {
+                <tr [class.top-three]="entry.rank <= 3">
+                  <td class="rank">{{ entry.rank }}</td>
+                  <td>{{ entry.firstName }} {{ entry.lastName }}</td>
+                  <td class="time">{{ formatNanos(entry.bestTimeNanos) }}</td>
+                  <td class="runs">{{ entry.completedRuns }}/{{ entry.dnfCount > 0 ? entry.dnfCount + ' DNF' : '' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      <!-- Knockout Bracket -->
+      @if (knockout(); as ko) {
+        <section class="panel bracket">
+          <h2>{{ 'spectator.knockoutBracket' | translate }}</h2>
+          <span class="status-badge">{{ ko.status }}</span>
+          <div class="bracket-rounds">
+            @for (round of getKnockoutRounds(ko); track round.roundNumber) {
+              <div class="round-column">
+                <h3>{{ 'spectator.roundLabel' | translate: { number: round.roundNumber } }}</h3>
+                @for (match of round.matches; track match.id) {
+                  <div class="match-card" [class.completed]="match.status === 'COMPLETED'" [class.bye]="match.isBye">
+                    @if (match.isBye) {
+                      <div class="match-participant winner">
+                        <span>{{ getKnockoutParticipantName(match.participant1Id) }}</span>
+                        <span class="bye-badge">{{ 'spectator.bye' | translate }}</span>
+                      </div>
+                    } @else {
+                      <div class="match-participant" [class.winner]="match.winnerId === match.participant1Id">
+                        <span>{{ getKnockoutParticipantName(match.participant1Id) }}</span>
+                      </div>
+                      <div class="match-participant" [class.winner]="match.winnerId === match.participant2Id">
+                        <span>{{ getKnockoutParticipantName(match.participant2Id) }}</span>
+                      </div>
+                    }
+                    @if (match.status === 'COMPLETED' && match.winnerId) {
+                      <div class="match-winner">
+                        {{ 'spectator.winner' | translate }}: {{ getKnockoutParticipantName(match.winnerId) }}
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+</div>

@@ -304,8 +304,31 @@
   },
   "spectator": {
     "shell": {
-      "placeholder": "Live-Rennergebnisse erscheinen hier.",
+      "placeholder": "Wählen Sie eine Veranstaltung aus, um Live-Ergebnisse anzuzeigen.",
       "title": "Zuschaueransicht"
-    }
+    },
+    "selectEvent": "Veranstaltung wählen",
+    "fullscreen": "Vollbild",
+    "exitFullscreen": "Vollbild beenden",
+    "reducedMotion": "Reduzierte Animation",
+    "animationsOn": "Animationen ein",
+    "live": "LIVE",
+    "polling": "Aktualisiere",
+    "currentRace": "Aktuelles Rennen",
+    "noCurrentRace": "Kein laufendes Rennen.",
+    "upcomingRaces": "Nächste Rennen",
+    "noUpcomingRaces": "Keine nächsten Rennen.",
+    "heatLabel": "Lauf #{{number}}",
+    "leaderboard": "Qualifikations-Rangliste",
+    "finalized": "Finalisiert",
+    "rank": "Rang",
+    "name": "Name",
+    "bestTime": "Beste Zeit",
+    "runs": "Läufe",
+    "knockoutBracket": "K.o.-Turnierbaum",
+    "roundLabel": "Runde {{number}}",
+    "bye": "Freilos",
+    "winner": "Sieger",
+    "dnf": "DNF"
   }
 }

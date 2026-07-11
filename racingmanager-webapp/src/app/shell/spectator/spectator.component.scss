@@ -1,0 +1,410 @@
+:host {
+  display: block;
+  height: 100vh;
+  background: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+}
+
+.spectator-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.spectator-shell.fullscreen {
+  background: #000;
+  color: #fff;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-bg-panel);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.fullscreen .top-bar {
+  background: #111;
+  border-color: #333;
+}
+
+.event-name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.top-actions select {
+  height: var(--control-height-compact);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-raised);
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.top-actions button {
+  height: var(--control-height-compact);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-raised);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.top-actions button:hover {
+  border-color: var(--color-text-muted);
+}
+
+.status {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-control);
+}
+
+.status.live {
+  color: #0a0;
+  background: rgba(0, 170, 0, 0.1);
+}
+
+.fullscreen .status.live {
+  color: #0f0;
+  background: rgba(0, 255, 0, 0.15);
+}
+
+.status.polling {
+  color: var(--color-text-muted);
+  background: var(--color-bg-raised);
+}
+
+.error-banner {
+  padding: var(--space-3) var(--space-6);
+  background: #d32f2f;
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-size: 16px;
+  color: var(--color-text-muted);
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  flex: 1;
+  overflow: auto;
+}
+
+.fullscreen .dashboard {
+  padding: var(--space-6);
+}
+
+.panel {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  padding: var(--space-4);
+}
+
+.fullscreen .panel {
+  background: #111;
+  border-color: #333;
+}
+
+.panel h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.current-race {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.upcoming-races {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.leaderboard {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.bracket {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.heat-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.heat-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.heat-status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-raised);
+}
+
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lane-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  font-size: 14px;
+}
+
+.lane-row.winner {
+  border-color: #4caf50;
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.fullscreen .lane-row.winner {
+  border-color: #0f0;
+  background: rgba(0, 255, 0, 0.08);
+}
+
+.lane-number {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-bg-raised);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lane-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.lane-time {
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.lane-dnf {
+  color: #d32f2f;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.heat-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+}
+
+.heat-participants {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.vs {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.finalized-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-control);
+  background: #4caf50;
+  color: #fff;
+  margin-bottom: var(--space-2);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+tr.top-three td {
+  font-weight: 600;
+}
+
+.rank {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.time {
+  font-family: monospace;
+}
+
+.runs {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-raised);
+  margin-bottom: var(--space-3);
+}
+
+.bracket-rounds {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+}
+
+.round-column {
+  min-width: 180px;
+}
+
+.round-column h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.match-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: 12px;
+}
+
+.match-card.completed {
+  border-color: #4caf50;
+}
+
+.match-card.bye {
+  opacity: 0.7;
+}
+
+.match-participant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.match-participant.winner {
+  font-weight: 700;
+}
+
+.bye-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 var(--space-1);
+  border-radius: 2px;
+  background: var(--color-bg-raised);
+}
+
+.match-winner {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+  font-size: 11px;
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+/* Responsive: single column on narrow screens */
+@media (max-width: 900px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .current-race,
+  .upcoming-races,
+  .leaderboard,
+  .bracket {
+    grid-column: 1;
+  }
+
+  .current-race { grid-row: 1; }
+  .upcoming-races { grid-row: 2; }
+  .leaderboard { grid-row: 3; }
+  .bracket { grid-row: 4; }
+}

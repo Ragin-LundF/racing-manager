@@ -11,6 +11,7 @@ import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
+import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.infrastructure.configureDatabase
 import io.github.raginlundf.racingmanager.infrastructure.configureLogging
 import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
@@ -23,6 +24,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.KnockoutRe
 import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
+import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.ktor.server.application.Application
 
@@ -61,6 +63,8 @@ fun Application.module() {
     val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
     val knockoutRepository = KnockoutRepository()
     val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
+    val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
+    val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
 
     configureLogging()
     configureSerialization()
@@ -68,5 +72,6 @@ fun Application.module() {
     configureDatabase()
     seedDemoAdmin(authService)
     configureWebSockets()
-    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService)
+    spectatorWebSocketService.start()
+    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, spectatorService, eventRepository, spectatorWebSocketService)
 }

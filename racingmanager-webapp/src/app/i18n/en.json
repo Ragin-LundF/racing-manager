@@ -304,8 +304,31 @@
   },
   "spectator": {
     "shell": {
-      "placeholder": "Live race results will appear here.",
+      "placeholder": "Select an event to display live results.",
       "title": "Spectator View"
-    }
+    },
+    "selectEvent": "Select Event",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen",
+    "reducedMotion": "Reduced Motion",
+    "animationsOn": "Animations On",
+    "live": "LIVE",
+    "polling": "Polling",
+    "currentRace": "Current Race",
+    "noCurrentRace": "No race in progress.",
+    "upcomingRaces": "Upcoming Races",
+    "noUpcomingRaces": "No upcoming races.",
+    "heatLabel": "Heat #{{number}}",
+    "leaderboard": "Qualification Leaderboard",
+    "finalized": "Finalized",
+    "rank": "Rank",
+    "name": "Name",
+    "bestTime": "Best Time",
+    "runs": "Runs",
+    "knockoutBracket": "Knockout Bracket",
+    "roundLabel": "Round {{number}}",
+    "bye": "Bye",
+    "winner": "Winner",
+    "dnf": "DNF"
   }
 }

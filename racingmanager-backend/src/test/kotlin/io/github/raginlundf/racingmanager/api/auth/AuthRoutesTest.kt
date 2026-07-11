@@ -10,7 +10,9 @@ import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
+import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
+import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.github.raginlundf.racingmanager.infrastructure.repositories.KnockoutRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
@@ -53,6 +55,8 @@ class AuthRoutesTest {
     private val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
     private val knockoutRepository = KnockoutRepository()
     private val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
+    private val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
+    private val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
 
     @BeforeTest
     fun setUp() {
@@ -239,7 +243,7 @@ class AuthRoutesTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService)
+        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, spectatorService, eventRepository, spectatorWebSocketService)
     }
 
     private fun extractSessionId(body: String): String {
