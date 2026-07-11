@@ -21,7 +21,7 @@ export const redirectIfAuthenticatedGuard: CanActivateFn = () => {
   const locale = inject(LocaleService);
 
   if (auth.isAuthenticated()) {
-    return router.parseUrl(`/${locale.currentLocale()}/director`);
+    return router.parseUrl(`/${locale.currentLocale()}/racemanager`);
   }
 
   return true;

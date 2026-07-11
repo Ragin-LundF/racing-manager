@@ -4,8 +4,10 @@ import io.github.raginlundf.racingmanager.api.configureRouting
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
 import io.github.raginlundf.racingmanager.application.auth.AuthService
+import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
@@ -32,6 +34,8 @@ class AuthRoutesTest {
     private val auditRepository = AuditRepository()
     private val passwordHasher = PasswordHasher()
     private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
+    private val eventRepository = EventRepository()
+    private val eventService = EventService(eventRepository, auditRepository)
 
     @BeforeTest
     fun setUp() {
@@ -217,7 +221,7 @@ class AuthRoutesTest {
     private fun Application.configureTestApp() {
         configureSerialization()
         configureStatusPages()
-        configureRouting(authService)
+        configureRouting(authService, eventService)
     }
 
     private fun extractSessionId(body: String): String {

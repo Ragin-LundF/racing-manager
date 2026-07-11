@@ -39,6 +39,7 @@ object DatabaseTestHelper {
 
     fun tearDown() {
         transaction {
+            exec("DROP TABLE IF EXISTS events")
             exec("DROP TABLE IF EXISTS audit_entries")
             exec("DROP TABLE IF EXISTS sessions")
             exec("DROP TABLE IF EXISTS users")

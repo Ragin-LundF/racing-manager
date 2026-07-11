@@ -64,4 +64,37 @@
             </column>
         </createTable>
     </changeSet>
+
+    <changeSet id="create-event-tables" author="racingmanager">
+        <createTable tableName="events">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lane_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="measurement_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_participants" type="INT"/>
+            <column name="version" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_events_created_by" references="users(id)"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="activated_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

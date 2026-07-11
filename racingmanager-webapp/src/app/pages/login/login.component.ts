@@ -77,7 +77,7 @@ export class LoginComponent {
         } else {
           this.router.navigate([
             this.localeService.currentLocale(),
-            'director',
+            'racemanager',
           ]);
         }
       });

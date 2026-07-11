@@ -2,11 +2,11 @@ import { Routes } from '@angular/router';
 import { authGuard, redirectIfAuthenticatedGuard } from './core/auth.guard';
 import { SetupComponent } from './pages/setup/setup.component';
 import { LoginComponent } from './pages/login/login.component';
-import { DirectorShellComponent } from './shell/director/director.component';
+import { RaceManagerShellComponent } from './shell/racemanager/racemanager.component';
 import { SpectatorShellComponent } from './shell/spectator/spectator.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'en/director', pathMatch: 'full' },
+  { path: '', redirectTo: 'en/racemanager', pathMatch: 'full' },
 
   { path: 'de/setup', component: SetupComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'en/setup', component: SetupComponent, canActivate: [redirectIfAuthenticatedGuard] },
@@ -15,13 +15,13 @@ export const routes: Routes = [
   { path: 'en/login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
 
   {
-    path: 'de/director',
-    component: DirectorShellComponent,
+    path: 'de/racemanager',
+    component: RaceManagerShellComponent,
     canActivate: [authGuard],
   },
   {
-    path: 'en/director',
-    component: DirectorShellComponent,
+    path: 'en/racemanager',
+    component: RaceManagerShellComponent,
     canActivate: [authGuard],
   },
 

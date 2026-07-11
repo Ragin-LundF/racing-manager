@@ -14,15 +14,15 @@
         <source>Unexpected health status.</source>
         <target>Unerwarteter Gesundheitsstatus.</target>
       </trans-unit>
-      <trans-unit id="director.shell.title">
-        <source>Director Dashboard</source>
-        <target>Direktor-Dashboard</target>
+      <trans-unit id="racemanager.shell.title">
+        <source>Race Manager</source>
+        <target>Rennmanager</target>
       </trans-unit>
-      <trans-unit id="director.shell.placeholder">
+      <trans-unit id="racemanager.shell.placeholder">
         <source>Event management will appear here.</source>
         <target>Eventverwaltung erscheint hier.</target>
       </trans-unit>
-      <trans-unit id="director.logout">
+      <trans-unit id="racemanager.logout">
         <source>Log Out</source>
         <target>Abmelden</target>
       </trans-unit>
