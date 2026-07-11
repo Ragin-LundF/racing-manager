@@ -1,39 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Lane 2 car">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 190" role="img" aria-label="Lane 2 car">
   <defs>
     <linearGradient id="l2-body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d64b51"/>
-      <stop offset="0.55" stop-color="#b53036"/>
-      <stop offset="1" stop-color="#5a161b"/>
+      <stop offset="0" stop-color="#d9484f"/>
+      <stop offset="1" stop-color="#8f2329"/>
     </linearGradient>
-    <radialGradient id="l2-hub" cx="0.35" cy="0.35" r="0.8">
+    <radialGradient id="l2-rim" cx="0.38" cy="0.38" r="0.7">
       <stop offset="0" stop-color="#eef2f7"/>
-      <stop offset="1" stop-color="#9aa6b3"/>
+      <stop offset="0.65" stop-color="#aab4c0"/>
+      <stop offset="1" stop-color="#5f6a76"/>
     </radialGradient>
   </defs>
 
   <!-- mirrored: car faces left toward centre -->
-  <g transform="translate(320,0) scale(-1,1)">
-    <ellipse cx="172" cy="150" rx="140" ry="12" fill="#000" opacity="0.28"/>
+  <g transform="translate(420,0) scale(-1,1)">
+    <ellipse cx="212" cy="168" rx="168" ry="15" fill="#000" opacity="0.28"/>
+
+    <path d="M62 134 L62 84 C62 74 70 68 80 68 L150 66 L360 118
+             C367 120 367 128 360 130 L62 134 Z"
+          fill="url(#l2-body)" stroke="#3d0f13" stroke-width="2" stroke-linejoin="round"/>
+
+    <path d="M80 68 L150 66 L360 118 L354 122 L150 72 L83 74 Z" fill="#e7686e" opacity="0.85"/>
+
+    <rect x="112" y="74" width="70" height="16" rx="8" fill="#3d0f13" opacity="0.85"/>
+
+    <path d="M78 98 L150 88 L344 116 L340 127 L150 100 L80 108 Z" fill="#f5f7fa"/>
+
+    <circle cx="214" cy="107" r="19" fill="#f5f7fa"/>
+    <circle cx="214" cy="107" r="19" fill="none" stroke="#8f2329" stroke-width="2"/>
+    <path d="M217 96 l-9 14 h6 l-3 10 12 -16 h-6 z" fill="#8f2329"/>
 
     <g>
-      <circle cx="82" cy="132" r="25" fill="#14181f"/>
-      <circle cx="82" cy="132" r="25" fill="none" stroke="#3a4450" stroke-width="3"/>
-      <circle cx="82" cy="132" r="10" fill="url(#l2-hub)"/>
-      <circle cx="252" cy="132" r="25" fill="#14181f"/>
-      <circle cx="252" cy="132" r="25" fill="none" stroke="#3a4450" stroke-width="3"/>
-      <circle cx="252" cy="132" r="10" fill="url(#l2-hub)"/>
+      <circle cx="122" cy="150" r="29" fill="#101318"/>
+      <circle cx="122" cy="150" r="29" fill="none" stroke="#2f3843" stroke-width="3"/>
+      <circle cx="122" cy="150" r="13" fill="url(#l2-rim)"/>
+      <circle cx="122" cy="150" r="3.5" fill="#3a4450"/>
+      <circle cx="306" cy="150" r="29" fill="#101318"/>
+      <circle cx="306" cy="150" r="29" fill="none" stroke="#2f3843" stroke-width="3"/>
+      <circle cx="306" cy="150" r="13" fill="url(#l2-rim)"/>
+      <circle cx="306" cy="150" r="3.5" fill="#3a4450"/>
     </g>
-
-    <path d="M44 118 L44 64 Q46 57 55 56 L150 61 L306 106 Q311 110 306 114 L300 118 Z"
-          fill="url(#l2-body)" stroke="#3d0f12" stroke-width="2" stroke-linejoin="round"/>
-
-    <path d="M56 57 L150 62 L302 107" fill="none" stroke="#f0a2a5" stroke-width="2.5"
-          stroke-linecap="round" opacity="0.7"/>
-
-    <path d="M54 92 L298 108 L298 114 L54 100 Z" fill="#f5f7fa" opacity="0.92"/>
-
-    <path d="M112 60 L176 63 L166 78 L120 76 Z" fill="#3d0f12" opacity="0.85"/>
-    <circle cx="150" cy="52" r="15" fill="#5a161b" stroke="#f0a2a5" stroke-width="2"/>
-    <path d="M138 52 a12 12 0 0 1 24 0 Z" fill="#f6d4d5"/>
   </g>
 </svg>

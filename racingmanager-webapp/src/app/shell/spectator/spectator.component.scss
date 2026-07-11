@@ -240,12 +240,12 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  border-radius: var(--radius-spectator);
-  overflow: hidden;
-  background: var(--color-bg-canvas);
+  /* Curved blue/red S-split drawn as a stretchable SVG behind the content. */
+  background: url("/heat-split.svg") center / 100% 100% no-repeat;
 }
 
 .side {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -254,17 +254,8 @@
   text-align: center;
 }
 
-.side.lane-1 {
-  background: linear-gradient(135deg, var(--color-lane-1), var(--color-lane-1-grad));
-  clip-path: polygon(0 0, 100% 0, calc(100% - 44px) 100%, 0 100%);
-  padding-right: var(--space-8);
-}
-
-.side.lane-2 {
-  background: linear-gradient(135deg, var(--color-lane-2-grad), var(--color-lane-2));
-  clip-path: polygon(44px 0, 100% 0, 100% 100%, 0 100%);
-  padding-left: var(--space-8);
-}
+.side.lane-1 { padding-right: var(--space-12); }
+.side.lane-2 { padding-left: var(--space-12); }
 
 .side.dnf { filter: saturate(0.7); }
 

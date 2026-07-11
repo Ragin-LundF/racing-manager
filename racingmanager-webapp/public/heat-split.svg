@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" preserveAspectRatio="none" role="presentation">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1c5a97"/>
+      <stop offset="0.5" stop-color="#123f6d"/>
+      <stop offset="1" stop-color="#0b2848"/>
+    </linearGradient>
+    <linearGradient id="red" x1="1" y1="0" x2="0.65" y2="1">
+      <stop offset="0" stop-color="#9a2830"/>
+      <stop offset="0.5" stop-color="#7a1f25"/>
+      <stop offset="1" stop-color="#481116"/>
+    </linearGradient>
+    <radialGradient id="glowB" cx="0.42" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#3d7dbe" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#3d7dbe" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowR" cx="0.58" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#c14a52" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#c14a52" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Blue panel: left of the S-seam, with a dipped top-inner corner -->
+  <path d="M14 0 L360 0 C430 0 452 18 462 46
+           C500 130 524 210 518 300
+           C512 400 470 480 452 560 L14 560 Z"
+        fill="url(#blue)"/>
+  <path d="M14 0 L360 0 C430 0 452 18 462 46
+           C500 130 524 210 518 300
+           C512 400 470 480 452 560 L14 560 Z"
+        fill="url(#glowB)"/>
+
+  <!-- Red panel: right of the S-seam -->
+  <path d="M986 0 L640 0 C540 0 520 18 506 46
+           C544 130 568 210 562 300
+           C556 400 514 480 496 560 L986 560 Z"
+        fill="url(#red)"/>
+  <path d="M986 0 L640 0 C540 0 520 18 506 46
+           C544 130 568 210 562 300
+           C556 400 514 480 496 560 L986 560 Z"
+        fill="url(#glowR)"/>
+</svg>
