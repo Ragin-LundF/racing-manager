@@ -1,0 +1,20 @@
+# IDEs
+.idea/*
+*.iws
+*.iml
+*.ipr
+*.iml
+!.idea/inspectionProfiles
+!.idea/inspectionProfiles/*
+!.idea/detekt.xml
+!.run/
+.vscode/*
+.kotlin/*
+
+# Build targets
+.gradle/*
+**/build/*
+**/target/*
+
+# Other
+.plan
