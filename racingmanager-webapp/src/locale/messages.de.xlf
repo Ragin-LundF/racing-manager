@@ -146,6 +146,26 @@
         <source>Edit</source>
         <target>Bearbeiten</target>
       </trans-unit>
+      <trans-unit id="events.list.view">
+        <source>View</source>
+        <target>Anzeigen</target>
+      </trans-unit>
+      <trans-unit id="events.detail.info">
+        <source>Status: {{ e.status }} | Lanes: {{ e.settings.laneType }} | Measurement: {{ e.settings.measurementType }}</source>
+        <target>Status: {{ e.status }} | Bahnen: {{ e.settings.laneType }} | Messung: {{ e.settings.measurementType }}</target>
+      </trans-unit>
+      <trans-unit id="events.detail.activate">
+        <source>Activate</source>
+        <target>Aktivieren</target>
+      </trans-unit>
+      <trans-unit id="events.detail.edit">
+        <source>Edit</source>
+        <target>Bearbeiten</target>
+      </trans-unit>
+      <trans-unit id="events.detail.archive">
+        <source>Archive</source>
+        <target>Archivieren</target>
+      </trans-unit>
       <trans-unit id="events.form.title">
         <source>{{ isEdit() ? 'Edit Event' : 'Create Event' }}</source>
         <target>{{ isEdit() ? 'Veranstaltung bearbeiten' : 'Veranstaltung erstellen' }}</target>
@@ -217,6 +237,258 @@
       <trans-unit id="racemanager.activeEvent.noEvents">
         <source>No events</source>
         <target>Keine Veranstaltungen</target>
+      </trans-unit>
+      <trans-unit id="participants.list.title">
+        <source>Participants</source>
+        <target>Teilnehmer</target>
+      </trans-unit>
+      <trans-unit id="participants.list.add">
+        <source>Add Participant</source>
+        <target>Teilnehmer hinzufügen</target>
+      </trans-unit>
+      <trans-unit id="participants.list.import">
+        <source>Import CSV</source>
+        <target>CSV importieren</target>
+      </trans-unit>
+      <trans-unit id="participants.list.randomize">
+        <source>Randomize</source>
+        <target>Randomisieren</target>
+      </trans-unit>
+      <trans-unit id="participants.list.empty">
+        <source>No participants yet. Add participants to get started.</source>
+        <target>Noch keine Teilnehmer. Fügen Sie Teilnehmer hinzu.</target>
+      </trans-unit>
+      <trans-unit id="participants.list.startNumber">
+        <source>#</source>
+        <target>#</target>
+      </trans-unit>
+      <trans-unit id="participants.list.name">
+        <source>Name</source>
+        <target>Name</target>
+      </trans-unit>
+      <trans-unit id="participants.list.club">
+        <source>Club</source>
+        <target>Verein</target>
+      </trans-unit>
+      <trans-unit id="participants.list.vehicle">
+        <source>Vehicle</source>
+        <target>Fahrzeug</target>
+      </trans-unit>
+      <trans-unit id="participants.list.status">
+        <source>Status</source>
+        <target>Status</target>
+      </trans-unit>
+      <trans-unit id="participants.list.sortOrder">
+        <source>Sort Order</source>
+        <target>Sortierreihenfolge</target>
+      </trans-unit>
+      <trans-unit id="participants.list.created">
+        <source>Created</source>
+        <target>Erstellt</target>
+      </trans-unit>
+      <trans-unit id="participants.list.edit">
+        <source>Edit</source>
+        <target>Bearbeiten</target>
+      </trans-unit>
+      <trans-unit id="participants.list.deactivate">
+        <source>Deactivate</source>
+        <target>Deaktivieren</target>
+      </trans-unit>
+      <trans-unit id="participants.list.reactivate">
+        <source>Reactivate</source>
+        <target>Reaktivieren</target>
+      </trans-unit>
+      <trans-unit id="participants.form.title">
+        <source>{{ isEdit() ? 'Edit Participant' : 'Add Participant' }}</source>
+        <target>{{ isEdit() ? 'Teilnehmer bearbeiten' : 'Teilnehmer hinzufügen' }}</target>
+      </trans-unit>
+      <trans-unit id="participants.form.startNumber">
+        <source>Start Number</source>
+        <target>Startnummer</target>
+      </trans-unit>
+      <trans-unit id="participants.form.startNumber.required">
+        <source>Start number is required.</source>
+        <target>Startnummer ist erforderlich.</target>
+      </trans-unit>
+      <trans-unit id="participants.form.firstName">
+        <source>First Name</source>
+        <target>Vorname</target>
+      </trans-unit>
+      <trans-unit id="participants.form.firstName.required">
+        <source>First name is required.</source>
+        <target>Vorname ist erforderlich.</target>
+      </trans-unit>
+      <trans-unit id="participants.form.lastName">
+        <source>Last Name</source>
+        <target>Nachname</target>
+      </trans-unit>
+      <trans-unit id="participants.form.lastName.required">
+        <source>Last name is required.</source>
+        <target>Nachname ist erforderlich.</target>
+      </trans-unit>
+      <trans-unit id="participants.form.club">
+        <source>Club</source>
+        <target>Verein</target>
+      </trans-unit>
+      <trans-unit id="participants.form.vehicleName">
+        <source>Vehicle Name</source>
+        <target>Fahrzeugname</target>
+      </trans-unit>
+      <trans-unit id="participants.form.vehicleCategory">
+        <source>Vehicle Category</source>
+        <target>Fahrzeugkategorie</target>
+      </trans-unit>
+      <trans-unit id="participants.form.save">
+        <source>{{ isEdit() ? 'Save Changes' : 'Add Participant' }}</source>
+        <target>{{ isEdit() ? 'Änderungen speichern' : 'Teilnehmer hinzufügen' }}</target>
+      </trans-unit>
+      <trans-unit id="participants.form.cancel">
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </trans-unit>
+      <trans-unit id="participants.import.title">
+        <source>Import Participants (CSV)</source>
+        <target>Teilnehmer importieren (CSV)</target>
+      </trans-unit>
+      <trans-unit id="participants.import.hint">
+        <source>Paste CSV data below. Format: startNumber, firstName, lastName, club, vehicleName, vehicleCategory</source>
+        <target>CSV-Daten unten einfügen. Format: Startnummer, Vorname, Nachname, Verein, Fahrzeugname, Fahrzeugkategorie</target>
+      </trans-unit>
+      <trans-unit id="participants.import.csvData">
+        <source>CSV Data</source>
+        <target>CSV-Daten</target>
+      </trans-unit>
+      <trans-unit id="participants.import.submit">
+        <source>Import</source>
+        <target>Importieren</target>
+      </trans-unit>
+      <trans-unit id="participants.import.cancel">
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </trans-unit>
+      <trans-unit id="participants.import.created">
+        <source>{{ r.created }} participants created.</source>
+        <target>{{ r.created }} Teilnehmer erstellt.</target>
+      </trans-unit>
+      <trans-unit id="participants.import.errors">
+        <source>Errors:</source>
+        <target>Fehler:</target>
+      </trans-unit>
+      <trans-unit id="participants.import.errorRow">
+        <source>Row {{ err.rowIndex + 1 }}: {{ err.message }}</source>
+        <target>Zeile {{ err.rowIndex + 1 }}: {{ err.message }}</target>
+      </trans-unit>
+      <trans-unit id="participants.import.back">
+        <source>Back to Participants</source>
+        <target>Zurück zu den Teilnehmern</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.title">
+        <source>Randomize Participants</source>
+        <target>Teilnehmer randomisieren</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.hint">
+        <source>Randomize the sort order of all participants.</source>
+        <target>Die Sortierreihenfolge aller Teilnehmer randomisieren.</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.start">
+        <source>{{ loading() ? 'Randomizing...' : 'Randomize' }}</source>
+        <target>{{ loading() ? 'Randomisiere...' : 'Randomisieren' }}</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.cancel">
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.success">
+        <source>Participants randomized with seed {{ r.seed }}.</source>
+        <target>Teilnehmer mit Seed {{ r.seed }} randomisiert.</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.back">
+        <source>Back to Participants</source>
+        <target>Zurück zu den Teilnehmern</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.already.title">
+        <source>Already Randomized</source>
+        <target>Bereits randomisiert</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.already.message">
+        <source>Participants have already been randomized. Re-randomization will change the sort order.</source>
+        <target>Teilnehmer wurden bereits randomisiert. Erneutes Randomisieren ändert die Sortierreihenfolge.</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.already.confirm">
+        <source>Re-randomize</source>
+        <target>Erneut randomisieren</target>
+      </trans-unit>
+      <trans-unit id="participants.randomize.already.cancel">
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </trans-unit>
+      <trans-unit id="events.detail.raceControl">
+        <source>Race Control</source>
+        <target>Rennsteuerung</target>
+      </trans-unit>
+      <trans-unit id="races.control.title">
+        <source>Race Control</source>
+        <target>Rennsteuerung</target>
+      </trans-unit>
+      <trans-unit id="races.control.createHeat">
+        <source>Create New Heat</source>
+        <target>Neuen Lauf erstellen</target>
+      </trans-unit>
+      <trans-unit id="races.control.noParticipants">
+        <source>No active participants available.</source>
+        <target>Keine aktiven Teilnehmer verfügbar.</target>
+      </trans-unit>
+      <trans-unit id="races.control.create">
+        <source>Create Heat</source>
+        <target>Lauf erstellen</target>
+      </trans-unit>
+      <trans-unit id="races.control.noHeats">
+        <source>No heats yet. Create a heat to get started.</source>
+        <target>Noch keine Läufe. Erstellen Sie einen Lauf, um zu beginnen.</target>
+      </trans-unit>
+      <trans-unit id="races.control.heatLabel">
+        <source>Heat #{{ heat.heatNumber }}</source>
+        <target>Lauf #{{ heat.heatNumber }}</target>
+      </trans-unit>
+      <trans-unit id="races.control.armedAt">
+        <source>Armed: {{ heat.armedAt | date:'HH:mm:ss' }}</source>
+        <target>Geschärft: {{ heat.armedAt | date:'HH:mm:ss' }}</target>
+      </trans-unit>
+      <trans-unit id="races.control.startedAt">
+        <source>Started: {{ heat.startedAt | date:'HH:mm:ss' }}</source>
+        <target>Gestartet: {{ heat.startedAt | date:'HH:mm:ss' }}</target>
+      </trans-unit>
+      <trans-unit id="races.control.finishedAt">
+        <source>Finished: {{ heat.finishedAt | date:'HH:mm:ss' }}</source>
+        <target>Beendet: {{ heat.finishedAt | date:'HH:mm:ss' }}</target>
+      </trans-unit>
+      <trans-unit id="races.control.arm">
+        <source>Arm</source>
+        <target>Schärfen</target>
+      </trans-unit>
+      <trans-unit id="races.control.start">
+        <source>Start</source>
+        <target>Starten</target>
+      </trans-unit>
+      <trans-unit id="races.control.cancel">
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </trans-unit>
+      <trans-unit id="races.control.finish">
+        <source>Finish</source>
+        <target>Beenden</target>
+      </trans-unit>
+      <trans-unit id="races.control.accept">
+        <source>Accept</source>
+        <target>Akzeptieren</target>
+      </trans-unit>
+      <trans-unit id="races.control.reject">
+        <source>Reject</source>
+        <target>Ablehnen</target>
+      </trans-unit>
+      <trans-unit id="races.control.repeat">
+        <source>Repeat</source>
+        <target>Wiederholen</target>
       </trans-unit>
     </body>
   </file>

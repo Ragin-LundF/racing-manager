@@ -1,0 +1,38 @@
+<div class="participant-import">
+  <h2 i18n="@@participants.import.title">Import Participants (CSV)</h2>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (result(); as r) {
+    <p class="success" i18n="@@participants.import.created">{{ r.created }} participants created.</p>
+    @if (r.errors.length > 0) {
+      <div class="errors">
+        <strong i18n="@@participants.import.errors">Errors:</strong>
+        <ul>
+          @for (err of r.errors; track err.rowIndex) {
+            <li i18n="@@participants.import.errorRow">Row {{ err.rowIndex + 1 }}: {{ err.message }}</li>
+          }
+        </ul>
+      </div>
+    }
+    <button (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.import.back">Back to Participants</button>
+  } @else {
+    <p i18n="@@participants.import.hint">
+      Paste CSV data below. Format: startNumber, firstName, lastName, club, vehicleName, vehicleCategory
+    </p>
+
+    <form #form="ngForm" (ngSubmit)="onSubmit()">
+      <label i18n="@@participants.import.csvData">
+        CSV Data
+        <textarea name="csvText" [(ngModel)]="csvText" required></textarea>
+      </label>
+
+      <div class="actions">
+        <button type="submit" [disabled]="!csvText.trim()" i18n="@@participants.import.submit">Import</button>
+        <button type="button" (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.import.cancel">Cancel</button>
+      </div>
+    </form>
+  }
+</div>

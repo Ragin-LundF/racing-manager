@@ -1,0 +1,85 @@
+<div class="race-control">
+  <div class="header">
+    <h2 i18n="@@races.control.title">Race Control</h2>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <div class="create-section">
+    <h3 i18n="@@races.control.createHeat">Create New Heat</h3>
+    <div>
+      @for (p of participants(); track p.id) {
+        <label>
+          <input type="checkbox" [checked]="selectedParticipantIds().includes(p.id)" (change)="toggleParticipant(p.id)" />
+          #{{ p.startNumber }} {{ p.firstName }} {{ p.lastName }}
+        </label>
+      }
+    </div>
+    @if (participants().length === 0) {
+      <p class="empty" i18n="@@races.control.noParticipants">No active participants available.</p>
+    }
+    <button class="primary" (click)="onCreateHeat()" [disabled]="selectedParticipantIds().length < 2 || creating()" i18n="@@races.control.create">
+      Create Heat
+    </button>
+  </div>
+
+  @if (heats().length === 0) {
+    <div class="empty" i18n="@@races.control.noHeats">No heats yet. Create a heat to get started.</div>
+  }
+
+  <div class="heats">
+    @for (heat of heats(); track heat.id) {
+      <div class="heat-card" [class.armed]="heat.status === 'ARMED'" [class.started]="heat.status === 'STARTED'" [class.finished]="heat.status === 'FINISHED'" [class.cancelled]="heat.status === 'CANCELLED'">
+        <div class="heat-header">
+          <div>
+            <strong i18n="@@races.control.heatLabel">Heat #{{ heat.heatNumber }}</strong>
+            <span class="heat-status" [class]="statusClass(heat.status)">{{ heat.status }}</span>
+          </div>
+          <div class="timestamps">
+            @if (heat.armedAt) { <span i18n="@@races.control.armedAt">Armed: {{ heat.armedAt | date:'HH:mm:ss' }}</span> }
+            @if (heat.startedAt) { <span i18n="@@races.control.startedAt">Started: {{ heat.startedAt | date:'HH:mm:ss' }}</span> }
+            @if (heat.finishedAt) { <span i18n="@@races.control.finishedAt">Finished: {{ heat.finishedAt | date:'HH:mm:ss' }}</span> }
+          </div>
+        </div>
+
+        <div class="lanes">
+          @for (lane of heat.lanes; track lane.lane) {
+            @let measurement = getLaneMeasurement(heat, lane.lane);
+            <div class="lane-card" [class.finished]="measurement?.outcome === 'FINISHED'" [class.dnf]="measurement?.outcome === 'DNF'">
+              <div class="lane-number">{{ lane.lane }}</div>
+              <div class="lane-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</div>
+              <div class="lane-time">{{ measurement ? formatNanos(measurement.durationNanos) : '-' }}</div>
+              @if (measurement) {
+                <div class="lane-outcome">{{ measurement.outcome }}</div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="actions">
+          @if (heat.status === 'PLANNED') {
+            <button class="primary" (click)="onArm(heat)" i18n="@@races.control.arm">Arm</button>
+          }
+          @if (heat.status === 'ARMED') {
+            <button class="success" (click)="onStart(heat)" i18n="@@races.control.start">Start</button>
+            <button class="danger" (click)="onCancel(heat)" i18n="@@races.control.cancel">Cancel</button>
+          }
+          @if (heat.status === 'STARTED') {
+            <button class="warning" (click)="onFinish(heat)" i18n="@@races.control.finish">Finish</button>
+            <button class="danger" (click)="onCancel(heat)" i18n="@@races.control.cancel">Cancel</button>
+          }
+          @if (heat.status === 'FINISHED' || heat.status === 'TIMEOUT') {
+            <button class="success" (click)="onAccept(heat)" i18n="@@races.control.accept">Accept</button>
+            <button class="danger" (click)="onReject(heat)" i18n="@@races.control.reject">Reject</button>
+            <button (click)="onRepeat(heat)" i18n="@@races.control.repeat">Repeat</button>
+          }
+          @if (heat.status === 'CANCELLED' || heat.status === 'TECHNICAL_ERROR') {
+            <button (click)="onRepeat(heat)" i18n="@@races.control.repeat">Repeat</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

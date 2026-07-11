@@ -1,0 +1,31 @@
+<div class="participant-randomize">
+  <h2 i18n="@@participants.randomize.title">Randomize Participants</h2>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (result(); as r) {
+    <p class="success" i18n="@@participants.randomize.success">Participants randomized with seed {{ r.seed }}.</p>
+    <div class="actions">
+      <button (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.randomize.back">Back to Participants</button>
+    </div>
+  } @else if (alreadyRandomized()) {
+    <div class="warning">
+      <strong i18n="@@participants.randomize.already.title">Already Randomized</strong>
+      <p i18n="@@participants.randomize.already.message">Participants have already been randomized. Re-randomization will change the sort order.</p>
+      <div class="actions">
+        <button (click)="onForceRandomize()" i18n="@@participants.randomize.already.confirm">Re-randomize</button>
+        <button (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.randomize.already.cancel">Cancel</button>
+      </div>
+    </div>
+  } @else {
+    <p i18n="@@participants.randomize.hint">Randomize the sort order of all participants.</p>
+    <div class="actions">
+      <button (click)="onRandomize()" [disabled]="loading()" i18n="@@participants.randomize.start">
+        {{ loading() ? 'Randomizing...' : 'Randomize' }}
+      </button>
+      <button (click)="router.navigate(['..'], { relativeTo: route })" i18n="@@participants.randomize.cancel">Cancel</button>
+    </div>
+  }
+</div>

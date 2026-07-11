@@ -1,0 +1,53 @@
+import { Component, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
+import { EventService } from './event.service';
+import { EventResponse } from './event.models';
+
+@Component({
+  selector: 'app-event-detail',
+  standalone: true,
+  imports: [RouterLink, RouterOutlet],
+  templateUrl: './event-detail.component.html',
+  styles: [`
+    .error { color: red; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .actions { display: flex; gap: 0.5rem; }
+  `],
+})
+export class EventDetailComponent {
+  private readonly eventService = inject(EventService);
+  protected readonly route = inject(ActivatedRoute);
+
+  protected event = signal<EventResponse | null>(null);
+  protected error = signal('');
+
+  constructor() {
+    const id = this.route.snapshot.paramMap.get('id')!;
+    this.loadEvent(id);
+  }
+
+  private loadEvent(id: string): void {
+    this.eventService.findById(id).subscribe({
+      next: (event) => this.event.set(event),
+      error: () => this.error.set('Failed to load event.'),
+    });
+  }
+
+  protected onActivate(): void {
+    const event = this.event();
+    if (!event) return;
+    this.eventService.activate(event.id).subscribe({
+      next: (updated) => this.event.set(updated),
+      error: () => this.error.set('Failed to activate event.'),
+    });
+  }
+
+  protected onArchive(): void {
+    const event = this.event();
+    if (!event) return;
+    this.eventService.archive(event.id).subscribe({
+      next: (updated) => this.event.set(updated),
+      error: () => this.error.set('Failed to archive event.'),
+    });
+  }
+}

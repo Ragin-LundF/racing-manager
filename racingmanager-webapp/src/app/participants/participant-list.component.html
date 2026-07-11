@@ -1,0 +1,56 @@
+<div class="participant-list">
+  <div class="header">
+    <h2 i18n="@@participants.list.title">Participants</h2>
+    <div class="toolbar">
+      <button routerLink="participants/new" i18n="@@participants.list.add">Add Participant</button>
+      <button routerLink="participants/import" i18n="@@participants.list.import">Import CSV</button>
+      <button routerLink="participants/randomize" i18n="@@participants.list.randomize">Randomize</button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (participants.length === 0) {
+    <div class="empty" i18n="@@participants.list.empty">
+      No participants yet. Add participants to get started.
+    </div>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th i18n="@@participants.list.startNumber">#</th>
+          <th i18n="@@participants.list.name">Name</th>
+          <th i18n="@@participants.list.club">Club</th>
+          <th i18n="@@participants.list.vehicle">Vehicle</th>
+          <th i18n="@@participants.list.status">Status</th>
+          <th i18n="@@participants.list.sortOrder">Sort Order</th>
+          <th i18n="@@participants.list.created">Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of participants; track p.id) {
+          <tr [class.inactive]="p.status === 'INACTIVE'">
+            <td>{{ p.startNumber }}</td>
+            <td>{{ p.firstName }} {{ p.lastName }}</td>
+            <td>{{ p.club }}</td>
+            <td>{{ p.vehicle?.name ?? '-' }}</td>
+            <td>{{ p.status }}</td>
+            <td>{{ p.sortOrder }}</td>
+            <td>{{ p.createdAt | date:'short' }}</td>
+            <td class="actions">
+              <a [routerLink]="['participants', p.id]" i18n="@@participants.list.edit">Edit</a>
+              @if (p.status === 'ACTIVE') {
+                <button (click)="onDeactivate(p.id)" i18n="@@participants.list.deactivate">Deactivate</button>
+              } @else {
+                <button (click)="onReactivate(p.id)" i18n="@@participants.list.reactivate">Reactivate</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

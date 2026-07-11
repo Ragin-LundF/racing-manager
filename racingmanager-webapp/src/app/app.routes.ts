@@ -6,6 +6,12 @@ import { RaceManagerShellComponent } from './shell/racemanager/racemanager.compo
 import { SpectatorShellComponent } from './shell/spectator/spectator.component';
 import { EventListComponent } from './events/event-list.component';
 import { EventFormComponent } from './events/event-form.component';
+import { EventDetailComponent } from './events/event-detail.component';
+import { ParticipantListComponent } from './participants/participant-list.component';
+import { ParticipantFormComponent } from './participants/participant-form.component';
+import { ParticipantImportComponent } from './participants/participant-import.component';
+import { ParticipantRandomizeComponent } from './participants/participant-randomize.component';
+import { RaceControlComponent } from './races/race-control.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'en/racemanager', pathMatch: 'full' },
@@ -23,7 +29,19 @@ export const routes: Routes = [
     children: [
       { path: '', component: EventListComponent },
       { path: 'new', component: EventFormComponent },
-      { path: ':id', component: EventFormComponent },
+      {
+        path: ':id',
+        component: EventDetailComponent,
+        children: [
+          { path: '', component: ParticipantListComponent },
+          { path: 'edit', component: EventFormComponent },
+          { path: 'participants/new', component: ParticipantFormComponent },
+          { path: 'participants/import', component: ParticipantImportComponent },
+          { path: 'participants/randomize', component: ParticipantRandomizeComponent },
+          { path: 'participants/:participantId', component: ParticipantFormComponent },
+          { path: 'race-control', component: RaceControlComponent },
+        ],
+      },
     ],
   },
   {
@@ -33,7 +51,19 @@ export const routes: Routes = [
     children: [
       { path: '', component: EventListComponent },
       { path: 'new', component: EventFormComponent },
-      { path: ':id', component: EventFormComponent },
+      {
+        path: ':id',
+        component: EventDetailComponent,
+        children: [
+          { path: '', component: ParticipantListComponent },
+          { path: 'edit', component: EventFormComponent },
+          { path: 'participants/new', component: ParticipantFormComponent },
+          { path: 'participants/import', component: ParticipantImportComponent },
+          { path: 'participants/randomize', component: ParticipantRandomizeComponent },
+          { path: 'participants/:participantId', component: ParticipantFormComponent },
+          { path: 'race-control', component: RaceControlComponent },
+        ],
+      },
     ],
   },
 

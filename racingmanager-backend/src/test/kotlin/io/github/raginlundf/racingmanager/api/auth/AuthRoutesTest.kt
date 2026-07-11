@@ -3,11 +3,16 @@ package io.github.raginlundf.racingmanager.api.auth
 import io.github.raginlundf.racingmanager.api.configureRouting
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
+import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.event.EventService
+import io.github.raginlundf.racingmanager.application.heat.HeatService
+import io.github.raginlundf.racingmanager.application.participant.ParticipantService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
@@ -36,6 +41,10 @@ class AuthRoutesTest {
     private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
     private val eventRepository = EventRepository()
     private val eventService = EventService(eventRepository, auditRepository)
+    private val participantRepository = ParticipantRepository()
+    private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
+    private val heatRepository = HeatRepository()
+    private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository)
 
     @BeforeTest
     fun setUp() {
@@ -221,7 +230,8 @@ class AuthRoutesTest {
     private fun Application.configureTestApp() {
         configureSerialization()
         configureStatusPages()
-        configureRouting(authService, eventService)
+        configureWebSockets()
+        configureRouting(authService, eventService, participantService, heatService)
     }
 
     private fun extractSessionId(body: String): String {

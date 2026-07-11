@@ -1,0 +1,27 @@
+<div class="event-detail">
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (event(); as e) {
+    <div class="header">
+      <div>
+        <h2>{{ e.name }}</h2>
+        <p>{{ e.description }}</p>
+        <p i18n="@@events.detail.info">Status: {{ e.status }} | Lanes: {{ e.settings.laneType }} | Measurement: {{ e.settings.measurementType }}</p>
+      </div>
+      <div class="actions">
+        @if (e.status === 'DRAFT') {
+          <button (click)="onActivate()" i18n="@@events.detail.activate">Activate</button>
+          <a [routerLink]="['edit']" i18n="@@events.detail.edit">Edit</a>
+        }
+        @if (e.status === 'ACTIVE') {
+          <a [routerLink]="['race-control']" i18n="@@events.detail.raceControl">Race Control</a>
+          <button (click)="onArchive()" i18n="@@events.detail.archive">Archive</button>
+        }
+      </div>
+    </div>
+
+    <router-outlet />
+  }
+</div>
