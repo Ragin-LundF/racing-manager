@@ -38,44 +38,98 @@
       <p>{{ 'spectator.shell.placeholder' | translate }}</p>
     </div>
   } @else {
-    <div class="dashboard">
-      <!-- Current Race Panel -->
-      <section class="panel current-race">
-        <h2>{{ 'spectator.currentRace' | translate }}</h2>
-        @if (currentHeat(); as heat) {
-          <div class="heat-header">
-            <span class="heat-label">{{ 'spectator.heatLabel' | translate: { number: heat.heatNumber } }}</span>
-            <span class="heat-status" [class]="heat.status">{{ heat.status }}</span>
-          </div>
-          <div class="lanes">
-            @for (lane of heat.lanes; track lane.lane) {
-              <div class="lane-row" [class.winner]="lane.outcome === 'FINISHED'">
-                <span class="lane-number">{{ lane.lane }}</span>
-                <span class="lane-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</span>
-                <span class="lane-time">{{ formatNanos(lane.durationNanos) }}</span>
-                @if (lane.outcome === 'DNF') {
-                  <span class="lane-dnf">{{ 'spectator.dnf' | translate }}</span>
-                }
-              </div>
-            }
-          </div>
+    <div class="stage">
+      <!-- LEFT: Qualification leaderboard -->
+      <section class="panel col leaderboard">
+        <div class="col-title">
+          <h2>{{ 'spectator.leaderboard' | translate }}</h2>
+          @if (qualificationStatus() === 'FINALIZED') {
+            <span class="finalized-badge">{{ 'spectator.finalized' | translate }}</span>
+          }
+        </div>
+        @if (rankings().length > 0) {
+          <table>
+            <thead>
+              <tr>
+                <th class="rank-col">{{ 'spectator.rank' | translate }}</th>
+                <th>{{ 'spectator.name' | translate }}</th>
+                <th class="time-col">{{ 'spectator.bestTime' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of rankings(); track entry.participantId) {
+                <tr [class.top-three]="entry.rank <= 3">
+                  <td class="rank">{{ entry.rank }}</td>
+                  <td class="name">{{ entry.firstName }} {{ entry.lastName }}</td>
+                  <td class="time tnum">{{ formatSeconds(entry.bestTimeNanos) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="unit-note">{{ 'spectator.timesInSeconds' | translate }}</p>
         } @else {
-          <p class="muted">{{ 'spectator.noCurrentRace' | translate }}</p>
+          <p class="muted">{{ 'spectator.noRankings' | translate }}</p>
         }
       </section>
 
-      <!-- Upcoming Races Panel -->
-      <section class="panel upcoming-races">
-        <h2>{{ 'spectator.upcomingRaces' | translate }}</h2>
+      <!-- CENTER: Current heat, the visual focal point -->
+      <section class="col current-heat">
+        <div class="heat-heading">
+          <h2>{{ 'spectator.currentRace' | translate }}</h2>
+          @if (currentHeat(); as heat) {
+            <p class="heat-sub">{{ 'spectator.heatLabel' | translate: { number: heat.heatNumber } }}</p>
+          }
+        </div>
+
+        @if (currentHeat(); as heat) {
+          <div class="versus">
+            @for (lane of [lane1(), lane2()]; track $index) {
+              @if (lane) {
+                <div class="side"
+                     [class.lane-1]="$index === 0"
+                     [class.lane-2]="$index === 1"
+                     [class.dnf]="lane.outcome === 'DNF'">
+                  <span class="spur">{{ 'spectator.laneLabel' | translate: { number: lane.lane } }}</span>
+                  <span class="racer">{{ lane.participantFirstName }} {{ lane.participantLastName }}</span>
+                  <span class="start-no">#{{ lane.participantStartNumber }}</span>
+                  <img class="car" [src]="$index === 0 ? '/car-lane-1.svg' : '/car-lane-2.svg'" alt="" />
+                  @if (lane.outcome === 'DNF') {
+                    <span class="final dnf-text">{{ 'spectator.dnf' | translate }}</span>
+                  } @else {
+                    <span class="final tnum">{{ formatSeconds(lane.durationNanos) }}</span>
+                    <span class="unit">{{ 'spectator.seconds' | translate }}</span>
+                  }
+                </div>
+              }
+            }
+            <div class="vs-badge">{{ 'spectator.vs' | translate }}</div>
+          </div>
+
+          <div class="status-strip">
+            <span class="state">
+              <span class="dot" [class]="heat.status"></span>{{ 'spectator.heatState.' + heat.status | translate }}
+            </span>
+            @if (heatDifference(); as diff) {
+              <span class="diff">{{ 'spectator.difference' | translate }}: {{ diff }} s</span>
+            }
+          </div>
+        } @else {
+          <p class="muted centered">{{ 'spectator.noCurrentRace' | translate }}</p>
+        }
+      </section>
+
+      <!-- RIGHT: Upcoming heats -->
+      <section class="panel col upcoming">
+        <div class="col-title"><h2>{{ 'spectator.upcomingRaces' | translate }}</h2></div>
         @if (upcomingHeats().length > 0) {
           @for (heat of upcomingHeats(); track heat.id) {
-            <div class="heat-card">
-              <span class="heat-label">{{ 'spectator.heatLabel' | translate: { number: heat.heatNumber } }}</span>
-              <div class="heat-participants">
+            <div class="up-card">
+              <span class="up-label">{{ 'spectator.heatLabel' | translate: { number: heat.heatNumber } }}</span>
+              <div class="up-names">
                 @for (lane of heat.lanes; track lane.lane) {
-                  <span>{{ lane.participantFirstName }} {{ lane.participantLastName }}</span>
+                  <span class="up-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</span>
                   @if (!$last) {
-                    <span class="vs">VS</span>
+                    <span class="up-vs">{{ 'spectator.vs' | translate }}</span>
                   }
                 }
               </div>
@@ -85,38 +139,9 @@
           <p class="muted">{{ 'spectator.noUpcomingRaces' | translate }}</p>
         }
       </section>
+    </div>
 
-      <!-- Qualification Leaderboard -->
-      @if (rankings().length > 0) {
-        <section class="panel leaderboard">
-          <h2>{{ 'spectator.leaderboard' | translate }}</h2>
-          @if (qualificationStatus() === 'FINALIZED') {
-            <span class="finalized-badge">{{ 'spectator.finalized' | translate }}</span>
-          }
-          <table>
-            <thead>
-              <tr>
-                <th>{{ 'spectator.rank' | translate }}</th>
-                <th>{{ 'spectator.name' | translate }}</th>
-                <th>{{ 'spectator.bestTime' | translate }}</th>
-                <th>{{ 'spectator.runs' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (entry of rankings(); track entry.participantId) {
-                <tr [class.top-three]="entry.rank <= 3">
-                  <td class="rank">{{ entry.rank }}</td>
-                  <td>{{ entry.firstName }} {{ entry.lastName }}</td>
-                  <td class="time">{{ formatNanos(entry.bestTimeNanos) }}</td>
-                  <td class="runs">{{ entry.completedRuns }}/{{ entry.dnfCount > 0 ? entry.dnfCount + ' DNF' : '' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </section>
-      }
-
-      <!-- Knockout Bracket -->
+    <!-- Knockout Bracket -->
       @if (knockout(); as ko) {
         <section class="panel bracket">
           <h2>{{ 'spectator.knockoutBracket' | translate }}</h2>
@@ -152,6 +177,11 @@
           </div>
         </section>
       }
-    </div>
+
+    <footer class="event-footer">
+      <span class="foot-left">{{ eventName() }}</span>
+      <span class="foot-center tnum">🕐 {{ clock() }}</span>
+      <span class="foot-right">{{ 'spectator.footerPhase' | translate }}</span>
+    </footer>
   }
 </div>

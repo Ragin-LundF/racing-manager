@@ -36,6 +36,8 @@ export class SpectatorShellComponent implements OnInit {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly currentHeat = computed(() => this.snapshot()?.currentHeat ?? this.lastKnownSnapshot()?.currentHeat ?? null);
+  protected readonly lane1 = computed(() => this.currentHeat()?.lanes?.[0] ?? null);
+  protected readonly lane2 = computed(() => this.currentHeat()?.lanes?.[1] ?? null);
   protected readonly upcomingHeats = computed(() => this.snapshot()?.upcomingHeats ?? this.lastKnownSnapshot()?.upcomingHeats ?? []);
   protected readonly rankings = computed(() => this.snapshot()?.qualificationRankings ?? this.lastKnownSnapshot()?.qualificationRankings ?? []);
   protected readonly knockout = computed(() => this.snapshot()?.knockout ?? this.lastKnownSnapshot()?.knockout ?? null);
@@ -43,11 +45,28 @@ export class SpectatorShellComponent implements OnInit {
   protected readonly qualificationStatus = computed(() => this.snapshot()?.qualificationStatus ?? this.lastKnownSnapshot()?.qualificationStatus ?? null);
   protected readonly hasLiveData = computed(() => this.snapshot() !== null || this.lastKnownSnapshot() !== null);
 
+  /** Absolute time gap between the two finished lanes, formatted "0.056". */
+  protected readonly heatDifference = computed(() => {
+    const a = this.lane1()?.durationNanos;
+    const b = this.lane2()?.durationNanos;
+    if (a == null || b == null) return null;
+    return (Math.abs(a - b) / 1_000_000_000).toFixed(3);
+  });
+
+  protected readonly clock = signal(this.formatClock());
+
   constructor() {
     effect(() => {
       this.reducedMotion();
       document.documentElement.classList.toggle('reduced-motion', this.reducedMotion());
     });
+    interval(1000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.clock.set(this.formatClock()));
+  }
+
+  private formatClock(): string {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
   ngOnInit(): void {
@@ -190,6 +209,12 @@ export class SpectatorShellComponent implements OnInit {
     if (nanos == null) return '—';
     const seconds = nanos / 1_000_000_000;
     return seconds.toFixed(3) + 's';
+  }
+
+  /** Bare seconds value with three decimals (spec §5: unit shown separately). */
+  protected formatSeconds(nanos: number | undefined | null): string {
+    if (nanos == null) return '—';
+    return (nanos / 1_000_000_000).toFixed(3);
   }
 
   protected getParticipantName(participantId: string | undefined | null): string {
