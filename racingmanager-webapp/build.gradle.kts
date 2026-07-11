@@ -16,7 +16,7 @@ abstract class ExecNpmCi @Inject constructor(
     fun run() {
         execOps.exec {
             workingDir = project.projectDir
-            commandLine("npm", "ci")
+            commandLine("/Users/ragin/.local/bin/npm", "ci")
         }
     }
 }
@@ -32,7 +32,9 @@ abstract class ExecNpx @Inject constructor(
         val parts: List<String> = commandArgs.get()
         execOps.exec {
             workingDir = project.projectDir
-            commandLine(parts)
+            environment("PATH", System.getenv("PATH"))
+            // Use full path to npx since Gradle daemon may not inherit the user's PATH
+            commandLine("/Users/ragin/.local/bin/npx", *parts.drop(1).toTypedArray())
         }
     }
 }
@@ -50,13 +52,13 @@ tasks.register<ExecNpx>("webLint") {
 tasks.register<ExecNpx>("webTypeCheck") {
     description = "Run Angular type checking"
     dependsOn("npmCi")
-    commandArgs.set(listOf("npx", "ng", "build", "--configuration=production", "--no-emit"))
+    commandArgs.set(listOf("npx", "ng", "build", "--configuration=production"))
 }
 
 tasks.register<ExecNpx>("webTest") {
     description = "Run Angular tests"
     dependsOn("npmCi")
-    commandArgs.set(listOf("npx", "ng", "test", "--watch=false", "--browsers=ChromeHeadless"))
+    commandArgs.set(listOf("npx", "ng", "test", "--watch=false"))
 }
 
 tasks.register<ExecNpx>("webBuild") {

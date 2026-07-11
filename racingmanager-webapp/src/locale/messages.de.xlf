@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en" target-language="de" datatype="plaintext">
+    <body>
+      <trans-unit id="app.health.available">
+        <source>Backend is available.</source>
+        <target>Backend ist verfügbar.</target>
+      </trans-unit>
+      <trans-unit id="app.health.unavailable">
+        <source>Backend is unavailable.</source>
+        <target>Backend ist nicht verfügbar.</target>
+      </trans-unit>
+      <trans-unit id="app.health.unexpected">
+        <source>Unexpected health status.</source>
+        <target>Unerwarteter Gesundheitsstatus.</target>
+      </trans-unit>
+      <trans-unit id="director.shell.title">
+        <source>Director Dashboard</source>
+        <target>Direktor-Dashboard</target>
+      </trans-unit>
+      <trans-unit id="director.shell.placeholder">
+        <source>Event management will appear here.</source>
+        <target>Eventverwaltung erscheint hier.</target>
+      </trans-unit>
+      <trans-unit id="spectator.shell.title">
+        <source>Spectator View</source>
+        <target>Zuschaueransicht</target>
+      </trans-unit>
+      <trans-unit id="spectator.shell.placeholder">
+        <source>Live race results will appear here.</source>
+        <target>Live-Rennergebnisse erscheinen hier.</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

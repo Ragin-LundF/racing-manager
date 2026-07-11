@@ -1,0 +1,15 @@
+<app-locale-selector />
+
+@if (health() === null) {
+  <p i18n="@@app.health.unavailable">Backend is unavailable.</p>
+} @else if (health()?.status === 'UP') {
+  <p i18n="@@app.health.available">Backend is available.</p>
+} @else {
+  <p i18n="@@app.health.unexpected">Unexpected health status.</p>
+}
+
+@if (buildInfo(); as info) {
+  <p>{{ info.name }} {{ info.version }}</p>
+}
+
+<router-outlet />
