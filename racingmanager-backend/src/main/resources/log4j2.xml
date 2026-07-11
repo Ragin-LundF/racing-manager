@@ -9,7 +9,7 @@
         <Root level="INFO">
             <AppenderRef ref="Console"/>
         </Root>
-        <Logger name="com.example.racingmanager" level="DEBUG" additivity="false">
+        <Logger name="io.github.raginlundf.racingmanager" level="DEBUG" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="liquibase" level="INFO" additivity="false">

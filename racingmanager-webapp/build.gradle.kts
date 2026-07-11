@@ -16,7 +16,7 @@ abstract class ExecNpmCi @Inject constructor(
     fun run() {
         execOps.exec {
             workingDir = project.projectDir
-            commandLine("/Users/ragin/.local/bin/npm", "ci")
+            commandLine("bash", "-lc", "npm ci")
         }
     }
 }
@@ -32,9 +32,7 @@ abstract class ExecNpx @Inject constructor(
         val parts: List<String> = commandArgs.get()
         execOps.exec {
             workingDir = project.projectDir
-            environment("PATH", System.getenv("PATH"))
-            // Use full path to npx since Gradle daemon may not inherit the user's PATH
-            commandLine("/Users/ragin/.local/bin/npx", *parts.drop(1).toTypedArray())
+            commandLine("bash", "-lc", parts.joinToString(" "))
         }
     }
 }
