@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
-import { EventService } from './event.service';
-import { EventResponse } from './event.models';
+import { EventClient } from '../libs/clients/event/event.client';
+import { EventResponse } from '../libs/clients/event/event.models';
 
 @Component({
   selector: 'app-event-detail',
@@ -11,7 +11,7 @@ import { EventResponse } from './event.models';
   styleUrl: './event-detail.component.scss',
 })
 export class EventDetailComponent {
-  private readonly eventService = inject(EventService);
+  private readonly eventService = inject(EventClient);
   protected readonly route = inject(ActivatedRoute);
 
   protected event = signal<EventResponse | null>(null);

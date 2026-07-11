@@ -3,14 +3,14 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../../core/auth.service';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 import { LocaleService } from '../../i18n/locale.service';
-import { EventService } from '../../events/event.service';
-import { EventResponse } from '../../events/event.models';
-import { QualificationService } from '../../qualification/qualification.service';
+import { EventClient } from '../../libs/clients/event/event.client';
+import { EventResponse } from '../../libs/clients/event/event.models';
+import { QualificationClient } from '../../libs/clients/qualification/qualification.client';
 import {
   HeatScheduleResponse,
   QualificationProgressResponse,
   QualificationResponse,
-} from '../../qualification/qualification.models';
+} from '../../libs/clients/qualification/qualification.models';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -22,8 +22,8 @@ import { FormsModule } from '@angular/forms';
 })
 export class RaceManagerShellComponent {
   protected readonly authService = inject(AuthService);
-  private readonly eventService = inject(EventService);
-  private readonly qualificationService = inject(QualificationService);
+  private readonly eventService = inject(EventClient);
+  private readonly qualificationService = inject(QualificationClient);
   private readonly router = inject(Router);
   protected readonly localeService = inject(LocaleService);
 

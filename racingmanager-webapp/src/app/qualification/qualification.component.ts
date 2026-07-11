@@ -1,14 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { QualificationService } from './qualification.service';
-import { HeatService } from '../races/heat.service';
+import { QualificationClient } from '../libs/clients/qualification/qualification.client';
+import { HeatClient } from '../libs/clients/heat/heat.client';
 import {
   QualificationResponse,
   QualificationRankingResponse,
   QualificationProgressResponse,
   HeatScheduleResponse,
-} from './qualification.models';
-import { HeatResponse } from '../races/heat.models';
+} from '../libs/clients/qualification/qualification.models';
+import { HeatResponse } from '../libs/clients/heat/heat.models';
 
 @Component({
   selector: 'app-qualification',
@@ -18,8 +18,8 @@ import { HeatResponse } from '../races/heat.models';
   styleUrl: './qualification.component.scss',
 })
 export class QualificationComponent {
-  private readonly qualificationService = inject(QualificationService);
-  private readonly heatService = inject(HeatService);
+  private readonly qualificationService = inject(QualificationClient);
+  private readonly heatService = inject(HeatClient);
   private readonly route = inject(ActivatedRoute);
 
   protected qualification = signal<QualificationResponse | null>(null);

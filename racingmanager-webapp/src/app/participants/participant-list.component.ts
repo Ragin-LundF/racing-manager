@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ParticipantService } from './participant.service';
-import { ParticipantResponse } from './participant.models';
+import { ParticipantClient } from '../libs/clients/participant/participant.client';
+import { ParticipantResponse } from '../libs/clients/participant/participant.models';
 import { DatePipe } from '@angular/common';
 
 @Component({
@@ -12,7 +12,7 @@ import { DatePipe } from '@angular/common';
   styleUrl: './participant-list.component.scss',
 })
 export class ParticipantListComponent {
-  private readonly participantService = inject(ParticipantService);
+  private readonly participantService = inject(ParticipantClient);
   private readonly route = inject(ActivatedRoute);
 
   protected participants: ParticipantResponse[] = [];

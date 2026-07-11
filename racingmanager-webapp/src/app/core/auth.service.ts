@@ -1,6 +1,7 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, of, tap } from 'rxjs';
+import { AuthClient } from '../libs/clients/auth/auth.client';
+import { SESSION_STORAGE_KEY } from '../libs/clients/core/api.config';
 import {
   ErrorResponse,
   LoginRequest,
@@ -9,17 +10,19 @@ import {
   SetupRequest,
   SetupResponse,
   SetupStatusResponse,
-} from './auth.models';
+} from '../libs/clients/auth/auth.models';
 
+/** Stateful session store. Delegates all HTTP to AuthClient and holds the
+    signed-in session; the session id itself is attached to requests by the
+    session interceptor. */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8080';
+  private readonly authClient = inject(AuthClient);
 
   readonly session = signal<SessionResponse | null>(null);
   readonly isAuthenticated = signal(false);
 
-  private readonly sessionKey = 'racingmanager_session';
+  private readonly sessionKey = SESSION_STORAGE_KEY;
 
   constructor() {
     this.restoreSession();
@@ -28,11 +31,8 @@ export class AuthService {
   private restoreSession(): void {
     const stored = localStorage.getItem(this.sessionKey);
     if (stored) {
-      const sessionId = stored;
-      this.http
-        .get<SessionResponse>(`${this.baseUrl}/api/v1/auth/session`, {
-          headers: { 'X-Session-Id': sessionId },
-        })
+      this.authClient
+        .getSession()
         .pipe(
           tap((s) => {
             this.session.set(s);
@@ -48,41 +48,31 @@ export class AuthService {
   }
 
   getSetupStatus(): Observable<SetupStatusResponse> {
-    return this.http.get<SetupStatusResponse>(
-      `${this.baseUrl}/api/v1/auth/setup-status`,
-    );
+    return this.authClient.getSetupStatus();
   }
 
   setup(request: SetupRequest): Observable<SetupResponse | ErrorResponse> {
-    return this.http
-      .post<SetupResponse>(`${this.baseUrl}/api/v1/auth/setup`, request)
-      .pipe(
-        catchError((err) =>
-          of(err.error as ErrorResponse),
-        ),
-      );
+    return this.authClient
+      .setup(request)
+      .pipe(catchError((err) => of(err.error as ErrorResponse)));
   }
 
   login(request: LoginRequest): Observable<LoginResponse | ErrorResponse> {
-    return this.http
-      .post<LoginResponse>(`${this.baseUrl}/api/v1/auth/login`, request)
-      .pipe(
-        tap((res) => {
-          if ('sessionId' in res) {
-            localStorage.setItem(this.sessionKey, res.sessionId);
-            this.session.set({
-              userId: res.userId,
-              username: res.username,
-              displayName: res.displayName,
-              role: res.role,
-            });
-            this.isAuthenticated.set(true);
-          }
-        }),
-        catchError((err) =>
-          of(err.error as ErrorResponse),
-        ),
-      );
+    return this.authClient.login(request).pipe(
+      tap((res) => {
+        if ('sessionId' in res) {
+          localStorage.setItem(this.sessionKey, res.sessionId);
+          this.session.set({
+            userId: res.userId,
+            username: res.username,
+            displayName: res.displayName,
+            role: res.role,
+          });
+          this.isAuthenticated.set(true);
+        }
+      }),
+      catchError((err) => of(err.error as ErrorResponse)),
+    );
   }
 
   logout(): Observable<void> {
@@ -91,19 +81,13 @@ export class AuthService {
       this.clearSession();
       return of(undefined);
     }
-    return this.http
-      .post<void>(
-        `${this.baseUrl}/api/v1/auth/logout`,
-        {},
-        { headers: { 'X-Session-Id': sessionId } },
-      )
-      .pipe(
-        tap(() => this.clearSession()),
-        catchError(() => {
-          this.clearSession();
-          return of(undefined);
-        }),
-      );
+    return this.authClient.logout().pipe(
+      tap(() => this.clearSession()),
+      catchError(() => {
+        this.clearSession();
+        return of(undefined);
+      }),
+    );
   }
 
   private clearSession(): void {

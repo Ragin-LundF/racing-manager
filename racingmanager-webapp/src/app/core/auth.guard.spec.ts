@@ -3,6 +3,7 @@ import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from './auth.service';
 import { authGuard, redirectIfAuthenticatedGuard } from './auth.guard';
 import { provideHttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../libs/clients/core/api.config';
 
 function mockRouteSnapshot(): ActivatedRouteSnapshot {
   return {} as unknown as ActivatedRouteSnapshot;
@@ -17,7 +18,7 @@ describe('authGuard', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(), { provide: API_BASE_URL, useValue: 'http://localhost:8080' }],
     }).compileComponents();
 
     auth = TestBed.inject(AuthService);
@@ -45,7 +46,7 @@ describe('redirectIfAuthenticatedGuard', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(), { provide: API_BASE_URL, useValue: 'http://localhost:8080' }],
     }).compileComponents();
 
     auth = TestBed.inject(AuthService);

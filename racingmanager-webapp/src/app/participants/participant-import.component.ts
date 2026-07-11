@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ParticipantService } from './participant.service';
-import { ImportError } from './participant.models';
+import { ParticipantClient } from '../libs/clients/participant/participant.client';
+import { ImportError } from '../libs/clients/participant/participant.models';
 import { catchError, of } from 'rxjs';
 
 @Component({
@@ -13,7 +13,7 @@ import { catchError, of } from 'rxjs';
   styleUrl: './participant-import.component.scss',
 })
 export class ParticipantImportComponent {
-  private readonly participantService = inject(ParticipantService);
+  private readonly participantService = inject(ParticipantClient);
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
 

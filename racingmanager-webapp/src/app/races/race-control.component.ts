@@ -1,10 +1,10 @@
 import { Component, inject, signal, OnDestroy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { HeatService } from './heat.service';
-import { ParticipantService } from '../participants/participant.service';
-import { HeatResponse, HeatStateChangeEvent, MeasurementResponse } from './heat.models';
-import { ParticipantResponse } from '../participants/participant.models';
+import { HeatClient } from '../libs/clients/heat/heat.client';
+import { ParticipantClient } from '../libs/clients/participant/participant.client';
+import { HeatResponse, HeatStateChangeEvent, MeasurementResponse } from '../libs/clients/heat/heat.models';
+import { ParticipantResponse } from '../libs/clients/participant/participant.models';
 
 @Component({
   selector: 'app-race-control',
@@ -14,8 +14,8 @@ import { ParticipantResponse } from '../participants/participant.models';
   styleUrl: './race-control.component.scss',
 })
 export class RaceControlComponent implements OnDestroy {
-  private readonly heatService = inject(HeatService);
-  private readonly participantService = inject(ParticipantService);
+  private readonly heatService = inject(HeatClient);
+  private readonly participantService = inject(ParticipantClient);
   private readonly route = inject(ActivatedRoute);
 
   protected heats = signal<HeatResponse[]>([]);

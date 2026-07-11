@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, shareReplay } from 'rxjs';
+import { API_BASE_URL } from '../core/api.config';
 import { BuildInfoResponse, HealthResponse } from './health.models';
 
 @Injectable({ providedIn: 'root' })
-export class HealthService {
+export class HealthClient {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8080';
+  private readonly baseUrl = inject(API_BASE_URL);
 
   private readonly health$ = this.http
     .get<HealthResponse>(`${this.baseUrl}/api/v1/health`)

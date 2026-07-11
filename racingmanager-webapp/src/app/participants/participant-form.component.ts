@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ParticipantService } from './participant.service';
+import { ParticipantClient } from '../libs/clients/participant/participant.client';
 import { catchError, of } from 'rxjs';
 
 @Component({
@@ -12,7 +12,7 @@ import { catchError, of } from 'rxjs';
   styleUrl: './participant-form.component.scss',
 })
 export class ParticipantFormComponent {
-  private readonly participantService = inject(ParticipantService);
+  private readonly participantService = inject(ParticipantClient);
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
 

@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EventService } from './event.service';
-import { ConflictResponse } from './event.models';
+import { EventClient } from '../libs/clients/event/event.client';
+import { ConflictResponse } from '../libs/clients/event/event.models';
 import { LocaleService } from '../i18n/locale.service';
 import { catchError, of } from 'rxjs';
 
@@ -14,7 +14,7 @@ import { catchError, of } from 'rxjs';
   styleUrl: './event-form.component.scss',
 })
 export class EventFormComponent {
-  private readonly eventService = inject(EventService);
+  private readonly eventService = inject(EventClient);
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
   private readonly localeService = inject(LocaleService);
