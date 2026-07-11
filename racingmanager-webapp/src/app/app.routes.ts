@@ -12,6 +12,7 @@ import { ParticipantFormComponent } from './participants/participant-form.compon
 import { ParticipantImportComponent } from './participants/participant-import.component';
 import { ParticipantRandomizeComponent } from './participants/participant-randomize.component';
 import { RaceControlComponent } from './races/race-control.component';
+import { QualificationComponent } from './qualification/qualification.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'en/racemanager', pathMatch: 'full' },
@@ -40,6 +41,7 @@ export const routes: Routes = [
           { path: 'participants/randomize', component: ParticipantRandomizeComponent },
           { path: 'participants/:participantId', component: ParticipantFormComponent },
           { path: 'race-control', component: RaceControlComponent },
+          { path: 'qualification', component: QualificationComponent },
         ],
       },
     ],
@@ -62,6 +64,7 @@ export const routes: Routes = [
           { path: 'participants/randomize', component: ParticipantRandomizeComponent },
           { path: 'participants/:participantId', component: ParticipantFormComponent },
           { path: 'race-control', component: RaceControlComponent },
+          { path: 'qualification', component: QualificationComponent },
         ],
       },
     ],

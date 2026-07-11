@@ -17,6 +17,7 @@
         }
         @if (e.status === 'ACTIVE') {
           <a [routerLink]="['race-control']" i18n="@@events.detail.raceControl">Race Control</a>
+          <a [routerLink]="['qualification']" i18n="@@events.detail.qualification">Qualification</a>
           <button (click)="onArchive()" i18n="@@events.detail.archive">Archive</button>
         }
       </div>

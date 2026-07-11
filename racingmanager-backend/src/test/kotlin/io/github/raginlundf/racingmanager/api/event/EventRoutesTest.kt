@@ -8,11 +8,13 @@ import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
+import io.github.raginlundf.racingmanager.application.qualification.QualificationService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
@@ -46,6 +48,8 @@ class EventRoutesTest {
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
     private val heatRepository = HeatRepository()
     private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository)
+    private val qualificationRepository = QualificationRepository()
+    private val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
 
     @BeforeTest
     fun setUp() {
@@ -61,7 +65,7 @@ class EventRoutesTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, eventService, participantService, heatService)
+        configureRouting(authService, eventService, participantService, heatService, qualificationService)
     }
 
     @Test

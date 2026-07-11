@@ -490,6 +490,166 @@
         <source>Repeat</source>
         <target>Wiederholen</target>
       </trans-unit>
+      <trans-unit id="events.detail.qualification">
+        <source>Qualification</source>
+        <target>Qualifikation</target>
+      </trans-unit>
+      <trans-unit id="qualification.title">
+        <source>Qualification</source>
+        <target>Qualifikation</target>
+      </trans-unit>
+      <trans-unit id="qualification.setupTitle">
+        <source>Setup Qualification</source>
+        <target>Qualifikation einrichten</target>
+      </trans-unit>
+      <trans-unit id="qualification.setupDescription">
+        <source>Configure and start the qualification phase. Each participant will race in multiple runs.</source>
+        <target>Qualifikationsphase konfigurieren und starten. Jeder Teilnehmer fährt mehrere Läufe.</target>
+      </trans-unit>
+      <trans-unit id="qualification.numberOfRuns">
+        <source>Number of runs:</source>
+        <target>Anzahl der Läufe:</target>
+      </trans-unit>
+      <trans-unit id="qualification.setupButton">
+        <source>Setup</source>
+        <target>Einrichten</target>
+      </trans-unit>
+      <trans-unit id="qualification.statusTitle">
+        <source>Qualification Status</source>
+        <target>Qualifikationsstatus</target>
+      </trans-unit>
+      <trans-unit id="qualification.status">
+        <source>Status:</source>
+        <target>Status:</target>
+      </trans-unit>
+      <trans-unit id="qualification.seed">
+        <source>Seed:</source>
+        <target>Seed:</target>
+      </trans-unit>
+      <trans-unit id="qualification.runs">
+        <source>Runs:</source>
+        <target>Läufe:</target>
+      </trans-unit>
+      <trans-unit id="qualification.generateSchedule">
+        <source>Generate Schedule</source>
+        <target>Zeitplan erstellen</target>
+      </trans-unit>
+      <trans-unit id="qualification.progressTitle">
+        <source>Progress</source>
+        <target>Fortschritt</target>
+      </trans-unit>
+      <trans-unit id="qualification.totalHeats">
+        <source>Total Heats</source>
+        <target>Läufe gesamt</target>
+      </trans-unit>
+      <trans-unit id="qualification.completedHeats">
+        <source>Completed</source>
+        <target>Abgeschlossen</target>
+      </trans-unit>
+      <trans-unit id="qualification.inProgressHeats">
+        <source>In Progress</source>
+        <target>In Bearbeitung</target>
+      </trans-unit>
+      <trans-unit id="qualification.plannedHeats">
+        <source>Planned</source>
+        <target>Geplant</target>
+      </trans-unit>
+      <trans-unit id="qualification.cancelledHeats">
+        <source>Cancelled</source>
+        <target>Abgebrochen</target>
+      </trans-unit>
+      <trans-unit id="qualification.participantsWithResults">
+        <source>With Results</source>
+        <target>Mit Ergebnissen</target>
+      </trans-unit>
+      <trans-unit id="qualification.scheduleTitle">
+        <source>Schedule</source>
+        <target>Zeitplan</target>
+      </trans-unit>
+      <trans-unit id="qualification.heatLabel">
+        <source>Heat #{{ heat.heatNumber }}</source>
+        <target>Lauf #{{ heat.heatNumber }}</target>
+      </trans-unit>
+      <trans-unit id="qualification.goToRaceControl">
+        <source>Run</source>
+        <target>Durchführen</target>
+      </trans-unit>
+      <trans-unit id="qualification.rankingsTitle">
+        <source>Rankings</source>
+        <target>Rangliste</target>
+      </trans-unit>
+      <trans-unit id="qualification.rank">
+        <source>Rank</source>
+        <target>Rang</target>
+      </trans-unit>
+      <trans-unit id="qualification.startNumber">
+        <source>#</source>
+        <target>#</target>
+      </trans-unit>
+      <trans-unit id="qualification.name">
+        <source>Name</source>
+        <target>Name</target>
+      </trans-unit>
+      <trans-unit id="qualification.club">
+        <source>Club</source>
+        <target>Verein</target>
+      </trans-unit>
+      <trans-unit id="qualification.bestTime">
+        <source>Best Time</source>
+        <target>Beste Zeit</target>
+      </trans-unit>
+      <trans-unit id="qualification.completedRuns">
+        <source>Runs</source>
+        <target>Läufe</target>
+      </trans-unit>
+      <trans-unit id="qualification.dnf">
+        <source>DNF</source>
+        <target>DNF</target>
+      </trans-unit>
+      <trans-unit id="qualification.actionsTitle">
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </trans-unit>
+      <trans-unit id="qualification.finalizeHint">
+        <source>All heats must be completed before finalizing.</source>
+        <target>Alle Läufe müssen abgeschlossen sein, bevor finalisiert wird.</target>
+      </trans-unit>
+      <trans-unit id="qualification.finalizeButton">
+        <source>Finalize</source>
+        <target>Finalisieren</target>
+      </trans-unit>
+      <trans-unit id="qualification.finalizeConfirm">
+        <source>Are you sure? This will lock the rankings.</source>
+        <target>Sind Sie sicher? Dies sperrt die Rangliste.</target>
+      </trans-unit>
+      <trans-unit id="qualification.confirmFinalize">
+        <source>Yes, Finalize</source>
+        <target>Ja, finalisieren</target>
+      </trans-unit>
+      <trans-unit id="qualification.cancel">
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </trans-unit>
+      <trans-unit id="qualification.finalizedTitle">
+        <source>Finalized</source>
+        <target>Finalisiert</target>
+      </trans-unit>
+      <trans-unit id="qualification.finalizedMessage">
+        <source>Qualification is finalized. Rankings are locked.</source>
+        <target>Qualifikation ist finalisiert. Rangliste ist gesperrt.</target>
+      </trans-unit>
+      <trans-unit id="qualification.reopenButton">
+        <source>Reopen</source>
+        <target>Wieder öffnen</target>
+      </trans-unit>
+      <trans-unit id="qualification.reopenConfirm">
+        <source>Reopen qualification to allow more runs?</source>
+        <target>Qualifikation wieder öffnen, um weitere Läufe zu ermöglichen?</target>
+      </trans-unit>
+      <trans-unit id="qualification.confirmReopen">
+        <source>Yes, Reopen</source>
+        <target>Ja, wieder öffnen</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>
