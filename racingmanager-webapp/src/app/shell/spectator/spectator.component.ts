@@ -101,9 +101,12 @@ export class SpectatorShellComponent implements OnInit {
     this.spectatorClient.getEvents().subscribe({
       next: (res) => {
         this.events.set(res.events);
+        // Auto-select the active event and connect immediately (the ngOnInit
+        // connect ran before this async result, with an empty id).
         const active = res.events.find((e) => e.status === 'ACTIVE');
-        if (active) {
+        if (active && !this.selectedEventId()) {
           this.selectedEventId.set(active.id);
+          this.connectToEvent();
         }
       },
       error: () => this.error.set('Failed to load events'),
@@ -117,7 +120,23 @@ export class SpectatorShellComponent implements OnInit {
     this.connected.set(false);
     this.error.set(null);
 
+    // Prime with the current snapshot right away so the view shows live state
+    // on every open; the WebSocket (or polling) then pushes future changes.
+    this.primeSnapshot(eventId);
     this.tryWebSocket(eventId);
+  }
+
+  private primeSnapshot(eventId: string): void {
+    this.spectatorClient.getSnapshot(eventId).subscribe({
+      next: (data) => {
+        if (this.selectedEventId() !== eventId) return;
+        this.snapshot.set(data);
+        this.lastKnownSnapshot.set(data);
+      },
+      error: () => {
+        // Ignore: the live connection or polling will populate the view.
+      },
+    });
   }
 
   private tryWebSocket(eventId: string): void {
