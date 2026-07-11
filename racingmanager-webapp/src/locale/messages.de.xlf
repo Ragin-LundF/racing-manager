@@ -22,6 +22,10 @@
         <source>Event management will appear here.</source>
         <target>Eventverwaltung erscheint hier.</target>
       </trans-unit>
+      <trans-unit id="director.logout">
+        <source>Log Out</source>
+        <target>Abmelden</target>
+      </trans-unit>
       <trans-unit id="spectator.shell.title">
         <source>Spectator View</source>
         <target>Zuschaueransicht</target>
@@ -29,6 +33,82 @@
       <trans-unit id="spectator.shell.placeholder">
         <source>Live race results will appear here.</source>
         <target>Live-Rennergebnisse erscheinen hier.</target>
+      </trans-unit>
+      <trans-unit id="setup.title">
+        <source>Administrator Setup</source>
+        <target>Administrator-Einrichtung</target>
+      </trans-unit>
+      <trans-unit id="setup.error.generic">
+        <source>Setup failed. Please try again.</source>
+        <target>Einrichtung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
+      </trans-unit>
+      <trans-unit id="setup.username">
+        <source>Username</source>
+        <target>Benutzername</target>
+      </trans-unit>
+      <trans-unit id="setup.username.required">
+        <source>Username is required (min. 3 characters).</source>
+        <target>Benutzername ist erforderlich (min. 3 Zeichen).</target>
+      </trans-unit>
+      <trans-unit id="setup.displayName">
+        <source>Display Name</source>
+        <target>Anzeigename</target>
+      </trans-unit>
+      <trans-unit id="setup.displayName.required">
+        <source>Display name is required.</source>
+        <target>Anzeigename ist erforderlich.</target>
+      </trans-unit>
+      <trans-unit id="setup.password">
+        <source>Password</source>
+        <target>Passwort</target>
+      </trans-unit>
+      <trans-unit id="setup.password.required">
+        <source>Password is required (min. 8 characters).</source>
+        <target>Passwort ist erforderlich (min. 8 Zeichen).</target>
+      </trans-unit>
+      <trans-unit id="setup.confirmPassword">
+        <source>Confirm Password</source>
+        <target>Passwort bestätigen</target>
+      </trans-unit>
+      <trans-unit id="setup.password.mismatch">
+        <source>Passwords do not match.</source>
+        <target>Passwörter stimmen nicht überein.</target>
+      </trans-unit>
+      <trans-unit id="setup.submit">
+        <source>Create Administrator</source>
+        <target>Administrator erstellen</target>
+      </trans-unit>
+      <trans-unit id="login.title">
+        <source>Login</source>
+        <target>Anmelden</target>
+      </trans-unit>
+      <trans-unit id="login.username">
+        <source>Username</source>
+        <target>Benutzername</target>
+      </trans-unit>
+      <trans-unit id="login.username.required">
+        <source>Username is required.</source>
+        <target>Benutzername ist erforderlich.</target>
+      </trans-unit>
+      <trans-unit id="login.password">
+        <source>Password</source>
+        <target>Passwort</target>
+      </trans-unit>
+      <trans-unit id="login.password.required">
+        <source>Password is required.</source>
+        <target>Passwort ist erforderlich.</target>
+      </trans-unit>
+      <trans-unit id="login.submit">
+        <source>Log In</source>
+        <target>Anmelden</target>
+      </trans-unit>
+      <trans-unit id="login.error.invalidCredentials">
+        <source>Invalid username or password.</source>
+        <target>Ungültiger Benutzername oder Passwort.</target>
+      </trans-unit>
+      <trans-unit id="login.error.generic">
+        <source>Login failed. Please try again.</source>
+        <target>Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
       </trans-unit>
     </body>
   </file>
