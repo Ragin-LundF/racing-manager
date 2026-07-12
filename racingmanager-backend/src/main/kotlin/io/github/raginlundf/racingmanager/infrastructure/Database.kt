@@ -10,10 +10,13 @@ import liquibase.resource.ClassLoaderResourceAccessor
 import org.jetbrains.exposed.v1.jdbc.Database as ExposedDatabase
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private val logger = KotlinLogging.logger {}
 
-fun Application.configureDatabase() {
+fun Application.configureDatabase(): javax.sql.DataSource {
     val dbPath = environment.config.propertyOrNull("racingmanager.database.path")
         ?.getString()
         ?: resolveDefaultDatabasePath()
@@ -23,10 +26,12 @@ fun Application.configureDatabase() {
         Files.createDirectories(dbDir)
     }
 
+    val dbFile = Path.of(dbPath)
+    if (Files.exists(dbFile)) {
+        createPreMigrationBackup(dbFile)
+    }
+
     val hikariConfig = HikariConfig().apply {
-        // WAL lets readers run concurrently with the single writer, and busy_timeout
-        // makes SQLite wait for a lock instead of failing fast — together they remove
-        // the request-serialization stalls that made list endpoints feel slow.
         jdbcUrl = "jdbc:sqlite:$dbPath?journal_mode=WAL&synchronous=NORMAL&busy_timeout=5000"
         driverClassName = "org.sqlite.JDBC"
         maximumPoolSize = 5
@@ -43,6 +48,16 @@ fun Application.configureDatabase() {
     runLiquibaseMigration(dataSource)
 
     logger.info { "Database initialized at $dbPath" }
+    return dataSource
+}
+
+private fun createPreMigrationBackup(dbFile: Path) {
+    val backupDir = dbFile.parent.resolve("backups")
+    Files.createDirectories(backupDir)
+    val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+    val backupFile = backupDir.resolve("racingmanager-pre-migration-$timestamp.db")
+    Files.copy(dbFile, backupFile, StandardCopyOption.REPLACE_EXISTING)
+    logger.info { "Pre-migration backup created at $backupFile" }
 }
 
 private fun runLiquibaseMigration(dataSource: HikariDataSource) {

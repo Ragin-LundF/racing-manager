@@ -7,6 +7,7 @@ import io.github.raginlundf.racingmanager.api.configureStatusPages
 import io.github.raginlundf.racingmanager.application.audit.AuditService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.SetupResult
+import io.github.raginlundf.racingmanager.application.diagnostics.DiagnosticsService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
@@ -73,9 +74,18 @@ fun Application.module() {
     configureLogging()
     configureSerialization()
     configureStatusPages()
-    configureDatabase()
+    val dataSource = configureDatabase()
+    val diagnosticsService = DiagnosticsService(dataSource, eventRepository, participantRepository, heatRepository)
+    diagnosticsService.findUnfinishedHeats().let { unfinished ->
+        if (unfinished.isNotEmpty()) {
+            logger.warn { "Found ${unfinished.size} unfinished heat(s) on startup — recovery recommended" }
+            unfinished.forEach { uf ->
+                logger.warn { "  Heat #${uf.heat.heatNumber} (${uf.heat.id}) in event '${uf.event.name}' has status ${uf.heat.status}" }
+            }
+        }
+    }
     seedDemoAdmin(authService)
     configureWebSockets()
     spectatorWebSocketService.start()
-    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService)
+    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService)
 }

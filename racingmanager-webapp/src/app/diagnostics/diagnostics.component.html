@@ -1,0 +1,129 @@
+<div class="diagnostics">
+  <div class="header">
+    <h2>{{ 'diagnostics.title' | translate }}</h2>
+    <button (click)="load()">{{ 'diagnostics.refresh' | translate }}</button>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (recoveryResult()) {
+    <p class="success">{{ recoveryResult() }}</p>
+  }
+
+  @if (loading()) {
+    <p>{{ 'diagnostics.loading' | translate }}</p>
+  }
+
+  @if (diagnostics(); as d) {
+    <section class="section">
+      <h3>{{ 'diagnostics.databaseTitle' | translate }}</h3>
+      <table class="info-table">
+        <tr>
+          <td>{{ 'diagnostics.connected' | translate }}</td>
+          <td>
+            @if (d.database.connected) {
+              <span class="status-ok">{{ 'diagnostics.yes' | translate }}</span>
+            } @else {
+              <span class="status-err">{{ 'diagnostics.no' | translate }}</span>
+            }
+          </td>
+        </tr>
+        <tr>
+          <td>{{ 'diagnostics.pingMs' | translate }}</td>
+          <td>{{ d.database.pingMs }} ms</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <h3>{{ 'diagnostics.eventsTitle' | translate }}</h3>
+      <table class="info-table">
+        <tr><td>{{ 'diagnostics.totalEvents' | translate }}</td><td>{{ d.events.total }}</td></tr>
+        <tr><td>{{ 'diagnostics.draftEvents' | translate }}</td><td>{{ d.events.draft }}</td></tr>
+        <tr><td>{{ 'diagnostics.activeEvents' | translate }}</td><td>{{ d.events.active }}</td></tr>
+        <tr><td>{{ 'diagnostics.completedEvents' | translate }}</td><td>{{ d.events.completed }}</td></tr>
+        <tr><td>{{ 'diagnostics.archivedEvents' | translate }}</td><td>{{ d.events.archived }}</td></tr>
+        <tr><td>{{ 'diagnostics.totalParticipants' | translate }}</td><td>{{ d.events.totalParticipants }}</td></tr>
+        <tr><td>{{ 'diagnostics.totalHeats' | translate }}</td><td>{{ d.events.totalHeats }}</td></tr>
+      </table>
+    </section>
+
+    @if (readiness(); as r) {
+      <section class="section">
+        <h3>{{ 'diagnostics.readinessTitle' | translate }}</h3>
+        <p>
+          {{ 'diagnostics.overallStatus' | translate }}:
+          @if (r.status === 'UP') {
+            <span class="status-ok">{{ r.status }}</span>
+          } @else {
+            <span class="status-err">{{ r.status }}</span>
+          }
+        </p>
+        <table class="info-table">
+          @for (check of r.checks; track check.name) {
+            <tr>
+              <td>{{ check.name }}</td>
+              <td>
+                @if (check.status === 'UP') {
+                  <span class="status-ok">{{ check.status }}</span>
+                } @else {
+                  <span class="status-err">{{ check.status }}</span>
+                }
+              </td>
+              @if (check.error) {
+                <td class="error-cell">{{ check.error }}</td>
+              }
+            </tr>
+          }
+        </table>
+      </section>
+    }
+
+    <section class="section">
+      <h3>{{ 'diagnostics.unfinishedHeatsTitle' | translate }}</h3>
+      @if (d.unfinishedHeats.length === 0) {
+        <p>{{ 'diagnostics.noUnfinishedHeats' | translate }}</p>
+      } @else {
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>{{ 'diagnostics.event' | translate }}</th>
+              <th>{{ 'diagnostics.heat' | translate }}</th>
+              <th>{{ 'diagnostics.status' | translate }}</th>
+              <th>{{ 'diagnostics.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (heat of d.unfinishedHeats; track heat.heatId) {
+              <tr>
+                <td>{{ heat.eventName }}</td>
+                <td>#{{ heat.heatNumber }} ({{ 'diagnostics.round' | translate }} {{ heat.round }})</td>
+                <td>{{ heat.status }}</td>
+                <td class="actions-cell">
+                  <button class="btn-cancel" (click)="onRecover(heat, 'cancel')">
+                    {{ 'diagnostics.cancelHeat' | translate }}
+                  </button>
+                  <button class="btn-reset" (click)="onRecover(heat, 'reset')">
+                    {{ 'diagnostics.resetHeat' | translate }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+
+    <section class="section">
+      <h3>{{ 'diagnostics.supportTitle' | translate }}</h3>
+      <p>{{ 'diagnostics.supportHint' | translate }}</p>
+      <ul>
+        <li>{{ 'diagnostics.supportLogs' | translate }}: <code>~/.racingmanager/logs/</code></li>
+        <li>{{ 'diagnostics.supportBackups' | translate }}: <code>~/.racingmanager/backups/</code></li>
+        <li>{{ 'diagnostics.supportDb' | translate }}: <code>~/.racingmanager/racingmanager.db</code></li>
+      </ul>
+    </section>
+  }
+</div>

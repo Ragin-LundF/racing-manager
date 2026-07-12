@@ -26,7 +26,8 @@
       "raceControl": "Race Control",
       "results": "Results",
       "export": "Export",
-      "audit": "Audit Log"
+      "audit": "Audit Log",
+      "diagnostics": "Diagnostics"
     },
     "form": {
       "cancel": "Cancel",
@@ -244,7 +245,8 @@
       "overview": "Overview",
       "participants": "Participants",
       "preliminary": "Preliminary Rounds",
-      "races": "Races"
+      "races": "Races",
+      "diagnostics": "Diagnostics"
     },
     "shell": {
       "placeholder": "Event management will appear here.",
@@ -329,6 +331,40 @@
     "html": "Export HTML",
     "json": "Export JSON",
     "backup": "Export Backup"
+  },
+  "diagnostics": {
+    "title": "Diagnostics",
+    "refresh": "Refresh",
+    "loading": "Loading diagnostics...",
+    "databaseTitle": "Database",
+    "connected": "Connected",
+    "yes": "Yes",
+    "no": "No",
+    "pingMs": "Ping",
+    "eventsTitle": "Events",
+    "totalEvents": "Total Events",
+    "draftEvents": "Draft",
+    "activeEvents": "Active",
+    "completedEvents": "Completed",
+    "archivedEvents": "Archived",
+    "totalParticipants": "Total Participants",
+    "totalHeats": "Total Heats",
+    "readinessTitle": "Readiness",
+    "overallStatus": "Overall Status",
+    "unfinishedHeatsTitle": "Unfinished Heats",
+    "noUnfinishedHeats": "No unfinished heats found.",
+    "event": "Event",
+    "heat": "Heat",
+    "status": "Status",
+    "actions": "Actions",
+    "round": "Round",
+    "cancelHeat": "Cancel",
+    "resetHeat": "Reset to Planned",
+    "supportTitle": "Support Bundle",
+    "supportHint": "When reporting an issue, include the following files:",
+    "supportLogs": "Logs",
+    "supportBackups": "Backups",
+    "supportDb": "Database"
   },
   "audit": {
     "title": "Audit Log",

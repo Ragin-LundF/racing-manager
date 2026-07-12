@@ -3,6 +3,7 @@ package io.github.raginlundf.racingmanager.api.event
 import io.github.raginlundf.racingmanager.api.configureRouting
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
+import io.github.raginlundf.racingmanager.application.diagnostics.DiagnosticsService
 import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
 import io.github.raginlundf.racingmanager.application.audit.AuditService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
@@ -62,6 +63,20 @@ class EventRoutesTest {
     private val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
     private val resultsService = ResultsService(eventRepository, participantRepository, heatRepository, qualificationRepository, knockoutRepository, auditRepository)
     private val auditService = AuditService(auditRepository)
+    private val diagnosticsService = DiagnosticsService(
+        object : javax.sql.DataSource {
+            override fun getConnection() = throw java.sql.SQLException("not used in event test")
+            override fun getConnection(username: String?, password: String?) = throw java.sql.SQLException("not used in event test")
+            override fun getLogWriter() = null
+            override fun setLogWriter(out: java.io.PrintWriter?) {}
+            override fun setLoginTimeout(seconds: Int) {}
+            override fun getLoginTimeout() = 0
+            override fun <T> unwrap(iface: Class<T>?) = throw java.sql.SQLException("not a wrapper")
+            override fun isWrapperFor(iface: Class<*>?) = false
+            override fun getParentLogger() = java.util.logging.Logger.getLogger("")
+        },
+        eventRepository, participantRepository, heatRepository,
+    )
 
     @BeforeTest
     fun setUp() {
@@ -77,7 +92,7 @@ class EventRoutesTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService)
+        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService)
     }
 
     @Test

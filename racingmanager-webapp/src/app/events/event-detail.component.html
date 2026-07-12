@@ -22,6 +22,7 @@
           <button [routerLink]="['results']">{{ 'events.detail.results' | translate }}</button>
           <button [routerLink]="['export']">{{ 'events.detail.export' | translate }}</button>
           <button [routerLink]="['audit']">{{ 'events.detail.audit' | translate }}</button>
+          <button [routerLink]="['diagnostics']">{{ 'events.detail.diagnostics' | translate }}</button>
         }
         @if (e.status === 'ACTIVE') {
           <button (click)="onArchive()">{{ 'events.detail.archive' | translate }}</button>

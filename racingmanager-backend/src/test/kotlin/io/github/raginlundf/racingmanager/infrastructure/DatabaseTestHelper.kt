@@ -10,7 +10,8 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object DatabaseTestHelper {
 
-    private var dataSource: HikariDataSource? = null
+    var dataSource: HikariDataSource? = null
+        private set
 
     fun setUp() {
         val config = HikariConfig().apply {

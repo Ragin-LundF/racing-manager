@@ -17,6 +17,7 @@ import { KnockoutComponent } from './knockout/knockout.component';
 import { ResultsComponent } from './results/results.component';
 import { ExportComponent } from './export/export.component';
 import { AuditComponent } from './audit/audit.component';
+import { DiagnosticsComponent } from './diagnostics/diagnostics.component';
 
 // Language is a runtime concern (ngx-translate + localStorage), so routes carry
 // no locale prefix.
@@ -32,6 +33,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', component: EventListComponent },
+      { path: 'diagnostics', component: DiagnosticsComponent },
       { path: 'new', component: EventFormComponent },
       {
         path: ':id',
@@ -49,6 +51,7 @@ export const routes: Routes = [
           { path: 'results', component: ResultsComponent },
           { path: 'export', component: ExportComponent },
           { path: 'audit', component: AuditComponent },
+          { path: 'diagnostics', component: DiagnosticsComponent },
         ],
       },
     ],

@@ -47,6 +47,16 @@
         <span class="nav-item disabled"><span class="nav-icon">◔</span><span>{{ 'racemanager.nav.preliminary' | translate }}</span></span>
         <span class="nav-item disabled"><span class="nav-icon">⚑</span><span>{{ 'racemanager.nav.races' | translate }}</span></span>
       }
+
+      <a
+        class="nav-item"
+        [routerLink]="['/', 'racemanager', 'diagnostics']"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <span class="nav-icon">◎</span>
+        <span>{{ 'racemanager.nav.diagnostics' | translate }}</span>
+      </a>
     </nav>
 
     <div class="nav-footer">

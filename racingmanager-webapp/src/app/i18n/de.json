@@ -26,7 +26,8 @@
       "raceControl": "Rennsteuerung",
       "results": "Ergebnisse",
       "export": "Export",
-      "audit": "Prüfprotokoll"
+      "audit": "Prüfprotokoll",
+      "diagnostics": "Diagnose"
     },
     "form": {
       "cancel": "Abbrechen",
@@ -244,7 +245,8 @@
       "overview": "Übersicht",
       "participants": "Teilnehmer",
       "preliminary": "Vorrunden",
-      "races": "Rennen"
+      "races": "Rennen",
+      "diagnostics": "Diagnose"
     },
     "shell": {
       "placeholder": "Eventverwaltung erscheint hier.",
@@ -329,6 +331,40 @@
     "html": "HTML exportieren",
     "json": "JSON exportieren",
     "backup": "Backup exportieren"
+  },
+  "diagnostics": {
+    "title": "Diagnose",
+    "refresh": "Aktualisieren",
+    "loading": "Lade Diagnose...",
+    "databaseTitle": "Datenbank",
+    "connected": "Verbunden",
+    "yes": "Ja",
+    "no": "Nein",
+    "pingMs": "Antwortzeit",
+    "eventsTitle": "Veranstaltungen",
+    "totalEvents": "Veranstaltungen gesamt",
+    "draftEvents": "Entwurf",
+    "activeEvents": "Aktiv",
+    "completedEvents": "Abgeschlossen",
+    "archivedEvents": "Archiviert",
+    "totalParticipants": "Teilnehmer gesamt",
+    "totalHeats": "Läufe gesamt",
+    "readinessTitle": "Bereitschaft",
+    "overallStatus": "Gesamtstatus",
+    "unfinishedHeatsTitle": "Unvollständige Läufe",
+    "noUnfinishedHeats": "Keine unvollständigen Läufe gefunden.",
+    "event": "Veranstaltung",
+    "heat": "Lauf",
+    "status": "Status",
+    "actions": "Aktionen",
+    "round": "Runde",
+    "cancelHeat": "Abbrechen",
+    "resetHeat": "Auf Geplant zurücksetzen",
+    "supportTitle": "Support-Paket",
+    "supportHint": "Fügen Sie bei der Fehlermeldung folgende Dateien bei:",
+    "supportLogs": "Protokolle",
+    "supportBackups": "Backups",
+    "supportDb": "Datenbank"
   },
   "audit": {
     "title": "Prüfprotokoll",
