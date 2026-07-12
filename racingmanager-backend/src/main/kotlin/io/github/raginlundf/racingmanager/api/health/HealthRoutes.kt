@@ -87,10 +87,11 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService) {
     }
 
     get("/api/v1/build-info") {
+        val pkg = BuildInfoResponseModel::class.java.`package`
         call.respond(
             BuildInfoResponseModel(
-                name = "racingmanager",
-                version = "1.0-SNAPSHOT",
+                name = pkg?.implementationTitle ?: "racingmanager",
+                version = pkg?.implementationVersion ?: "1.0-SNAPSHOT",
             ),
         )
     }

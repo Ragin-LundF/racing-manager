@@ -3,6 +3,7 @@ package io.github.raginlundf.racingmanager
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.raginlundf.racingmanager.api.configureRouting
 import io.github.raginlundf.racingmanager.api.configureSerialization
+import io.github.raginlundf.racingmanager.api.configureStaticContent
 import io.github.raginlundf.racingmanager.api.configureStatusPages
 import io.github.raginlundf.racingmanager.application.audit.AuditService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
@@ -74,6 +75,7 @@ fun Application.module() {
     configureLogging()
     configureSerialization()
     configureStatusPages()
+    configureStaticContent()
     val dataSource = configureDatabase()
     val diagnosticsService = DiagnosticsService(dataSource, eventRepository, participantRepository, heatRepository)
     diagnosticsService.findUnfinishedHeats().let { unfinished ->

@@ -6,7 +6,7 @@ task, never everything.
 
 ## Project overview
 
-Racing manager for pinewood-derby–style race events: create events, manage
+Racing manager for small race events: create events, manage
 participants, run qualification rounds and races, and show a spectator view.
 A Gradle multi-module repo with a Kotlin backend and an Angular web UI.
 
