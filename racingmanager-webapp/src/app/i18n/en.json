@@ -23,7 +23,10 @@
       "info": "Status: {{status}} | Lanes: {{lanes}} | Measurement: {{measurement}}",
       "knockout": "Knockout",
       "qualification": "Qualification",
-      "raceControl": "Race Control"
+      "raceControl": "Race Control",
+      "results": "Results",
+      "export": "Export",
+      "audit": "Audit Log"
     },
     "form": {
       "cancel": "Cancel",
@@ -301,6 +304,39 @@
       "label": "Username",
       "required": "Username is required (min. 3 characters)."
     }
+  },
+  "results": {
+    "title": "Results",
+    "completeButton": "Complete Event",
+    "reopenButton": "Reopen Event",
+    "qualificationTitle": "Qualification Rankings",
+    "knockoutTitle": "Knockout Results",
+    "rank": "Rank",
+    "startNumber": "#",
+    "name": "Name",
+    "club": "Club",
+    "bestTime": "Best Time",
+    "runs": "Runs",
+    "dnf": "DNF",
+    "empty": "No results available yet."
+  },
+  "export": {
+    "title": "Export & Backup",
+    "exportTitle": "Export Results",
+    "restoreTitle": "Restore from Backup",
+    "restoreHint": "Select a backup JSON file to restore event results.",
+    "csv": "Export CSV",
+    "html": "Export HTML",
+    "json": "Export JSON",
+    "backup": "Export Backup"
+  },
+  "audit": {
+    "title": "Audit Log",
+    "empty": "No audit entries found.",
+    "time": "Time",
+    "action": "Action",
+    "summary": "Summary",
+    "actor": "Actor"
   },
   "spectator": {
     "shell": {

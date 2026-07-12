@@ -1,0 +1,50 @@
+.export {
+  padding: var(--space-lg);
+
+  .header {
+    margin-bottom: var(--space-lg);
+  }
+
+  section {
+    margin-bottom: var(--space-xl);
+
+    h3 {
+      margin-bottom: var(--space-md);
+    }
+  }
+
+  .button-group {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+
+    button {
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      cursor: pointer;
+
+      &:hover {
+        background: var(--color-bg-hover);
+      }
+    }
+  }
+
+  .restore-section {
+    input[type="file"] {
+      display: block;
+      margin-top: var(--space-sm);
+    }
+  }
+
+  .error {
+    color: var(--color-error);
+    margin-bottom: var(--space-md);
+  }
+
+  .success {
+    color: var(--color-success);
+    margin-bottom: var(--space-md);
+  }
+}

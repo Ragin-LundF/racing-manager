@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.raginlundf.racingmanager.api.configureRouting
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
+import io.github.raginlundf.racingmanager.application.audit.AuditService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.SetupResult
 import io.github.raginlundf.racingmanager.application.event.EventService
@@ -65,6 +66,7 @@ fun Application.module() {
     val knockoutRepository = KnockoutRepository()
     val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
     val resultsService = ResultsService(eventRepository, participantRepository, heatRepository, qualificationRepository, knockoutRepository, auditRepository)
+    val auditService = AuditService(auditRepository)
     val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
     val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
 
@@ -75,5 +77,5 @@ fun Application.module() {
     seedDemoAdmin(authService)
     configureWebSockets()
     spectatorWebSocketService.start()
-    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService)
+    configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService)
 }

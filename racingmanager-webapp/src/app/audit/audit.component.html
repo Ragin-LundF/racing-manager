@@ -1,0 +1,34 @@
+<div class="audit">
+  <div class="header">
+    <h2>{{ 'audit.title' | translate }}</h2>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (entries().length === 0) {
+    <div class="empty">{{ 'audit.empty' | translate }}</div>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>{{ 'audit.time' | translate }}</th>
+          <th>{{ 'audit.action' | translate }}</th>
+          <th>{{ 'audit.summary' | translate }}</th>
+          <th>{{ 'audit.actor' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of entries(); track entry.id) {
+          <tr>
+            <td>{{ entry.occurredAt | date:'short' }}</td>
+            <td><span class="action-badge">{{ entry.action }}</span></td>
+            <td>{{ entry.summary }}</td>
+            <td>{{ entry.actorId ? (entry.actorId | slice:0:8) + '...' : '-' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

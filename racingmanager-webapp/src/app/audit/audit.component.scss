@@ -1,0 +1,45 @@
+.audit {
+  padding: var(--space-lg);
+
+  .header {
+    margin-bottom: var(--space-lg);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      padding: var(--space-sm);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+    }
+  }
+
+  .action-badge {
+    display: inline-block;
+    padding: 2px var(--space-xs);
+    border-radius: var(--radius-sm);
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    font-size: 0.8rem;
+    font-family: monospace;
+  }
+
+  .empty {
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: var(--space-xl);
+  }
+
+  .error {
+    color: var(--color-error);
+    margin-bottom: var(--space-md);
+  }
+}

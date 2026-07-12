@@ -1,5 +1,6 @@
 package io.github.raginlundf.racingmanager.api
 
+import io.github.raginlundf.racingmanager.api.audit.auditRoutes
 import io.github.raginlundf.racingmanager.api.auth.authRoutes
 import io.github.raginlundf.racingmanager.api.event.eventRoutes
 import io.github.raginlundf.racingmanager.api.health.healthRoutes
@@ -9,6 +10,7 @@ import io.github.raginlundf.racingmanager.api.participant.participantRoutes
 import io.github.raginlundf.racingmanager.api.qualification.qualificationRoutes
 import io.github.raginlundf.racingmanager.api.results.resultsRoutes
 import io.github.raginlundf.racingmanager.api.spectator.spectatorRoutes
+import io.github.raginlundf.racingmanager.application.audit.AuditService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
@@ -22,7 +24,7 @@ import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebS
 import io.ktor.server.application.Application
 import io.ktor.server.routing.routing
 
-fun Application.configureRouting(authService: AuthService, eventService: EventService, participantService: ParticipantService, heatService: HeatService, qualificationService: QualificationService, knockoutService: KnockoutService, resultsService: ResultsService, spectatorService: SpectatorService, eventRepository: EventRepository, webSocketService: SpectatorWebSocketService) {
+fun Application.configureRouting(authService: AuthService, eventService: EventService, participantService: ParticipantService, heatService: HeatService, qualificationService: QualificationService, knockoutService: KnockoutService, resultsService: ResultsService, spectatorService: SpectatorService, eventRepository: EventRepository, webSocketService: SpectatorWebSocketService, auditService: AuditService) {
     routing {
         healthRoutes()
         authRoutes(authService)
@@ -32,6 +34,7 @@ fun Application.configureRouting(authService: AuthService, eventService: EventSe
         qualificationRoutes(authService, qualificationService)
         knockoutRoutes(authService, knockoutService)
         resultsRoutes(authService, resultsService)
+        auditRoutes(authService, auditService)
         spectatorRoutes(spectatorService, eventRepository, webSocketService)
     }
 }

@@ -4,12 +4,14 @@ import io.github.raginlundf.racingmanager.api.configureRouting
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
 import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
+import io.github.raginlundf.racingmanager.application.audit.AuditService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
+import io.github.raginlundf.racingmanager.application.results.ResultsService
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
@@ -57,6 +59,8 @@ class AuthRoutesTest {
     private val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
     private val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
     private val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
+    private val resultsService = ResultsService(eventRepository, participantRepository, heatRepository, qualificationRepository, knockoutRepository, auditRepository)
+    private val auditService = AuditService(auditRepository)
 
     @BeforeTest
     fun setUp() {
@@ -243,7 +247,7 @@ class AuthRoutesTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, spectatorService, eventRepository, spectatorWebSocketService)
+        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService)
     }
 
     private fun extractSessionId(body: String): String {

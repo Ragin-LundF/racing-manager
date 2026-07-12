@@ -1,0 +1,29 @@
+<div class="export">
+  <div class="header">
+    <h2>{{ 'export.title' | translate }}</h2>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (restoreResult()) {
+    <p class="success">{{ restoreResult() }}</p>
+  }
+
+  <section class="export-section">
+    <h3>{{ 'export.exportTitle' | translate }}</h3>
+    <div class="button-group">
+      <button (click)="onExportCsv()">{{ 'export.csv' | translate }}</button>
+      <button (click)="onExportHtml()">{{ 'export.html' | translate }}</button>
+      <button (click)="onExportJson()">{{ 'export.json' | translate }}</button>
+      <button (click)="onExportBackup()">{{ 'export.backup' | translate }}</button>
+    </div>
+  </section>
+
+  <section class="restore-section">
+    <h3>{{ 'export.restoreTitle' | translate }}</h3>
+    <p>{{ 'export.restoreHint' | translate }}</p>
+    <input type="file" accept=".json" (change)="onFileSelected($event)" />
+  </section>
+</div>

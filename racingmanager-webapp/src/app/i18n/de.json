@@ -23,7 +23,10 @@
       "info": "Status: {{status}} | Spuren: {{lanes}} | Messung: {{measurement}}",
       "knockout": "K.o.-Phase",
       "qualification": "Qualifikation",
-      "raceControl": "Rennsteuerung"
+      "raceControl": "Rennsteuerung",
+      "results": "Ergebnisse",
+      "export": "Export",
+      "audit": "Prüfprotokoll"
     },
     "form": {
       "cancel": "Abbrechen",
@@ -301,6 +304,39 @@
       "label": "Benutzername",
       "required": "Benutzername ist erforderlich (min. 3 Zeichen)."
     }
+  },
+  "results": {
+    "title": "Ergebnisse",
+    "completeButton": "Veranstaltung abschließen",
+    "reopenButton": "Veranstaltung wieder öffnen",
+    "qualificationTitle": "Qualifikations-Rangliste",
+    "knockoutTitle": "K.o.-Ergebnisse",
+    "rank": "Platz",
+    "startNumber": "#",
+    "name": "Name",
+    "club": "Verein",
+    "bestTime": "Beste Zeit",
+    "runs": "Läufe",
+    "dnf": "DNF",
+    "empty": "Noch keine Ergebnisse verfügbar."
+  },
+  "export": {
+    "title": "Export & Backup",
+    "exportTitle": "Ergebnisse exportieren",
+    "restoreTitle": "Aus Backup wiederherstellen",
+    "restoreHint": "Wählen Sie eine Backup-JSON-Datei aus, um Veranstaltungsergebnisse wiederherzustellen.",
+    "csv": "CSV exportieren",
+    "html": "HTML exportieren",
+    "json": "JSON exportieren",
+    "backup": "Backup exportieren"
+  },
+  "audit": {
+    "title": "Prüfprotokoll",
+    "empty": "Keine Prüfprotokolleinträge gefunden.",
+    "time": "Zeit",
+    "action": "Aktion",
+    "summary": "Zusammenfassung",
+    "actor": "Akteur"
   },
   "spectator": {
     "shell": {

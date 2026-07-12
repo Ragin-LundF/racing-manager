@@ -15,10 +15,15 @@
           <button (click)="onActivate()">{{ 'events.detail.activate' | translate }}</button>
           <a [routerLink]="['edit']">{{ 'events.detail.edit' | translate }}</a>
         }
-        @if (e.status === 'ACTIVE') {
+        @if (e.status === 'ACTIVE' || e.status === 'COMPLETED') {
           <button [routerLink]="['race-control']">{{ 'events.detail.raceControl' | translate }}</button>
           <button [routerLink]="['qualification']">{{ 'events.detail.qualification' | translate }}</button>
           <button [routerLink]="['knockout']">{{ 'events.detail.knockout' | translate }}</button>
+          <button [routerLink]="['results']">{{ 'events.detail.results' | translate }}</button>
+          <button [routerLink]="['export']">{{ 'events.detail.export' | translate }}</button>
+          <button [routerLink]="['audit']">{{ 'events.detail.audit' | translate }}</button>
+        }
+        @if (e.status === 'ACTIVE') {
           <button (click)="onArchive()">{{ 'events.detail.archive' | translate }}</button>
         }
       </div>

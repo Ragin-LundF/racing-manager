@@ -2,10 +2,10 @@ package io.github.raginlundf.racingmanager.infrastructure.repositories
 
 import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.infrastructure.tables.AuditEntryTable
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -35,12 +35,17 @@ class AuditRepository {
         limit: Int = 100,
         offset: Int = 0,
     ): List<AuditEntryEntity> = transaction {
-        var query: Query = AuditEntryTable.selectAll()
-        if (action != null) query = query.adjustWhere { it?.and(AuditEntryTable.action eq action) ?: (AuditEntryTable.action eq action) }
-        if (targetType != null) query = query.adjustWhere { it?.and(AuditEntryTable.targetType eq targetType) ?: (AuditEntryTable.targetType eq targetType) }
-        if (targetId != null) query = query.adjustWhere { it?.and(AuditEntryTable.targetId eq targetId) ?: (AuditEntryTable.targetId eq targetId) }
-        if (actorId != null) query = query.adjustWhere { it?.and(AuditEntryTable.actorId eq actorId) ?: (AuditEntryTable.actorId eq actorId) }
-        query
+        val conditions = mutableListOf<Op<Boolean>>()
+        if (action != null) conditions.add(AuditEntryTable.action eq action)
+        if (targetType != null) conditions.add(AuditEntryTable.targetType eq targetType)
+        if (targetId != null) conditions.add(AuditEntryTable.targetId eq targetId)
+        if (actorId != null) conditions.add(AuditEntryTable.actorId eq actorId)
+
+        AuditEntryTable.selectAll()
+            .let { query ->
+                if (conditions.isEmpty()) query
+                else query.where { conditions.reduce { a, b -> a and b } }
+            }
             .orderBy(AuditEntryTable.occurredAt to SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())

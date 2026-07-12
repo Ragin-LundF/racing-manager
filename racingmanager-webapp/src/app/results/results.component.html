@@ -1,0 +1,83 @@
+<div class="results">
+  <div class="header">
+    <h2>{{ 'results.title' | translate }}</h2>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (snapshot(); as s) {
+    <div class="status-bar">
+      <span class="status-badge {{ s.event.status | lowercase }}">{{ s.event.status }}</span>
+      @if (s.event.status === 'ACTIVE') {
+        <button class="btn-complete" (click)="onComplete()" [disabled]="completing()">
+          {{ 'results.completeButton' | translate }}
+        </button>
+      }
+      @if (s.event.status === 'COMPLETED') {
+        <button class="btn-reopen" (click)="onReopen()" [disabled]="reopening()">
+          {{ 'results.reopenButton' | translate }}
+        </button>
+      }
+    </div>
+
+    @if (s.qualificationRankings.length > 0) {
+      <section class="rankings">
+        <h3>{{ 'results.qualificationTitle' | translate }}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'results.rank' | translate }}</th>
+              <th>{{ 'results.startNumber' | translate }}</th>
+              <th>{{ 'results.name' | translate }}</th>
+              <th>{{ 'results.club' | translate }}</th>
+              <th>{{ 'results.bestTime' | translate }}</th>
+              <th>{{ 'results.runs' | translate }}</th>
+              <th>{{ 'results.dnf' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of s.qualificationRankings; track entry.participantId) {
+              <tr>
+                <td>{{ entry.rank }}</td>
+                <td>{{ entry.startNumber }}</td>
+                <td>{{ entry.firstName }} {{ entry.lastName }}</td>
+                <td>{{ entry.club }}</td>
+                <td>{{ entry.bestTimeNanos !== null ? (entry.bestTimeNanos / 1000000) + ' ms' : '-' }}</td>
+                <td>{{ entry.completedRuns }}</td>
+                <td>{{ entry.dnfCount }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+
+    @if (s.knockoutResults.length > 0) {
+      <section class="knockout-results">
+        <h3>{{ 'results.knockoutTitle' | translate }}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'results.rank' | translate }}</th>
+              <th>{{ 'results.name' | translate }}</th>
+              <th>{{ 'results.club' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of s.knockoutResults; track entry.participantId) {
+              <tr>
+                <td>{{ entry.rank }}</td>
+                <td>{{ entry.firstName }} {{ entry.lastName }}</td>
+                <td>{{ entry.club }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  } @else {
+    <div class="empty">{{ 'results.empty' | translate }}</div>
+  }
+</div>
