@@ -1,9 +1,15 @@
 ---
 name: rest-api-test-harness
-description: Endpoint inventory, scenario matrix, and required assertions. Use for changed REST endpoints.
+description: Endpoint inventory, scenario matrix, and required assertions for Ktor testApplication tests. Use for changed REST endpoints.
 ---
 
 # REST API Test Harness
+
+REST endpoints are tested with Ktor's `testApplication { }` host: configure the
+app with the production plugins/routing, then drive it through the built-in
+`client` (`client.get`/`post`/`put`/`delete`) over the real HTTP boundary and
+assert on the `HttpResponse`. Authenticate the same way a client would — obtain a
+JWT via `/api/v1/auth/login` and send `Authorization: Bearer <token>`.
 
 ## Endpoint inventory
 
@@ -32,6 +38,6 @@ Per changed endpoint identify: method and path, required scopes, request headers
 
 ## Prohibited shortcuts
 
-- No direct controller calls for REST behavior scenarios.
-- No bypassing filters except in tests explicitly below the HTTP boundary.
+- No calling route handlers or services directly for REST behavior scenarios — go through the `testApplication` `client`.
+- No bypassing authentication/status-page plugins except in tests explicitly below the HTTP boundary.
 - No status-code-only tests for endpoints with response contracts.

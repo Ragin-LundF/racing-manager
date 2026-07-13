@@ -22,7 +22,8 @@ rest of the app.
 2. **Client first.** In `libs/clients/<domain>/`, add or extend
    `<domain>.client.ts` (one method per endpoint, returns `Observable`) and the
    request/response `interface`s in `<domain>.models.ts`. Inject `API_BASE_URL`;
-   never hardcode the host or set session headers.
+   never hardcode the host or set `Authorization` headers (the bearer interceptor
+   attaches them).
 3. **Component (three files).** Create `<feature>.component.{ts,html,scss}`:
    - Standalone, selector `app-<feature>`, `templateUrl` + `styleUrl`.
    - Dependencies via `inject()`.

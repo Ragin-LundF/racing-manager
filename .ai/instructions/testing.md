@@ -24,8 +24,9 @@ description: Testing rules — coverage expectations, kotlin.test usage, anti-ch
 
 ## REST API tests
 
-- Test REST APIs through Cucumber/Gherkin scenarios (see `rest-api-cucumber.md`) when the BDD Cucumber Gherkin library is available.
-- Controller-only unit tests do not replace REST API scenarios.
+- Test REST APIs through Ktor's `testApplication { }` host, driving the routes with the built-in `client` over the real HTTP boundary (see `harness/rest-api-test-harness.md`).
+- Configure the application under test with the same plugins/routing the server uses (`configureSerialization`, `configureStatusPages`, `configureRouting`, …); assert `response.status` and the response body.
+- Direct service/route-handler calls do not replace HTTP-level REST tests.
 
 ## Coverage expectations
 
@@ -57,7 +58,7 @@ Name the behavior, not the method: `returns report when request is valid`, `reje
 A change is complete only when:
 
 1. Unit tests cover changed function behavior and parameters.
-2. REST behavior is covered by Cucumber scenarios when relevant.
+2. REST behavior is covered by Ktor `testApplication` tests when relevant.
 3. Negative, edge, and error paths are covered.
 4. Tests fail without the production change or with a realistic regression.
 5. Static analysis and formatting checks pass.

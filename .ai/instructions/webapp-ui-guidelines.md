@@ -33,7 +33,7 @@ src/app/
     <feature>-list.component.{ts,html,scss,spec.ts}
     <feature>-form.component.{ts,html,scss,spec.ts}
   libs/clients/
-    core/            api.config.ts, session.interceptor.ts   # shared client plumbing
+    core/            api.config.ts, auth.interceptor.ts       # shared client plumbing
     <domain>/        <domain>.client.ts, <domain>.models.ts   # one folder per API domain
   core/              app-wide services (auth, selected-event, guards)
   i18n/              en.json, de.json, loader, locale service
@@ -52,8 +52,8 @@ src/app/
 ## HTTP clients
 
 One injectable client per backend domain. Thin — one method per endpoint,
-returning an `Observable`. No caching, no state, no header wrangling (the session
-interceptor attaches `X-Session-Id` globally).
+returning an `Observable`. No caching, no state, no header wrangling (the bearer
+interceptor attaches `Authorization: Bearer <token>` globally).
 
 ```ts
 @Injectable({ providedIn: 'root' })
@@ -189,10 +189,15 @@ callback does **not** trigger change detection. The template will not update.
 
 ## Auth and session
 
-- The session id is attached to every request by `session.interceptor.ts`. Clients
-  and components never set `X-Session-Id` themselves.
-- Session state lives in `core/auth.service.ts` (`session`, `isAuthenticated`
-  signals). Guard protected routes with `authGuard`.
+- Auth is JWT-based (short-lived access token + refresh token). `auth.interceptor.ts`
+  provides `bearerInterceptor` (attaches `Authorization: Bearer <token>` to every
+  request, skipping any that already carry an explicit `Authorization` header) and
+  `authErrorInterceptor` (on `401`, silently refreshes via
+  `AuthService.refreshNow()` and retries once). Clients and components never set
+  `Authorization` themselves.
+- Session state lives in `core/auth.service.ts`: `session` and `isAuthenticated`
+  signals, `getAccessToken()`, `login()`, `refreshNow()`, and `logout()`. Guard
+  protected routes with `authGuard`.
 
 ## Testing
 

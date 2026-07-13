@@ -32,8 +32,7 @@ wired into Gradle via `@angular/build`, but day-to-day UI work uses npm directly
   (RS256, `com.auth0:java-jwt`): short-lived access tokens carried via
   `Authorization: Bearer`, opaque DB-backed refresh tokens. Multi-tenant
   (`tenants`/`memberships`), scoped `rm:supervisor`/`rm:admin`/`rm:user`/
-  `rm:spectator`. See `.plan/tenant/implementation-plan.md` for the full
-  tenant/JWT/sync design and its slice-by-slice implementation notes.
+  `rm:spectator`.
 - **Logging:** kotlin-logging over Log4j2.
 - **Tests:** JUnit 5 platform + `kotlin.test`, Ktor `server-test-host`,
   `kotlinx-coroutines-test`.
@@ -51,10 +50,8 @@ Config: `src/main/resources/application.conf`. The `demo` profile seeds a defaul
 `admin` / `admin` user on first run.
 
 `openapi/openapi-*.yaml` documents the auth/tenant/admin/spectator/bootstrap/sync
-API surface added by the tenant plan. **Deviation from `module-architecture.md`'s
-generated-module description below:** this repo hand-writes Ktor routes and DTOs
-directly; these OpenAPI files are a contract reference for API consumers, not a
-codegen input — there is no `<module>-rest-api`/`<module>-dto` generation step.
+API surface. This repo hand-writes Ktor routes and DTOs
+directly; these OpenAPI files are a contract reference for API consumers, not a codegen input.
 
 ### Webapp — `racingmanager-webapp`
 
@@ -102,11 +99,11 @@ IDE run configs live in `.run/` (`ApplicationKt`, `Angular Server`).
 
 | Task | Read |
 |---|---|
-| Module boundaries, package layout, DTO/domain boundaries, adapters, Gradle/Maven structure | `instructions/module-architecture.md` |
+| Writing or changing Kotlin production code (backend) | `instructions/coding-guidelines.md`, `harness/code-change-harness.md`, `skills/kotlin-code-generation.skill.md` |
 | REST API design, `openapi-*.yaml`, status codes, paging, sorting, errors, scopes, compatibility | `instructions/api-guidelines.md`, `instructions/security.md`, `skills/openapi-authoring.skill.md` |
 | Unit tests and coverage | `instructions/testing.md`, `harness/test-generation-harness.md`, `harness/no-cheating-test-harness.md` |
-| REST API tests (Cucumber/Gherkin) | `instructions/rest-api-cucumber.md`, `harness/rest-api-test-harness.md`, `skills/rest-api-cucumber-testing.skill.md` |
-| Static analysis, Detekt, SonarQube, ktlint, formatting | `instructions/static-analysis.md`, `instructions/editorconfig-style.md`, `harness/static-analysis-remediation-harness.md` |
+| REST API tests (Ktor `testApplication` host) | `instructions/testing.md`, `harness/rest-api-test-harness.md` |
+| Static analysis, Detekt, SonarQube, ktlint, formatting | `instructions/static-analysis.md`, `instructions/editorconfig-style.md`, `harness/static-analysis-remediation-harness.md`, `skills/static-analysis-cleanup.skill.md` |
 | Code review or refactoring | `harness/code-change-harness.md`, `harness/review-harness.md` |
 | Webapp UI — new/changed Angular page, view, component, or API client (`racingmanager-webapp`) | `instructions/webapp-ui-guidelines.md`, `skills/webapp-page-authoring.skill.md` |
 

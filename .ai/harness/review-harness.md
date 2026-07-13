@@ -21,4 +21,4 @@ Per finding: severity (blocker/major/minor/nit), location, issue, why it matters
 
 ## Approval criteria
 
-Approve only when behavior matches the requested change, relevant meaningful tests exist, REST changes have Cucumber coverage, static analysis and formatting are addressed, and no security or compatibility regression is visible.
+Approve only when behavior matches the requested change, relevant meaningful tests exist, REST changes have Ktor `testApplication` coverage, static analysis and formatting are addressed, and no security or compatibility regression is visible.
