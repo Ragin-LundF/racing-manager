@@ -9,6 +9,7 @@ import io.github.raginlundf.racingmanager.api.health.healthRoutes
 import io.github.raginlundf.racingmanager.api.heat.heatRoutes
 import io.github.raginlundf.racingmanager.api.knockout.knockoutRoutes
 import io.github.raginlundf.racingmanager.api.participant.participantRoutes
+import io.github.raginlundf.racingmanager.api.racedevice.raceDeviceRoutes
 import io.github.raginlundf.racingmanager.api.qualification.qualificationRoutes
 import io.github.raginlundf.racingmanager.api.results.resultsRoutes
 import io.github.raginlundf.racingmanager.api.spectator.spectatorRoutes
@@ -27,14 +28,16 @@ import io.github.raginlundf.racingmanager.application.bootstrap.LocalPackageServ
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.application.sync.SyncService
 import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
+import io.github.raginlundf.racingmanager.infrastructure.gateway.ReconfigurableMeasurementGateway
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RaceDeviceSettingsRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SpectatorExchangeCodeRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.ktor.server.application.Application
 import io.ktor.server.routing.routing
 
-fun Application.configureRouting(authService: AuthService, jwtService: JwtService, eventService: EventService, participantService: ParticipantService, heatService: HeatService, qualificationService: QualificationService, knockoutService: KnockoutService, resultsService: ResultsService, spectatorService: SpectatorService, eventRepository: EventRepository, webSocketService: SpectatorWebSocketService, auditService: AuditService, diagnosticsService: DiagnosticsService, deploymentMode: DeploymentMode, spectatorExchangeCodeRepository: SpectatorExchangeCodeRepository, localPackageService: LocalPackageService, syncService: SyncService) {
+fun Application.configureRouting(authService: AuthService, jwtService: JwtService, eventService: EventService, participantService: ParticipantService, heatService: HeatService, qualificationService: QualificationService, knockoutService: KnockoutService, resultsService: ResultsService, spectatorService: SpectatorService, eventRepository: EventRepository, webSocketService: SpectatorWebSocketService, auditService: AuditService, diagnosticsService: DiagnosticsService, deploymentMode: DeploymentMode, spectatorExchangeCodeRepository: SpectatorExchangeCodeRepository, localPackageService: LocalPackageService, syncService: SyncService, raceDeviceGateway: ReconfigurableMeasurementGateway, raceDeviceSettingsRepository: RaceDeviceSettingsRepository) {
     routing {
         healthRoutes(diagnosticsService, jwtService)
         authRoutes(authService, jwtService, deploymentMode)
@@ -50,5 +53,6 @@ fun Application.configureRouting(authService: AuthService, jwtService: JwtServic
         spectatorRoutes(jwtService, spectatorService, eventRepository, webSocketService, spectatorExchangeCodeRepository)
         bootstrapRoutes(jwtService, localPackageService, deploymentMode)
         syncRoutes(jwtService, syncService, deploymentMode)
+        raceDeviceRoutes(jwtService, raceDeviceGateway, raceDeviceSettingsRepository, deploymentMode)
     }
 }

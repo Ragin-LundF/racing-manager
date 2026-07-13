@@ -324,6 +324,7 @@
       "preliminary": "Vorrunden",
       "races": "Rennen",
       "raspberryPi": "Raspberry-Pi-API",
+      "raspberryPiConfig": "Raspberry-Pi-Einrichtung",
       "diagnostics": "Diagnose",
       "tenant": "Mandant"
     },
@@ -388,6 +389,30 @@
       "prepareRace": "Schließt und schärft das Tor, aktiviert die angegebenen Bahnen und prüft die Sensoren — ohne die Autos freizugeben. Antworte mit raceReady oder mit error, falls ein Sensor bereits blockiert ist.",
       "reset": "Setzt das Gerät in den Ausgangszustand zurück. Ein Reset während eines Rennens bricht dieses zuerst ab.",
       "startRace": "Gibt das gemeinsame Tor einmal frei, nimmt den monotonen Startzeitpunkt und antwortet mit raceStarted. Nur einmal pro Rennen annehmen."
+    },
+    "config": {
+      "title": "Raspberry-Pi-Einrichtung",
+      "intro": "Legen Sie fest, wie die App mit dem Zeitmessgerät verbunden wird. Nutzen Sie den Simulator zum Testen ohne Hardware oder verbinden Sie die App mit Ihrem Raspberry Pi. Änderungen werden sofort übernommen — kein Neustart nötig.",
+      "mode": {
+        "label": "Gerät",
+        "simulated": "Simulator (keine Hardware)",
+        "hardware": "Raspberry Pi (Hardware)"
+      },
+      "endpoint": {
+        "label": "Raspberry-Pi-Adresse",
+        "hint": "WebSocket-URL des Geräts, z. B. ws://192.168.1.100:8080/race"
+      },
+      "timeout": {
+        "label": "Ziel-Timeout (ms)"
+      },
+      "save": "Speichern",
+      "test": "Verbindung testen",
+      "testing": "Test läuft…",
+      "saved": "Einstellungen gespeichert und übernommen.",
+      "saveError": "Einstellungen konnten nicht gespeichert werden. Bitte Adresse prüfen und erneut versuchen.",
+      "loadError": "Einstellungen konnten nicht geladen werden.",
+      "testSuccess": "Verbindung erfolgreich ({{ms}} ms).",
+      "testFailed": "Verbindung fehlgeschlagen: {{message}}"
     },
     "connection": {
       "colField": "Feld",

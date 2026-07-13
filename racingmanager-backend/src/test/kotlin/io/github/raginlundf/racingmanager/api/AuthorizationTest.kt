@@ -131,7 +131,7 @@ class AuthorizationTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, DeploymentMode.LOCAL, spectatorExchangeCodeRepository, localPackageService, syncService)
+        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, DeploymentMode.LOCAL, spectatorExchangeCodeRepository, localPackageService, syncService, io.github.raginlundf.racingmanager.api.testRaceDeviceGateway(), io.github.raginlundf.racingmanager.api.testRaceDeviceSettingsRepository())
     }
 
     /** Creates a second tenant with its own admin — `AuthService.setupAdmin`

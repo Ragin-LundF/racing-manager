@@ -35,6 +35,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.PairedInst
 import io.github.raginlundf.racingmanager.infrastructure.repositories.PairingCodeRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RaceDeviceSettingsRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SpectatorExchangeCodeRepository
@@ -83,6 +84,9 @@ private fun Application.configureJwtKeyProvider(deploymentMode: DeploymentMode):
     }
 
 fun Application.module() {
+    // Connect the database first: the race-device gateway reads its persisted
+    // settings during construction below, so the connection must already exist.
+    val dataSource = configureDatabase()
     val userRepository = UserRepository()
     val auditRepository = AuditRepository()
     val eventRepository = EventRepository()
@@ -94,7 +98,8 @@ fun Application.module() {
     val passwordHasher = PasswordHasher()
     val eventService = EventService(eventRepository, participantRepository, auditRepository)
     val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
-    val measurementGateway = configureMeasurementGateway()
+    val raceDeviceSettingsRepository = RaceDeviceSettingsRepository()
+    val measurementGateway = configureMeasurementGateway(raceDeviceSettingsRepository)
     val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository, measurementGateway)
     val qualificationRepository = QualificationRepository()
     val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
@@ -116,7 +121,6 @@ fun Application.module() {
     configureStatusPages()
     configureStaticContent()
     val deploymentMode = configureDeploymentMode()
-    val dataSource = configureDatabase()
     val jwtKeyProvider = configureJwtKeyProvider(deploymentMode)
     val jwtService = JwtService(jwtKeyProvider)
     val authService = AuthService(userRepository, tenantRepository, membershipRepository, refreshTokenRepository, auditRepository, passwordHasher, jwtService)
@@ -134,5 +138,5 @@ fun Application.module() {
     seedDemoAdmin(authService, deploymentMode)
     configureWebSockets()
     spectatorWebSocketService.start()
-    configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, deploymentMode, spectatorExchangeCodeRepository, localPackageService, syncService)
+    configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, deploymentMode, spectatorExchangeCodeRepository, localPackageService, syncService, measurementGateway, raceDeviceSettingsRepository)
 }

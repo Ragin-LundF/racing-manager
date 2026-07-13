@@ -23,6 +23,7 @@ import { AuditComponent } from './audit/audit.component';
 import { DiagnosticsComponent } from './diagnostics/diagnostics.component';
 import { TenantSettingsComponent } from './tenant/tenant-settings.component';
 import { RaspberryPiComponent } from './raspberry-pi/raspberry-pi.component';
+import { RaceDeviceSettingsComponent } from './raspberry-pi/race-device-settings.component';
 
 // Language is a runtime concern (ngx-translate + localStorage), so routes carry
 // no locale prefix.
@@ -42,6 +43,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', component: EventListComponent },
+      { path: 'race-device', component: RaceDeviceSettingsComponent, canActivate: [adminGuard] },
       { path: 'raspberry-pi', component: RaspberryPiComponent },
       { path: 'diagnostics', component: DiagnosticsComponent, canActivate: [adminGuard] },
       { path: 'tenant', component: TenantSettingsComponent, canActivate: [adminGuard] },

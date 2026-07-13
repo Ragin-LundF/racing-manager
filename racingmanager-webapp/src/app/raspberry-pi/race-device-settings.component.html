@@ -1,0 +1,54 @@
+<div class="race-device-settings">
+  <div class="header">
+    <h2>{{ 'raspberryPi.config.title' | translate }}</h2>
+  </div>
+
+  <p class="intro">{{ 'raspberryPi.config.intro' | translate }}</p>
+
+  @if (error(); as err) {
+    <p class="error">{{ err }}</p>
+  }
+  @if (success(); as ok) {
+    <p class="success">{{ ok }}</p>
+  }
+
+  <form #form="ngForm" (ngSubmit)="onSave()">
+    <label>
+      <span>{{ 'raspberryPi.config.mode.label' | translate }}</span>
+      <select name="mode" [(ngModel)]="mode">
+        <option value="SIMULATED">{{ 'raspberryPi.config.mode.simulated' | translate }}</option>
+        <option value="HARDWARE">{{ 'raspberryPi.config.mode.hardware' | translate }}</option>
+      </select>
+    </label>
+
+    @if (mode === 'HARDWARE') {
+      <label>
+        <span>{{ 'raspberryPi.config.endpoint.label' | translate }}</span>
+        <input
+          name="endpoint"
+          [(ngModel)]="endpoint"
+          required
+          pattern="wss?://.+"
+          placeholder="ws://192.168.1.100:8080/race"
+        />
+        <small class="hint">{{ 'raspberryPi.config.endpoint.hint' | translate }}</small>
+      </label>
+    }
+
+    <label>
+      <span>{{ 'raspberryPi.config.timeout.label' | translate }}</span>
+      <input type="number" name="finishTimeoutMs" [(ngModel)]="finishTimeoutMs" required min="1" />
+    </label>
+
+    <div class="actions">
+      <button type="submit" [disabled]="form.invalid">{{ 'raspberryPi.config.save' | translate }}</button>
+      <button type="button" (click)="onTest()" [disabled]="form.invalid || testing()">
+        {{ (testing() ? 'raspberryPi.config.testing' : 'raspberryPi.config.test') | translate }}
+      </button>
+    </div>
+  </form>
+
+  @if (testResult(); as result) {
+    <p [class.success]="testOk()" [class.error]="!testOk()">{{ result }}</p>
+  }
+</div>

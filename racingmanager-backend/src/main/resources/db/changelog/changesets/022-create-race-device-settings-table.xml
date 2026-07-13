@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="create-race-device-settings-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="race_device_settings"/></not>
+        </preConditions>
+        <createTable tableName="race_device_settings">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="mode" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="endpoint" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="finish_timeout_ms" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

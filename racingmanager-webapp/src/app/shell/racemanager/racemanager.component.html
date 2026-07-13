@@ -70,6 +70,18 @@
         </a>
       }
 
+      @if (authService.hasScope('rm:admin')) {
+        <a
+          class="nav-item"
+          [routerLink]="['/', 'racemanager', 'race-device']"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">🔧</span>
+          <span>{{ 'racemanager.nav.raspberryPiConfig' | translate }}</span>
+        </a>
+      }
+
       <a
         class="nav-item"
         [routerLink]="['/', 'racemanager', 'raspberry-pi']"

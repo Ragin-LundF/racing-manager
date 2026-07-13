@@ -15,6 +15,7 @@ import io.github.raginlundf.racingmanager.infrastructure.gateway.transport.RaceD
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -32,7 +33,7 @@ private val logger = KotlinLogging.logger {}
 class RaspberryPiMeasurementGateway(
     private val transport: RaceDeviceTransport,
     private val finishTimeoutMs: Long = DEFAULT_FINISH_TIMEOUT_MS,
-    scope: CoroutineScope = CoroutineScope(context = Dispatchers.Default),
+    private val scope: CoroutineScope = CoroutineScope(context = Dispatchers.Default),
 ) : MeasurementGateway {
     private val events = MutableSharedFlow<MeasurementGatewayEvent>(extraBufferCapacity = 64)
 
@@ -50,6 +51,15 @@ class RaspberryPiMeasurementGateway(
 
     override fun events(): Flow<MeasurementGatewayEvent> {
         return events.asSharedFlow()
+    }
+
+    /** Tears the gateway down: stops consuming device frames and closes the
+        transport (including its reconnect loop). Called when the
+        [ReconfigurableMeasurementGateway] swaps to new settings so an old
+        connection does not linger and keep reconnecting. */
+    suspend fun close() {
+        scope.cancel()
+        transport.close()
     }
 
     override suspend fun arm(heat: HeatEntity): GatewayArmResult {

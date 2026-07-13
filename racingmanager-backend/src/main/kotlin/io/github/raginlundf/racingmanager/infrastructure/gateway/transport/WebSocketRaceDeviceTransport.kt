@@ -3,6 +3,7 @@ package io.github.raginlundf.racingmanager.infrastructure.gateway.transport
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -47,6 +48,9 @@ class WebSocketRaceDeviceTransport(
     }
 
     override suspend fun close() {
+        // Cancel first so the listener's onClose/onError cannot schedule a
+        // reconnect after we have intentionally torn the connection down.
+        scope.cancel()
         socket?.sendClose(WebSocket.NORMAL_CLOSURE, "closing")
         socket = null
     }

@@ -324,6 +324,7 @@
       "preliminary": "Preliminary Rounds",
       "races": "Races",
       "raspberryPi": "Raspberry Pi API",
+      "raspberryPiConfig": "Raspberry Pi Setup",
       "diagnostics": "Diagnostics",
       "tenant": "Tenant"
     },
@@ -388,6 +389,30 @@
       "prepareRace": "Close and arm the gate, enable the given lanes, and verify the sensors — without releasing the cars. Reply with raceReady, or error if a sensor is already blocked.",
       "reset": "Return the device to its initial state. A reset during a race aborts it first.",
       "startRace": "Release the shared gate once, take the monotonic start timestamp, and reply with raceStarted. Accept it only once per race."
+    },
+    "config": {
+      "title": "Raspberry Pi Setup",
+      "intro": "Choose how the app connects to the race timing device. Use the simulator to test without hardware, or point the app at your Raspberry Pi. Changes apply immediately — no restart needed.",
+      "mode": {
+        "label": "Device",
+        "simulated": "Simulator (no hardware)",
+        "hardware": "Raspberry Pi (hardware)"
+      },
+      "endpoint": {
+        "label": "Raspberry Pi address",
+        "hint": "WebSocket URL of the device, e.g. ws://192.168.1.100:8080/race"
+      },
+      "timeout": {
+        "label": "Finish timeout (ms)"
+      },
+      "save": "Save",
+      "test": "Test connection",
+      "testing": "Testing…",
+      "saved": "Settings saved and applied.",
+      "saveError": "Could not save settings. Check the address and try again.",
+      "loadError": "Could not load settings.",
+      "testSuccess": "Connection successful ({{ms}} ms).",
+      "testFailed": "Connection failed: {{message}}"
     },
     "connection": {
       "colField": "Field",

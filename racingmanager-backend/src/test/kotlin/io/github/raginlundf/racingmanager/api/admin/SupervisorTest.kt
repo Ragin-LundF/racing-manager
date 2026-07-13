@@ -121,7 +121,7 @@ class SupervisorTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, mode, spectatorExchangeCodeRepository, localPackageService, syncService)
+        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, mode, spectatorExchangeCodeRepository, localPackageService, syncService, io.github.raginlundf.racingmanager.api.testRaceDeviceGateway(), io.github.raginlundf.racingmanager.api.testRaceDeviceSettingsRepository())
     }
 
     @Test

@@ -26,4 +26,5 @@
     <include file="changesets/019-create-local-instance-tables.xml" relativeToChangelogFile="true"/>
     <include file="changesets/020-add-event-sync-columns.xml" relativeToChangelogFile="true"/>
     <include file="changesets/021-create-sync-tables.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/022-create-race-device-settings-table.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
