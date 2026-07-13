@@ -19,7 +19,7 @@ description: REST API and OpenAPI design rules — paths, methods, status codes,
 
 ## Paths
 
-- Start with `/api/v<major>`; camelCase for multi-word elements: `/api/v1/dataSources`.
+- Start with `/api/v<major>`; camelCase for multi-word elements: `/api/v1/racing`.
 - Resources, not methods — no action prefixes like `/create/myData`; the HTTP method expresses the action.
 - Plural nouns for CRUD collections; singular only for single-instance resources.
 - No personal, protected, or sensitive data in path or query parameters.
@@ -47,7 +47,7 @@ description: REST API and OpenAPI design rules — paths, methods, status codes,
 
 ## Searches
 
-- `POST` with request body, `200` response, path `<resource>/search` (e.g. `/api/v1/reports/search`).
+- `POST` with request body, `200` response, path `<resource>/search` (e.g. `/api/v1/racing/search`).
 - Paging and sorting stay query parameters even for POST searches.
 
 ## Headers

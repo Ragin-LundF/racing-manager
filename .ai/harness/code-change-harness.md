@@ -21,7 +21,6 @@ description: Intake, planning, and implementation checklist. Use before and duri
 ## Implementation rules
 
 - Make the smallest coherent change; no unrelated refactoring.
-- Business logic in domain services; REST/event layers only map and delegate; application services orchestrate, they hold no business rules.
 - Add tests close to the changed behavior.
 - Run formatting, static analysis, and test checks where possible.
 

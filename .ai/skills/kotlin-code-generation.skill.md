@@ -9,7 +9,6 @@ description: Workflow for writing or changing Kotlin production code — load or
 
 - `../instructions/coding-guidelines.md`
 - `../instructions/testing.md`
-- `../instructions/module-architecture.md` when modules or layers are involved.
 
 ## Workflow
 
