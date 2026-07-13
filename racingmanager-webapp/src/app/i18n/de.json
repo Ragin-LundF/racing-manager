@@ -100,7 +100,7 @@
       "required": "Benutzername ist erforderlich."
     },
     "tenantSlug": {
-      "label": "Arbeitsbereich (optional)"
+      "label": "Mandantenkürzel (benötigt für Mandanten)"
     },
     "registerLink": "Neue Veranstaltungsorganisation registrieren",
     "raspberryPiLink": "Raspberry-Pi-Integrationsleitfaden"
@@ -112,8 +112,8 @@
       "required": "Name der Organisation ist erforderlich."
     },
     "tenantSlug": {
-      "label": "Kurzname (URL)",
-      "required": "Kurzname ist erforderlich."
+      "label": "Mandantenkürzel (benötigt für Login)",
+      "required": "Mandantenkürzel ist erforderlich."
     },
     "username": {
       "label": "Benutzername",

@@ -1,1 +1,23 @@
 @use '../auth-card';
+
+// Prominent green call-to-action under the login card, aligned to its width.
+.docs-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  background: var(--color-action);
+  color: #08130b; // matches the card's submit button
+  border: 1px solid var(--color-action);
+  border-radius: var(--radius-control);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}

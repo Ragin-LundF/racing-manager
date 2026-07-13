@@ -52,8 +52,9 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
         </form>
 
         <a [routerLink]="['/register']">{{ 'login.registerLink' | translate }}</a>
-        <a [routerLink]="['/raspberry-pi']">{{ 'login.raspberryPiLink' | translate }}</a>
       </div>
+
+      <a class="docs-button" [routerLink]="['/raspberry-pi']">{{ 'login.raspberryPiLink' | translate }}</a>
     </div>
   `,
   styleUrl: './login.component.scss',

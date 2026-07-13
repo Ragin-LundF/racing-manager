@@ -100,7 +100,7 @@
       "required": "Username is required."
     },
     "tenantSlug": {
-      "label": "Workspace (optional)"
+      "label": "Tenant code (required for tenants)"
     },
     "registerLink": "Register a new event organization",
     "raspberryPiLink": "Raspberry Pi integration guide"
@@ -112,8 +112,8 @@
       "required": "Organization name is required."
     },
     "tenantSlug": {
-      "label": "Short Name (URL)",
-      "required": "Short name is required."
+      "label": "Tenant code (required for login)",
+      "required": "Tenant code is required."
     },
     "username": {
       "label": "Username",
