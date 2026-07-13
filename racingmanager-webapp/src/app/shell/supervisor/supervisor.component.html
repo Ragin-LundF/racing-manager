@@ -1,0 +1,14 @@
+<div class="shell">
+  <header class="top-bar">
+    <h1 class="page-title">{{ 'supervisor.title' | translate }}</h1>
+    <div class="top-actions">
+      <app-locale-selector />
+      <span class="user">{{ authService.session()?.displayName }}</span>
+      <button (click)="onLogout()">{{ 'supervisor.logout' | translate }}</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <router-outlet />
+  </main>
+</div>

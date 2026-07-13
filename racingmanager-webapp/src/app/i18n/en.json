@@ -294,7 +294,8 @@
       "participants": "Participants",
       "preliminary": "Preliminary Rounds",
       "races": "Races",
-      "diagnostics": "Diagnostics"
+      "diagnostics": "Diagnostics",
+      "tenant": "Tenant"
     },
     "shell": {
       "placeholder": "Event management will appear here.",
@@ -335,25 +336,76 @@
     }
   },
   "setup": {
+    "alreadySetUp": "An administrator has already been set up.",
     "confirmPassword": "Confirm Password",
     "displayName": {
       "label": "Display Name",
       "required": "Display name is required."
     },
     "error": {
+      "alreadySetUp": "This has already been set up.",
       "generic": "Setup failed. Please try again."
     },
+    "loginLink": "Go to login",
     "password": {
       "label": "Password",
       "mismatch": "Passwords do not match.",
       "required": "Password is required (min. 8 characters)."
     },
+    "registerTenantLink": "Set up a tenant instead",
     "submit": "Create Administrator",
+    "supervisor": {
+      "alreadySetUp": "The platform supervisor has already been set up.",
+      "submit": "Create Supervisor",
+      "title": "Supervisor Setup"
+    },
     "title": "Administrator Setup",
     "username": {
       "label": "Username",
       "required": "Username is required (min. 3 characters)."
     }
+  },
+  "tenant": {
+    "title": "Tenant Settings",
+    "detailsTitle": "Details",
+    "displayName": {
+      "label": "Display Name"
+    },
+    "slug": {
+      "label": "Slug"
+    },
+    "status": {
+      "label": "Status"
+    },
+    "save": "Save",
+    "usersTitle": "Users",
+    "createUserTitle": "Create User",
+    "users": {
+      "username": "Username",
+      "displayName": "Display Name",
+      "role": "Role",
+      "status": "Status",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "create": "Create"
+    },
+    "error": {
+      "generic": "Something went wrong. Please try again.",
+      "usernameTaken": "This username already exists in the tenant."
+    }
+  },
+  "supervisor": {
+    "title": "Supervisor Console",
+    "tenants": {
+      "displayName": "Display Name",
+      "slug": "Slug",
+      "status": "Status",
+      "deactivate": "Deactivate",
+      "delete": "Delete",
+      "confirmSlugPrompt": "Type the tenant slug to confirm deletion:",
+      "empty": "No tenants yet."
+    },
+    "logout": "Logout"
   },
   "results": {
     "title": "Results",

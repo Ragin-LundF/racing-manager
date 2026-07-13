@@ -1,0 +1,82 @@
+<div class="tenant-settings">
+  <div class="header">
+    <h2>{{ 'tenant.title' | translate }}</h2>
+  </div>
+
+  @if (error(); as err) {
+    <p class="error">{{ err | translate }}</p>
+  }
+
+  @if (tenant(); as t) {
+    <section class="section">
+      <h3>{{ 'tenant.detailsTitle' | translate }}</h3>
+      <form #form="ngForm" (ngSubmit)="onSaveTenant()">
+        <label>
+          <span>{{ 'tenant.displayName.label' | translate }}</span>
+          <input name="displayName" [(ngModel)]="displayName" required minlength="1" />
+        </label>
+        <div class="meta-row">
+          <span>{{ 'tenant.slug.label' | translate }}: {{ t.slug }}</span>
+          <span>{{ 'tenant.status.label' | translate }}: {{ t.status }}</span>
+        </div>
+        <button type="submit" [disabled]="form.invalid">{{ 'tenant.save' | translate }}</button>
+      </form>
+    </section>
+  }
+
+  <section class="section">
+    <h3>{{ 'tenant.usersTitle' | translate }}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>{{ 'tenant.users.username' | translate }}</th>
+          <th>{{ 'tenant.users.displayName' | translate }}</th>
+          <th>{{ 'tenant.users.role' | translate }}</th>
+          <th>{{ 'tenant.users.status' | translate }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.userId) {
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.displayName }}</td>
+            <td>{{ user.role }}</td>
+            <td>{{ user.status }}</td>
+            <td class="actions">
+              <button (click)="onToggleUserStatus(user)">
+                {{ (user.status === 'ACTIVE' ? 'tenant.users.deactivate' : 'tenant.users.activate') | translate }}
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h3>{{ 'tenant.createUserTitle' | translate }}</h3>
+    <form #createForm="ngForm" (ngSubmit)="onCreateUser()">
+      <label>
+        <span>{{ 'tenant.users.username' | translate }}</span>
+        <input name="newUsername" [(ngModel)]="newUsername" required minlength="3" />
+      </label>
+      <label>
+        <span>{{ 'tenant.users.displayName' | translate }}</span>
+        <input name="newDisplayName" [(ngModel)]="newDisplayName" required />
+      </label>
+      <label>
+        <span>{{ 'setup.password.label' | translate }}</span>
+        <input type="password" name="newPassword" [(ngModel)]="newPassword" required minlength="8" />
+      </label>
+      <label>
+        <span>{{ 'tenant.users.role' | translate }}</span>
+        <select name="newRole" [(ngModel)]="newRole">
+          <option value="DIRECTOR">DIRECTOR</option>
+          <option value="ADMIN">ADMIN</option>
+        </select>
+      </label>
+      <button type="submit" [disabled]="createForm.invalid">{{ 'tenant.users.create' | translate }}</button>
+    </form>
+  </section>
+</div>

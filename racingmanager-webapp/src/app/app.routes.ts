@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
-import { adminGuard, authGuard, redirectIfAuthenticatedGuard } from './core/auth.guard';
+import { adminGuard, authGuard, redirectIfAuthenticatedGuard, supervisorGuard } from './core/auth.guard';
 import { SetupComponent } from './pages/setup/setup.component';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { RaceManagerShellComponent } from './shell/racemanager/racemanager.component';
+import { SupervisorShellComponent } from './shell/supervisor/supervisor.component';
+import { TenantListComponent } from './supervisor/tenant-list.component';
 import { SpectatorShellComponent } from './shell/spectator/spectator.component';
 import { EventListComponent } from './events/event-list.component';
 import { EventFormComponent } from './events/event-form.component';
@@ -19,6 +21,7 @@ import { ResultsComponent } from './results/results.component';
 import { ExportComponent } from './export/export.component';
 import { AuditComponent } from './audit/audit.component';
 import { DiagnosticsComponent } from './diagnostics/diagnostics.component';
+import { TenantSettingsComponent } from './tenant/tenant-settings.component';
 
 // Language is a runtime concern (ngx-translate + localStorage), so routes carry
 // no locale prefix.
@@ -36,6 +39,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: EventListComponent },
       { path: 'diagnostics', component: DiagnosticsComponent, canActivate: [adminGuard] },
+      { path: 'tenant', component: TenantSettingsComponent, canActivate: [adminGuard] },
       { path: 'new', component: EventFormComponent },
       {
         path: ':id',
@@ -57,6 +61,13 @@ export const routes: Routes = [
         ],
       },
     ],
+  },
+
+  {
+    path: 'supervisor',
+    component: SupervisorShellComponent,
+    canActivate: [authGuard, supervisorGuard],
+    children: [{ path: '', component: TenantListComponent }],
   },
 
   { path: 'spectator', component: SpectatorShellComponent },

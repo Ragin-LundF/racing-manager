@@ -66,11 +66,17 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
     }
 
     get("/api/v1/auth/setup-status") {
-        val firstRun = authService.isFirstRun()
-        call.respond(SetupStatusResponseModel(firstRun = firstRun))
+        call.respond(SetupStatusResponseModel(firstRun = authService.isFirstRun(), mode = deploymentMode.name))
     }
 
     post("/api/v1/auth/setup") {
+        if (deploymentMode != DeploymentMode.LOCAL) {
+            call.respond(
+                status = HttpStatusCode.Forbidden,
+                message = ErrorResponseModel("NOT_LOCAL_MODE", "Admin setup is only available in local mode"),
+            )
+            return@post
+        }
         val request = call.receive<SetupRequestModel>()
         when (val result = authService.setupAdmin(request.username, request.password, request.displayName)) {
             is SetupResult.Success -> {

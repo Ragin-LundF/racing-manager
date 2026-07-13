@@ -5,4 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SetupStatusResponseModel(
     val firstRun: Boolean,
+    val mode: String,
 )

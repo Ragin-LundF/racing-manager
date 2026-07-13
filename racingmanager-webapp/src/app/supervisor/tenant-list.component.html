@@ -1,0 +1,29 @@
+<div class="tenant-list">
+  @if (tenants().length === 0) {
+    <div class="empty">{{ 'supervisor.tenants.empty' | translate }}</div>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>{{ 'supervisor.tenants.displayName' | translate }}</th>
+          <th>{{ 'supervisor.tenants.slug' | translate }}</th>
+          <th>{{ 'supervisor.tenants.status' | translate }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (tenant of tenants(); track tenant.id) {
+          <tr>
+            <td>{{ tenant.displayName }}</td>
+            <td>{{ tenant.slug }}</td>
+            <td>{{ tenant.status }}</td>
+            <td class="actions">
+              <button (click)="onDeactivate(tenant)">{{ 'supervisor.tenants.deactivate' | translate }}</button>
+              <button class="btn-delete" (click)="onDelete(tenant)">{{ 'supervisor.tenants.delete' | translate }}</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

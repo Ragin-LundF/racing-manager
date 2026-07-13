@@ -38,3 +38,18 @@ export const adminGuard: CanActivateFn = () => {
 
   return router.parseUrl('/racemanager');
 };
+
+/** Gates the platform supervisor console. A supervisor has no tenant
+    membership, so redirecting a non-supervisor here to `/racemanager` (which
+    a supervisor can't use either) would be a dead end — send them to
+    `/login` instead, same as [authGuard]. */
+export const supervisorGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (auth.hasScope('rm:supervisor')) {
+    return true;
+  }
+
+  return router.parseUrl('/login');
+};

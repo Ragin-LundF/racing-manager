@@ -294,7 +294,8 @@
       "participants": "Teilnehmer",
       "preliminary": "Vorrunden",
       "races": "Rennen",
-      "diagnostics": "Diagnose"
+      "diagnostics": "Diagnose",
+      "tenant": "Mandant"
     },
     "shell": {
       "placeholder": "Eventverwaltung erscheint hier.",
@@ -335,25 +336,76 @@
     }
   },
   "setup": {
+    "alreadySetUp": "Ein Administrator wurde bereits eingerichtet.",
     "confirmPassword": "Passwort bestätigen",
     "displayName": {
       "label": "Anzeigename",
       "required": "Anzeigename ist erforderlich."
     },
     "error": {
+      "alreadySetUp": "Dies wurde bereits eingerichtet.",
       "generic": "Einrichtung fehlgeschlagen. Bitte versuchen Sie es erneut."
     },
+    "loginLink": "Zur Anmeldung",
     "password": {
       "label": "Passwort",
       "mismatch": "Passwörter stimmen nicht überein.",
       "required": "Passwort ist erforderlich (min. 8 Zeichen)."
     },
+    "registerTenantLink": "Stattdessen einen Mandanten einrichten",
     "submit": "Administrator erstellen",
+    "supervisor": {
+      "alreadySetUp": "Der Plattform-Supervisor wurde bereits eingerichtet.",
+      "submit": "Supervisor erstellen",
+      "title": "Supervisor-Einrichtung"
+    },
     "title": "Administrator-Einrichtung",
     "username": {
       "label": "Benutzername",
       "required": "Benutzername ist erforderlich (min. 3 Zeichen)."
     }
+  },
+  "tenant": {
+    "title": "Mandanteneinstellungen",
+    "detailsTitle": "Details",
+    "displayName": {
+      "label": "Anzeigename"
+    },
+    "slug": {
+      "label": "Slug"
+    },
+    "status": {
+      "label": "Status"
+    },
+    "save": "Speichern",
+    "usersTitle": "Benutzer",
+    "createUserTitle": "Benutzer erstellen",
+    "users": {
+      "username": "Benutzername",
+      "displayName": "Anzeigename",
+      "role": "Rolle",
+      "status": "Status",
+      "activate": "Aktivieren",
+      "deactivate": "Deaktivieren",
+      "create": "Erstellen"
+    },
+    "error": {
+      "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "usernameTaken": "Dieser Benutzername existiert bereits im Mandanten."
+    }
+  },
+  "supervisor": {
+    "title": "Supervisor-Konsole",
+    "tenants": {
+      "displayName": "Anzeigename",
+      "slug": "Slug",
+      "status": "Status",
+      "deactivate": "Deaktivieren",
+      "delete": "Löschen",
+      "confirmSlugPrompt": "Geben Sie den Mandanten-Slug ein, um die Löschung zu bestätigen:",
+      "empty": "Noch keine Mandanten."
+    },
+    "logout": "Abmelden"
   },
   "results": {
     "title": "Ergebnisse",

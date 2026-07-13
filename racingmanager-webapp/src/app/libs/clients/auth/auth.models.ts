@@ -12,6 +12,7 @@ export interface SetupResponse {
 
 export interface SetupStatusResponse {
   firstRun: boolean;
+  mode: 'LOCAL' | 'HOSTED';
 }
 
 export interface LoginRequest {

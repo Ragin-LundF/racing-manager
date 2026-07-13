@@ -1,0 +1,42 @@
+.tenant-settings {
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
+  .header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+
+  .error { color: var(--color-error); }
+
+  .section { margin-bottom: var(--space-6); }
+  .section h3 { margin-bottom: var(--space-3); }
+
+  label { display: block; margin-bottom: var(--space-2); }
+  input, select { display: block; width: 100%; max-width: 400px; margin-top: var(--space-1); }
+
+  .meta-row { display: flex; gap: var(--space-4); color: var(--color-text-secondary); margin-bottom: var(--space-3); }
+
+  button {
+    height: var(--control-height-compact);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-raised);
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    &:hover { border-color: var(--color-text-muted); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    font-size: 14px;
+  }
+  th, td { padding: 0 var(--space-4); height: 44px; text-align: left; border-bottom: 1px solid var(--color-border); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--color-bg-raised); }
+  th { font-weight: 600; font-size: 13px; color: var(--color-text-secondary); background: var(--color-bg-raised); }
+  td.actions { display: flex; gap: var(--space-2); align-items: center; height: 44px; }
+}

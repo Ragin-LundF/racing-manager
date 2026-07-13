@@ -33,7 +33,7 @@ import java.util.UUID
     one-time supervisor bootstrap, gated to hosted mode like `/api/v1/register`. */
 fun Route.adminRoutes(jwtService: JwtService, authService: AuthService, deploymentMode: DeploymentMode) {
     get("/api/v1/admin/setup-status") {
-        call.respond(SetupStatusResponseModel(firstRun = authService.isFirstSupervisorRun()))
+        call.respond(SetupStatusResponseModel(firstRun = authService.isFirstSupervisorRun(), mode = deploymentMode.name))
     }
 
     post("/api/v1/admin/setup") {

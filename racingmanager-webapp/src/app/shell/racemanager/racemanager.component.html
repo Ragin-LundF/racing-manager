@@ -57,6 +57,18 @@
         <span class="nav-icon">◎</span>
         <span>{{ 'racemanager.nav.diagnostics' | translate }}</span>
       </a>
+
+      @if (authService.hasScope('rm:admin')) {
+        <a
+          class="nav-item"
+          [routerLink]="['/', 'racemanager', 'tenant']"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <span class="nav-icon">⚙</span>
+          <span>{{ 'racemanager.nav.tenant' | translate }}</span>
+        </a>
+      }
     </nav>
 
     <div class="nav-footer">

@@ -75,7 +75,7 @@ export class LoginComponent {
         if ('code' in res) {
           this.errorMessage.set(this.localizeError(res.code));
         } else {
-          this.router.navigate(['/racemanager']);
+          this.router.navigate([this.authService.hasScope('rm:supervisor') ? '/supervisor' : '/racemanager']);
         }
       });
   }

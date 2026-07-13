@@ -126,7 +126,32 @@ class AuthRoutesTest {
         val response = client.get("/api/v1/auth/setup-status")
 
         assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.bodyAsText().contains("\"firstRun\":true"))
+        val body = response.bodyAsText()
+        assertTrue(body.contains("\"firstRun\":true"))
+        assertTrue(body.contains("\"mode\":\"LOCAL\""))
+    }
+
+    @Test
+    fun `setup-status reports hosted mode`() = testApplication {
+        application { configureTestApp(DeploymentMode.HOSTED) }
+
+        val response = client.get("/api/v1/auth/setup-status")
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.bodyAsText().contains("\"mode\":\"HOSTED\""))
+    }
+
+    @Test
+    fun `setup returns 403 in hosted mode`() = testApplication {
+        application { configureTestApp(DeploymentMode.HOSTED) }
+
+        val response = client.post("/api/v1/auth/setup") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123","displayName":"Admin User"}""")
+        }
+
+        assertEquals(HttpStatusCode.Forbidden, response.status)
+        assertTrue(response.bodyAsText().contains("\"code\":\"NOT_LOCAL_MODE\""))
     }
 
     @Test
@@ -315,11 +340,11 @@ class AuthRoutesTest {
         assertTrue(response.bodyAsText().contains("\"firstRun\":false"))
     }
 
-    private fun Application.configureTestApp() {
+    private fun Application.configureTestApp(deploymentMode: DeploymentMode = DeploymentMode.LOCAL) {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, DeploymentMode.LOCAL, spectatorExchangeCodeRepository, localPackageService, syncService)
+        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, deploymentMode, spectatorExchangeCodeRepository, localPackageService, syncService)
     }
 
     private fun String.extractField(field: String): String {
