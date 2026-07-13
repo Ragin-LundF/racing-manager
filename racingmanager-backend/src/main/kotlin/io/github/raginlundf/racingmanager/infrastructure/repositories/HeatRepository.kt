@@ -24,14 +24,14 @@ class HeatRepository {
     fun findById(id: UUID): HeatEntity? = transaction {
         HeatTable.selectAll().where { HeatTable.id eq id }
             .singleOrNull()
-            ?.let { row -> mapRow(row) }
+            ?.let { row -> mapRow(row = row) }
     }
 
     fun findByEventId(eventId: UUID): List<HeatEntity> = transaction {
         HeatTable.selectAll()
             .where { HeatTable.eventId eq eventId }
             .orderBy(HeatTable.round to SortOrder.ASC, HeatTable.heatNumber to SortOrder.ASC)
-            .map { row -> mapRow(row) }
+            .map { row -> mapRow(row = row) }
     }
 
     fun findEventIdByHeatId(heatId: UUID): UUID? = transaction {
@@ -43,16 +43,16 @@ class HeatRepository {
     fun findAll(): List<HeatEntity> = transaction {
         HeatTable.selectAll()
             .orderBy(HeatTable.createdAt to SortOrder.DESC)
-            .map { row -> mapRow(row) }
+            .map { row -> mapRow(row = row) }
     }
 
     fun findLatestByEventId(eventId: UUID): HeatEntity? = transaction {
         HeatTable.selectAll()
             .where { HeatTable.eventId eq eventId }
             .orderBy(HeatTable.createdAt to SortOrder.DESC)
-            .limit(1)
+            .limit(count = 1)
             .singleOrNull()
-            ?.let { row -> mapRow(row) }
+            ?.let { row -> mapRow(row = row) }
     }
 
     fun insert(heat: HeatEntity) = transaction {
@@ -81,7 +81,7 @@ class HeatRepository {
     }
 
     fun updateStatus(id: UUID, status: HeatStatus, armedAt: Instant? = null, startedAt: Instant? = null, finishedAt: Instant? = null) = transaction {
-        HeatTable.update({ HeatTable.id eq id }) {
+        HeatTable.update(where = { HeatTable.id eq id }) {
             it[HeatTable.status] = status.name
             if (armedAt != null) it[HeatTable.armedAt] = armedAt
             if (startedAt != null) it[HeatTable.startedAt] = startedAt

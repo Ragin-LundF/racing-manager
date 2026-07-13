@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { ConflictResponse } from '../libs/clients/event/event.models';
 import { LocaleService } from '../i18n/locale.service';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, of } from 'rxjs';
 
 @Component({
@@ -21,6 +21,7 @@ export class EventFormComponent {
   private readonly localeService = inject(LocaleService);
   // Zoneless CD: ngModel fields set in an async callback need an explicit nudge.
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
 
   protected isEdit = signal(false);
   protected name = '';
@@ -55,7 +56,7 @@ export class EventFormComponent {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.error.set('Failed to load event.');
+        this.error.set(this.translate.instant('events.form.loadError'));
       },
     });
   }
@@ -78,7 +79,7 @@ export class EventFormComponent {
           if (body && body.expectedVersion !== undefined) {
             this.conflict.set(body);
           } else {
-            this.error.set('Update failed.');
+            this.error.set(this.translate.instant('events.form.updateError'));
           }
           return of(null);
         }),
@@ -96,7 +97,7 @@ export class EventFormComponent {
         maxParticipants: this.maxParticipants,
       }).pipe(
         catchError((err) => {
-          this.error.set(err?.error?.message ?? 'Create failed.');
+          this.error.set(err?.error?.message ?? this.translate.instant('events.form.createError'));
           return of(null);
         }),
       ).subscribe((res) => {

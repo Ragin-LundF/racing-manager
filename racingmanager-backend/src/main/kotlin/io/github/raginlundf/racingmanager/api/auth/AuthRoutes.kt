@@ -129,6 +129,15 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
                     ),
                 )
             }
+            is LoginResult.TenantDisabled -> {
+                call.respond(
+                    status = HttpStatusCode.Unauthorized,
+                    message = ErrorResponseModel(
+                        code = "TENANT_DISABLED",
+                        message = "This tenant has been deactivated",
+                    ),
+                )
+            }
         }
     }
 

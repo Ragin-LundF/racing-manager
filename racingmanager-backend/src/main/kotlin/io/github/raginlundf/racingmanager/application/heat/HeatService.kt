@@ -2,6 +2,7 @@ package io.github.raginlundf.racingmanager.application.heat
 
 import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.domain.event.EventStatus
+import io.github.raginlundf.racingmanager.domain.event.MeasurementType
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.heat.HeatLaneAssignment
 import io.github.raginlundf.racingmanager.domain.heat.HeatStatus
@@ -168,6 +169,11 @@ class HeatService(
         )
 
         val updated = heatRepository.findById(id)!!
+        val event = eventRepository.findById(updated.eventId)
+        if (event?.settings?.measurementType == MeasurementType.SIMULATED) {
+            measurementGateway.simulateHeat(updated)
+        }
+
         _events.tryEmit(HeatServiceEvent.HeatStateChanged(updated))
         return StartHeatResult.Success(updated)
     }

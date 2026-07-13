@@ -117,6 +117,16 @@ class AuthServiceTest {
     }
 
     @Test
+    fun `login for a deactivated tenant returns TenantDisabled`() {
+        authService.setupAdmin("admin", "password123", "Admin User")
+        authService.deactivateTenant(AuthService.LOCAL_TENANT_ID, UUID.randomUUID())
+
+        val result = authService.login("admin", "password123")
+
+        assertIs<LoginResult.TenantDisabled>(result)
+    }
+
+    @Test
     fun `access token from login verifies to the correct principal`() {
         authService.setupAdmin("admin", "password123", "Admin User")
         val login = authService.login("admin", "password123") as LoginResult.Success

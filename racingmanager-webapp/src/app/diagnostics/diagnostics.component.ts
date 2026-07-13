@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { DiagnosticsClient } from '../libs/clients/diagnostics/diagnostics.client';
 import {
   DiagnosticsResponse,
@@ -16,6 +16,7 @@ import {
 })
 export class DiagnosticsComponent implements OnInit {
   private readonly diagnosticsClient = inject(DiagnosticsClient);
+  private readonly translate = inject(TranslateService);
 
   protected diagnostics = signal<DiagnosticsResponse | null>(null);
   protected readiness = signal<ReadinessResponse | null>(null);
@@ -37,7 +38,7 @@ export class DiagnosticsComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Failed to load diagnostics.');
+        this.error.set(this.translate.instant('diagnostics.loadError'));
         this.loading.set(false);
       },
     });
@@ -49,11 +50,13 @@ export class DiagnosticsComponent implements OnInit {
   protected onRecover(heat: UnfinishedHeat, action: string): void {
     this.diagnosticsClient.recoverHeat(heat.heatId, action).subscribe({
       next: (result) => {
-        this.recoveryResult.set(`Heat #${heat.heatNumber}: ${result.action}`);
+        this.recoveryResult.set(
+          this.translate.instant('diagnostics.recoveryResult', { heatNumber: heat.heatNumber, action: result.action }),
+        );
         this.load();
       },
       error: (err) => {
-        this.error.set(`Recovery failed: ${err.message}`);
+        this.error.set(this.translate.instant('diagnostics.recoveryFailed', { message: err.message }));
       },
     });
   }

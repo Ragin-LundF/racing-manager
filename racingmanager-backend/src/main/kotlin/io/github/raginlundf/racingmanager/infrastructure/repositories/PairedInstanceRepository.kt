@@ -32,11 +32,11 @@ class PairedInstanceRepository {
     }
 
     fun updateStatus(id: UUID, status: PairedInstanceStatus) = transaction {
-        PairedInstanceTable.update({ PairedInstanceTable.id eq id }) { it[PairedInstanceTable.status] = status.name }
+        PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.status] = status.name }
     }
 
     fun updateLastSyncAt(id: UUID, lastSyncAt: Instant) = transaction {
-        PairedInstanceTable.update({ PairedInstanceTable.id eq id }) { it[PairedInstanceTable.lastSyncAt] = lastSyncAt }
+        PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.lastSyncAt] = lastSyncAt }
     }
 
     private fun org.jetbrains.exposed.v1.core.ResultRow.toEntity() = PairedInstanceEntity(

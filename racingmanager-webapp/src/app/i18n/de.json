@@ -63,7 +63,10 @@
       "title": {
         "create": "Veranstaltung erstellen",
         "edit": "Veranstaltung bearbeiten"
-      }
+      },
+      "loadError": "Laden der Veranstaltung fehlgeschlagen.",
+      "updateError": "Aktualisierung fehlgeschlagen.",
+      "createError": "Erstellung fehlgeschlagen."
     },
     "list": {
       "create": "Veranstaltung erstellen",
@@ -83,7 +86,8 @@
   "login": {
     "error": {
       "generic": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
-      "invalidCredentials": "Ungültiger Benutzername oder Passwort."
+      "invalidCredentials": "Ungültiger Benutzername oder Passwort.",
+      "tenantDisabled": "Dieser Mandant wurde deaktiviert."
     },
     "password": {
       "label": "Passwort",
@@ -158,7 +162,10 @@
         "edit": "Teilnehmer bearbeiten"
       },
       "vehicleCategory": "Fahrzeugkategorie",
-      "vehicleName": "Fahrzeugname"
+      "vehicleName": "Fahrzeugname",
+      "loadError": "Laden des Teilnehmers fehlgeschlagen.",
+      "updateError": "Aktualisierung fehlgeschlagen.",
+      "createError": "Erstellung fehlgeschlagen."
     },
     "import": {
       "back": "Zurück zu den Teilnehmern",
@@ -169,7 +176,9 @@
       "errors": "Fehler:",
       "hint": "CSV-Daten unten einfügen. Format: Startnummer, Vorname, Nachname, Verein, Fahrzeugname, Fahrzeugkategorie",
       "submit": "Importieren",
-      "title": "Teilnehmer importieren (CSV)"
+      "title": "Teilnehmer importieren (CSV)",
+      "noRowsError": "Keine Zeilen zum Importieren.",
+      "importError": "Import fehlgeschlagen."
     },
     "list": {
       "add": "Teilnehmer hinzufügen",
@@ -201,7 +210,8 @@
       "loading": "Randomisiere...",
       "start": "Randomisieren",
       "success": "Teilnehmer mit Seed {{seed}} randomisiert.",
-      "title": "Teilnehmer randomisieren"
+      "title": "Teilnehmer randomisieren",
+      "randomizationError": "Randomisierung fehlgeschlagen."
     }
   },
   "qualification": {
@@ -218,7 +228,9 @@
     "finalizeButton": "Finalisieren",
     "finalizeConfirm": "Sind Sie sicher? Dies sperrt die Rangliste.",
     "finalizeHint": "Alle Läufe müssen abgeschlossen sein, bevor finalisiert wird.",
+    "finalizedError": "Finalisierung der Qualifikation fehlgeschlagen.",
     "finalizedMessage": "Qualifikation ist finalisiert. Rangliste ist gesperrt.",
+    "finalizedSuccess": "Qualifikation finalisiert.",
     "finalizedTitle": "Finalisiert",
     "generateSchedule": "Zeitplan erstellen",
     "goToRaceControl": "Durchführen",
@@ -233,11 +245,17 @@
     "rankingsTitle": "Rangliste",
     "reopenButton": "Wieder öffnen",
     "reopenConfirm": "Qualifikation wieder öffnen, um weitere Läufe zu ermöglichen?",
+    "reopenedError": "Wiedereröffnung der Qualifikation fehlgeschlagen.",
+    "reopenedSuccess": "Qualifikation wieder eröffnet.",
     "runs": "Läufe:",
+    "scheduleGeneratedError": "Erstellung des Zeitplans fehlgeschlagen.",
+    "scheduleGeneratedSuccess": "Zeitplan erstellt.",
     "scheduleTitle": "Zeitplan",
     "seed": "Seed:",
     "setupButton": "Einrichten",
     "setupDescription": "Qualifikationsphase konfigurieren und starten. Jeder Teilnehmer fährt mehrere Läufe.",
+    "setupError": "Einrichtung der Qualifikation fehlgeschlagen.",
+    "setupSuccess": "Einrichtung der Qualifikation abgeschlossen.",
     "setupTitle": "Qualifikation einrichten",
     "startNumber": "#",
     "status": "Status:",
@@ -253,20 +271,28 @@
     "cancel": "Abbrechen",
     "confirmFinalize": "Ja, finalisieren",
     "createHeat": "Lauf erstellen",
+    "createHeatError": "Erstellung des Laufs fehlgeschlagen.",
     "finalizeButton": "Finalisieren",
     "finalizeConfirm": "Sind Sie sicher? Dies sperrt die K.o.-Ergebnisse.",
     "finalizeHint": "Alle Begegnungen müssen abgeschlossen sein, bevor finalisiert wird.",
+    "finalizedError": "Finalisierung der K.o.-Phase fehlgeschlagen.",
     "finalizedMessage": "K.o.-Phase ist finalisiert. Ergebnisse sind gesperrt.",
+    "finalizedSuccess": "K.o.-Phase finalisiert.",
     "finalizedTitle": "Finalisiert",
     "generatePairings": "Paarungen erstellen",
     "goToRaceControl": "Durchführen",
+    "heatCreatedSuccess": "Lauf für Begegnung erstellt.",
     "manualPairings": "Manuelle Paarungen",
+    "manualPairingsSavedError": "Speichern der manuellen Paarungen fehlgeschlagen.",
+    "manualPairingsSavedSuccess": "Manuelle Paarungen gespeichert.",
     "manualPairingsTitle": "Manuelle Paarungen festlegen",
     "modeAdjacent": "Benachbart (1v2, 3v4, ...)",
     "modeFirstVsLast": "Erster gegen Letzter (1vN, 2vN-1, ...)",
     "modeManual": "Manuell",
     "modeRandom": "Zufällig",
     "pairingMode": "Paarungsmodus:",
+    "pairingsGeneratedError": "Erstellung der Paarungen fehlgeschlagen.",
+    "pairingsGeneratedSuccess": "Paarungen erstellt.",
     "resultsTitle": "Ergebnisse",
     "roundLabel": "Runde {{number}}",
     "savePairings": "Paarungen speichern",
@@ -274,6 +300,8 @@
     "selectParticipantOrBye": "Teilnehmer oder Freilos...",
     "setupButton": "Einrichten",
     "setupDescription": "K.o.-Phase konfigurieren und starten. Paarungen werden basierend auf der Qualifikationsrangliste erstellt.",
+    "setupError": "Einrichtung der K.o.-Phase fehlgeschlagen.",
+    "setupSuccess": "Einrichtung der K.o.-Phase abgeschlossen.",
     "setupTitle": "K.o.-Phase einrichten",
     "status": "Status:",
     "statusTitle": "K.o.-Status",
@@ -318,20 +346,29 @@
   "races": {
     "control": {
       "accept": "Akzeptieren",
+      "acceptError": "Akzeptieren des Ergebnisses fehlgeschlagen.",
       "arm": "Schärfen",
       "armedAt": "Geschärft: {{time}}",
+      "armError": "Schärfen des Laufs fehlgeschlagen.",
       "cancel": "Abbrechen",
+      "cancelError": "Abbrechen des Laufs fehlgeschlagen.",
       "create": "Lauf erstellen",
+      "createError": "Erstellung des Laufs fehlgeschlagen.",
       "createHeat": "Neuen Lauf erstellen",
       "finish": "Beenden",
       "finishedAt": "Beendet: {{time}}",
+      "finishError": "Beenden des Laufs fehlgeschlagen.",
       "heatLabel": "Lauf #{{number}}",
+      "loadError": "Laden der Läufe fehlgeschlagen.",
       "noHeats": "Noch keine Läufe. Erstellen Sie einen Lauf, um zu beginnen.",
       "noParticipants": "Keine aktiven Teilnehmer verfügbar.",
       "reject": "Ablehnen",
+      "rejectError": "Ablehnen des Ergebnisses fehlgeschlagen.",
       "repeat": "Wiederholen",
+      "repeatError": "Wiederholung des Laufs fehlgeschlagen.",
       "start": "Starten",
       "startedAt": "Gestartet: {{time}}",
+      "startError": "Starten des Laufs fehlgeschlagen.",
       "title": "Rennsteuerung"
     }
   },
@@ -410,7 +447,9 @@
   "results": {
     "title": "Ergebnisse",
     "completeButton": "Veranstaltung abschließen",
+    "completeError": "Abschließen der Veranstaltung fehlgeschlagen.",
     "reopenButton": "Veranstaltung wieder öffnen",
+    "reopenError": "Wiedereröffnung der Veranstaltung fehlgeschlagen.",
     "qualificationTitle": "Qualifikations-Rangliste",
     "knockoutTitle": "K.o.-Ergebnisse",
     "rank": "Platz",
@@ -420,7 +459,8 @@
     "bestTime": "Beste Zeit",
     "runs": "Läufe",
     "dnf": "DNF",
-    "empty": "Noch keine Ergebnisse verfügbar."
+    "empty": "Noch keine Ergebnisse verfügbar.",
+    "loadError": "Laden der Ergebnisse fehlgeschlagen."
   },
   "export": {
     "title": "Export & Backup",
@@ -430,7 +470,14 @@
     "csv": "CSV exportieren",
     "html": "HTML exportieren",
     "json": "JSON exportieren",
-    "backup": "Backup exportieren"
+    "backup": "Backup exportieren",
+    "csvExportError": "CSV-Export fehlgeschlagen.",
+    "htmlExportError": "HTML-Export fehlgeschlagen.",
+    "jsonExportError": "JSON-Export fehlgeschlagen.",
+    "backupExportError": "Backup-Export fehlgeschlagen.",
+    "restoreSuccess": "Wiederherstellung erfolgreich.",
+    "restoreFailed": "Wiederherstellung fehlgeschlagen: {{message}}",
+    "invalidBackupFormat": "Ungültiges Backup-Dateiformat."
   },
   "diagnostics": {
     "title": "Diagnose",
@@ -464,7 +511,10 @@
     "supportHint": "Fügen Sie bei der Fehlermeldung folgende Dateien bei:",
     "supportLogs": "Protokolle",
     "supportBackups": "Backups",
-    "supportDb": "Datenbank"
+    "supportDb": "Datenbank",
+    "loadError": "Laden der Diagnose fehlgeschlagen.",
+    "recoveryResult": "Lauf #{{heatNumber}}: {{action}}",
+    "recoveryFailed": "Wiederherstellung fehlgeschlagen: {{message}}"
   },
   "audit": {
     "title": "Prüfprotokoll",
@@ -475,7 +525,8 @@
     "actor": "Akteur",
     "refresh": "Aktualisieren",
     "count": "{{count}} Einträge",
-    "system": "System"
+    "system": "System",
+    "loadError": "Laden des Prüfprotokolls fehlgeschlagen."
   },
   "spectator": {
     "shell": {

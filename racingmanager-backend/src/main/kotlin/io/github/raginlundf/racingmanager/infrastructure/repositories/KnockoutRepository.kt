@@ -24,14 +24,14 @@ class KnockoutRepository {
         KnockoutTournamentTable.selectAll()
             .where { KnockoutTournamentTable.eventId eq eventId }
             .singleOrNull()
-            ?.let { row -> mapTournamentRow(row) }
+            ?.let { row -> mapTournamentRow(row = row) }
     }
 
     fun findById(id: UUID): KnockoutTournamentEntity? = transaction {
         KnockoutTournamentTable.selectAll()
             .where { KnockoutTournamentTable.id eq id }
             .singleOrNull()
-            ?.let { row -> mapTournamentRow(row) }
+            ?.let { row -> mapTournamentRow(row = row) }
     }
 
     fun insert(tournament: KnockoutTournamentEntity) = transaction {
@@ -49,7 +49,7 @@ class KnockoutRepository {
     }
 
     fun updateStatus(id: UUID, status: KnockoutStatus, updatedAt: kotlin.time.Instant, finalizedAt: kotlin.time.Instant? = null, finalizedBy: UUID? = null) = transaction {
-        KnockoutTournamentTable.update({ KnockoutTournamentTable.id eq id }) {
+        KnockoutTournamentTable.update(where = { KnockoutTournamentTable.id eq id }) {
             it[KnockoutTournamentTable.status] = status.name
             it[KnockoutTournamentTable.updatedAt] = updatedAt
             if (finalizedAt != null) it[KnockoutTournamentTable.finalizedAt] = finalizedAt
@@ -61,14 +61,14 @@ class KnockoutRepository {
         KnockoutMatchTable.selectAll()
             .where { KnockoutMatchTable.tournamentId eq tournamentId }
             .orderBy(KnockoutMatchTable.roundNumber to SortOrder.ASC, KnockoutMatchTable.matchNumber to SortOrder.ASC)
-            .map { row -> mapMatchRow(row) }
+            .map { row -> mapMatchRow(row = row) }
     }
 
     fun findMatchesByRound(tournamentId: UUID, roundNumber: Int): List<KnockoutMatchEntity> = transaction {
         KnockoutMatchTable.selectAll()
             .where { KnockoutMatchTable.tournamentId eq tournamentId and (KnockoutMatchTable.roundNumber eq roundNumber) }
             .orderBy(KnockoutMatchTable.matchNumber to SortOrder.ASC)
-            .map { row -> mapMatchRow(row) }
+            .map { row -> mapMatchRow(row = row) }
     }
 
     fun insertMatch(match: KnockoutMatchEntity) = transaction {
@@ -87,14 +87,14 @@ class KnockoutRepository {
     }
 
     fun updateMatchParticipants(id: UUID, participant1Id: UUID?, participant2Id: UUID?) = transaction {
-        KnockoutMatchTable.update({ KnockoutMatchTable.id eq id }) {
+        KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
             it[KnockoutMatchTable.participant1Id] = participant1Id
             it[KnockoutMatchTable.participant2Id] = participant2Id
         }
     }
 
     fun updateMatchResult(id: UUID, winnerId: UUID, heatId: UUID, status: KnockoutMatchStatus) = transaction {
-        KnockoutMatchTable.update({ KnockoutMatchTable.id eq id }) {
+        KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
             it[KnockoutMatchTable.winnerId] = winnerId
             it[KnockoutMatchTable.heatId] = heatId
             it[KnockoutMatchTable.status] = status.name

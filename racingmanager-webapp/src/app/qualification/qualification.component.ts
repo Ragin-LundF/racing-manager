@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { QualificationClient } from '../libs/clients/qualification/qualification.client';
 import { HeatClient } from '../libs/clients/heat/heat.client';
@@ -22,6 +22,7 @@ export class QualificationComponent {
   private readonly qualificationService = inject(QualificationClient);
   private readonly heatService = inject(HeatClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   protected qualification = signal<QualificationResponse | null>(null);
   protected rankings = signal<QualificationRankingResponse[]>([]);
@@ -94,10 +95,10 @@ export class QualificationComponent {
       next: (q) => {
         this.qualification.set(q);
         this.loading.set(false);
-        this.success.set('Qualification setup complete.');
+        this.success.set(this.translate.instant('qualification.setupSuccess'));
       },
       error: () => {
-        this.error.set('Failed to setup qualification.');
+        this.error.set(this.translate.instant('qualification.setupError'));
         this.loading.set(false);
       },
     });
@@ -111,11 +112,11 @@ export class QualificationComponent {
       next: (q) => {
         this.qualification.set(q);
         this.loading.set(false);
-        this.success.set('Schedule generated.');
+        this.success.set(this.translate.instant('qualification.scheduleGeneratedSuccess'));
         this.loadSchedule();
       },
       error: () => {
-        this.error.set('Failed to generate schedule.');
+        this.error.set(this.translate.instant('qualification.scheduleGeneratedError'));
         this.loading.set(false);
       },
     });
@@ -129,11 +130,11 @@ export class QualificationComponent {
       next: () => {
         this.loading.set(false);
         this.showFinalizeConfirm.set(false);
-        this.success.set('Qualification finalized.');
+        this.success.set(this.translate.instant('qualification.finalizedSuccess'));
         this.load();
       },
       error: () => {
-        this.error.set('Failed to finalize qualification.');
+        this.error.set(this.translate.instant('qualification.finalizedError'));
         this.loading.set(false);
       },
     });
@@ -147,11 +148,11 @@ export class QualificationComponent {
       next: () => {
         this.loading.set(false);
         this.showReopenConfirm.set(false);
-        this.success.set('Qualification reopened.');
+        this.success.set(this.translate.instant('qualification.reopenedSuccess'));
         this.load();
       },
       error: () => {
-        this.error.set('Failed to reopen qualification.');
+        this.error.set(this.translate.instant('qualification.reopenedError'));
         this.loading.set(false);
       },
     });

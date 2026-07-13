@@ -7,8 +7,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
-import kotlin.time.Instant
 import java.util.UUID
+import kotlin.time.Instant
 
 class PairingCodeRepository {
 
@@ -28,7 +28,7 @@ class PairingCodeRepository {
         if (row[PairingCodeTable.consumed] || now > row[PairingCodeTable.expiresAt]) {
             return@transaction null
         }
-        PairingCodeTable.update({ PairingCodeTable.id eq id }) { it[consumed] = true }
+        PairingCodeTable.update(where = { PairingCodeTable.id eq id }) { it[consumed] = true }
         PairingCodeEntity(
             id = row[PairingCodeTable.id],
             tenantId = row[PairingCodeTable.tenantId],

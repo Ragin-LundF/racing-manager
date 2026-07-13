@@ -81,7 +81,12 @@ export class LoginComponent {
   }
 
   private localizeError(code: string): string {
-    const key = code === 'INVALID_CREDENTIALS' ? 'login.error.invalidCredentials' : 'login.error.generic';
+    const key =
+      code === 'INVALID_CREDENTIALS'
+        ? 'login.error.invalidCredentials'
+        : code === 'TENANT_DISABLED'
+          ? 'login.error.tenantDisabled'
+          : 'login.error.generic';
     return this.translate.instant(key);
   }
 }

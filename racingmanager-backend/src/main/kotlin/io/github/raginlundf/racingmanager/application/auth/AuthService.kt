@@ -121,6 +121,11 @@ class AuthService(
             return LoginResult.InvalidCredentials
         }
 
+        val tenant = tenantRepository.findById(user.tenantId)
+        if (tenant == null || tenant.status != TenantStatus.ACTIVE) {
+            return LoginResult.TenantDisabled
+        }
+
         val (accessToken, refreshToken, scopes) = issueTokens(user)
         auditRepository.insert(
             AuditEntryEntity(
@@ -523,6 +528,7 @@ sealed interface LoginResult {
         val user: UserEntity,
     ) : LoginResult
     data object InvalidCredentials : LoginResult
+    data object TenantDisabled : LoginResult
 }
 
 sealed interface RefreshResult {

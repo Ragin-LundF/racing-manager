@@ -8,6 +8,7 @@ import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -16,17 +17,19 @@ import java.util.UUID
 
 class AuditRepository {
 
-    fun insert(entry: AuditEntryEntity) = transaction {
-        AuditEntryTable.insert {
-            it[id] = entry.id
-            it[actorId] = entry.actorId
-            it[action] = entry.action
-            it[targetType] = entry.targetType
-            it[targetId] = entry.targetId
-            it[summary] = entry.summary
-            it[details] = entry.details
-            it[correlationId] = entry.correlationId
-            it[occurredAt] = entry.occurredAt
+    fun insert(entry: AuditEntryEntity): InsertStatement<Number> {
+        return transaction {
+            AuditEntryTable.insert {
+                it[id] = entry.id
+                it[actorId] = entry.actorId
+                it[action] = entry.action
+                it[targetType] = entry.targetType
+                it[targetId] = entry.targetId
+                it[summary] = entry.summary
+                it[details] = entry.details
+                it[correlationId] = entry.correlationId
+                it[occurredAt] = entry.occurredAt
+            }
         }
     }
 
@@ -51,7 +54,12 @@ class AuditRepository {
 
         val query = if (tenantId != null) {
             conditions.add(UserTable.tenantId eq tenantId)
-            AuditEntryTable.join(UserTable, JoinType.INNER, AuditEntryTable.actorId, UserTable.id)
+            AuditEntryTable.join(
+                otherTable = UserTable,
+                joinType = JoinType.INNER,
+                onColumn = AuditEntryTable.actorId,
+                otherColumn = UserTable.id
+            )
                 .select(AuditEntryTable.columns)
         } else {
             AuditEntryTable.selectAll()
@@ -63,8 +71,8 @@ class AuditRepository {
                 else q.where { conditions.reduce { a, b -> a and b } }
             }
             .orderBy(AuditEntryTable.occurredAt to SortOrder.DESC)
-            .limit(limit)
-            .offset(offset.toLong())
+            .limit(count = limit)
+            .offset(start = offset.toLong())
             .map { row ->
                 AuditEntryEntity(
                     id = row[AuditEntryTable.id],

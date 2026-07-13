@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
@@ -17,6 +17,7 @@ export class ParticipantImportComponent {
   private readonly participantService = inject(ParticipantClient);
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   protected csvText = '';
   protected error = signal('');
@@ -43,14 +44,14 @@ export class ParticipantImportComponent {
       });
 
     if (rows.length === 0) {
-      this.error.set('No rows to import.');
+      this.error.set(this.translate.instant('participants.import.noRowsError'));
       return;
     }
 
     const eventId = this.route.snapshot.paramMap.get('id')!;
     this.participantService.importCsv(eventId, { rows }).pipe(
       catchError(() => {
-        this.error.set('Import failed.');
+        this.error.set(this.translate.instant('participants.import.importError'));
         return of(null);
       }),
     ).subscribe((res) => {

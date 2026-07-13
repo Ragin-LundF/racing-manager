@@ -53,19 +53,20 @@ class EventRepository {
     }
 
     fun update(event: EventEntity): Boolean = transaction {
-        val count = EventTable.update({ EventTable.id eq event.id and (EventTable.version eq event.version - 1) }) {
-            it[name] = event.name
-            it[description] = event.description
-            it[status] = event.status.name
-            it[laneType] = event.settings.laneType.name
-            it[measurementType] = event.settings.measurementType.name
-            it[maxParticipants] = event.settings.maxParticipants
-            it[version] = event.version
-            it[updatedAt] = event.updatedAt
-            it[activatedAt] = event.activatedAt
-            it[lockedForSync] = event.lockedForSync
-            it[syncStatus] = event.syncStatus?.name
-        }
+        val count =
+            EventTable.update(where = { EventTable.id eq event.id and (EventTable.version eq event.version - 1) }) {
+                it[name] = event.name
+                it[description] = event.description
+                it[status] = event.status.name
+                it[laneType] = event.settings.laneType.name
+                it[measurementType] = event.settings.measurementType.name
+                it[maxParticipants] = event.settings.maxParticipants
+                it[version] = event.version
+                it[updatedAt] = event.updatedAt
+                it[activatedAt] = event.activatedAt
+                it[lockedForSync] = event.lockedForSync
+                it[syncStatus] = event.syncStatus?.name
+            }
         count > 0
     }
 
@@ -74,8 +75,8 @@ class EventRepository {
     }
 
     /** Defense-in-depth tenant filter: returns the event only if it belongs to
-        [tenantId], so a route-level check that is missed or bypassed cannot
-        leak another tenant's event through this query alone. */
+    [tenantId], so a route-level check that is missed or bypassed cannot
+    leak another tenant's event through this query alone. */
     fun findByIdForTenant(id: UUID, tenantId: UUID): EventEntity? = transaction {
         EventTable.selectAll().where { (EventTable.id eq id) and (EventTable.tenantId eq tenantId) }
             .singleOrNull()

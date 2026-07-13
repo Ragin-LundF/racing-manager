@@ -8,6 +8,7 @@ import io.github.raginlundf.racingmanager.application.participant.ParticipantSer
 import io.github.raginlundf.racingmanager.application.participant.CreateParticipantResult
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
 import io.github.raginlundf.racingmanager.domain.heat.HeatStatus
+import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.gateway.SimulationMeasurementGateway
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
@@ -22,7 +23,9 @@ import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -30,6 +33,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import java.util.UUID
 
 class HeatServiceTest {
@@ -45,7 +49,12 @@ class HeatServiceTest {
     private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
-    private val measurementGateway = SimulationMeasurementGateway()
+    private val measurementGateway = SimulationMeasurementGateway(
+        rampDelayMs = 2,
+        raceMinMs = 2,
+        raceMaxMs = 4,
+        dnfTimeoutMs = 6,
+    )
     private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository, measurementGateway)
 
     private lateinit var actorId: UUID
@@ -206,5 +215,25 @@ class HeatServiceTest {
 
         val result = heatService.rejectResult(heatId, actorId)
         assertIs<RejectResult.Success>(result)
+    }
+
+    @Test
+    fun `start on a SIMULATED event auto-finishes the heat with one measurement per lane`() = runBlocking {
+        val created = heatService.create(eventId, listOf(participantId1, participantId2), actorId)
+        val heatId = (created as CreateHeatResult.Success).heat.id
+        heatService.arm(heatId, actorId)
+        heatService.start(heatId, actorId)
+
+        val finished = withTimeout(2_000) {
+            var heat = heatService.findById(heatId)!!
+            while (heat.status != HeatStatus.FINISHED) {
+                delay(10)
+                heat = heatService.findById(heatId)!!
+            }
+            heat
+        }
+
+        assertEquals(2, finished.measurements.size)
+        assertTrue(finished.measurements.all { it.outcome == LaneOutcome.FINISHED || it.outcome == LaneOutcome.DNF })
     }
 }

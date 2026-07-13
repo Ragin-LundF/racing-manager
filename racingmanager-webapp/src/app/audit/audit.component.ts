@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { DatePipe, SlicePipe } from '@angular/common';
 import { AuditClient } from '../libs/clients/audit/audit.client';
 import { AuditEntryResponse } from '../libs/clients/audit/audit.models';
@@ -15,6 +15,7 @@ import { AuditEntryResponse } from '../libs/clients/audit/audit.models';
 export class AuditComponent {
   private readonly auditClient = inject(AuditClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   protected entries = signal<AuditEntryResponse[]>([]);
   protected error = signal('');
@@ -31,7 +32,7 @@ export class AuditComponent {
     this.error.set('');
     this.auditClient.findByEventId(this.eventId).subscribe({
       next: (data) => this.entries.set(data),
-      error: () => this.error.set('Failed to load audit log.'),
+      error: () => this.error.set(this.translate.instant('audit.loadError')),
     });
   }
 

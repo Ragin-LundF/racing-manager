@@ -17,7 +17,9 @@ class ImportedPackageRepository {
                 ImportedPackageEntity(
                     packageId = it[ImportedPackageTable.packageId],
                     originTenantId = it[ImportedPackageTable.originTenantId],
-                    importedEventIds = it[ImportedPackageTable.importedEventIds].split(",").filter { s -> s.isNotBlank() }.map(UUID::fromString),
+                    importedEventIds = it[ImportedPackageTable.importedEventIds]
+                        .split(",").filter { s -> s.isNotBlank() }
+                        .map(transform = UUID::fromString),
                     importedAt = it[ImportedPackageTable.importedAt],
                 )
             }
@@ -27,7 +29,7 @@ class ImportedPackageRepository {
         ImportedPackageTable.insert {
             it[packageId] = entry.packageId
             it[originTenantId] = entry.originTenantId
-            it[importedEventIds] = entry.importedEventIds.joinToString(",")
+            it[importedEventIds] = entry.importedEventIds.joinToString(separator = ",")
             it[importedAt] = entry.importedAt
         }
     }

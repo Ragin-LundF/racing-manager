@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LowerCasePipe } from '@angular/common';
 import { ResultsClient } from '../libs/clients/results/results.client';
 import { EventResultSnapshotResponse } from '../libs/clients/results/results.models';
@@ -15,6 +15,7 @@ import { EventResultSnapshotResponse } from '../libs/clients/results/results.mod
 export class ResultsComponent {
   private readonly resultsClient = inject(ResultsClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   protected snapshot = signal<EventResultSnapshotResponse | null>(null);
   protected error = signal('');
@@ -32,7 +33,7 @@ export class ResultsComponent {
   private load(): void {
     this.resultsClient.getSnapshot(this.eventId).subscribe({
       next: (data) => this.snapshot.set(data),
-      error: () => this.error.set('Failed to load results.'),
+      error: () => this.error.set(this.translate.instant('results.loadError')),
     });
   }
 
@@ -41,7 +42,7 @@ export class ResultsComponent {
     this.resultsClient.completeEvent(this.eventId).subscribe({
       next: () => this.load(),
       error: () => {
-        this.error.set('Failed to complete event.');
+        this.error.set(this.translate.instant('results.completeError'));
         this.completing.set(false);
       },
     });
@@ -52,7 +53,7 @@ export class ResultsComponent {
     this.resultsClient.reopenEvent(this.eventId).subscribe({
       next: () => this.load(),
       error: () => {
-        this.error.set('Failed to reopen event.');
+        this.error.set(this.translate.instant('results.reopenError'));
         this.reopening.set(false);
       },
     });

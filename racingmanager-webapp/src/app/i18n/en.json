@@ -63,7 +63,10 @@
       "title": {
         "create": "Create Event",
         "edit": "Edit Event"
-      }
+      },
+      "loadError": "Failed to load event.",
+      "updateError": "Update failed.",
+      "createError": "Create failed."
     },
     "list": {
       "create": "Create Event",
@@ -83,7 +86,8 @@
   "login": {
     "error": {
       "generic": "Login failed. Please try again.",
-      "invalidCredentials": "Invalid username or password."
+      "invalidCredentials": "Invalid username or password.",
+      "tenantDisabled": "This tenant has been deactivated."
     },
     "password": {
       "label": "Password",
@@ -158,7 +162,10 @@
         "edit": "Edit Participant"
       },
       "vehicleCategory": "Vehicle Category",
-      "vehicleName": "Vehicle Name"
+      "vehicleName": "Vehicle Name",
+      "loadError": "Failed to load participant.",
+      "updateError": "Update failed.",
+      "createError": "Create failed."
     },
     "import": {
       "back": "Back to Participants",
@@ -169,7 +176,9 @@
       "errors": "Errors:",
       "hint": "Paste CSV data below. Format: startNumber, firstName, lastName, club, vehicleName, vehicleCategory",
       "submit": "Import",
-      "title": "Import Participants (CSV)"
+      "title": "Import Participants (CSV)",
+      "noRowsError": "No rows to import.",
+      "importError": "Import failed."
     },
     "list": {
       "add": "Add Participant",
@@ -201,7 +210,8 @@
       "loading": "Randomizing...",
       "start": "Randomize",
       "success": "Participants randomized with seed {{seed}}.",
-      "title": "Randomize Participants"
+      "title": "Randomize Participants",
+      "randomizationError": "Randomization failed."
     }
   },
   "qualification": {
@@ -218,7 +228,9 @@
     "finalizeButton": "Finalize",
     "finalizeConfirm": "Are you sure? This will lock the rankings.",
     "finalizeHint": "All heats must be completed before finalizing.",
+    "finalizedError": "Failed to finalize qualification.",
     "finalizedMessage": "Qualification is finalized. Rankings are locked.",
+    "finalizedSuccess": "Qualification finalized.",
     "finalizedTitle": "Finalized",
     "generateSchedule": "Generate Schedule",
     "goToRaceControl": "Run",
@@ -233,11 +245,17 @@
     "rankingsTitle": "Rankings",
     "reopenButton": "Reopen",
     "reopenConfirm": "Reopen qualification to allow more runs?",
+    "reopenedError": "Failed to reopen qualification.",
+    "reopenedSuccess": "Qualification reopened.",
     "runs": "Runs:",
+    "scheduleGeneratedError": "Failed to generate schedule.",
+    "scheduleGeneratedSuccess": "Schedule generated.",
     "scheduleTitle": "Schedule",
     "seed": "Seed:",
     "setupButton": "Setup",
     "setupDescription": "Configure and start the qualification phase. Each participant will race in multiple runs.",
+    "setupError": "Failed to setup qualification.",
+    "setupSuccess": "Qualification setup complete.",
     "setupTitle": "Setup Qualification",
     "startNumber": "#",
     "status": "Status:",
@@ -253,20 +271,28 @@
     "cancel": "Cancel",
     "confirmFinalize": "Yes, Finalize",
     "createHeat": "Create Heat",
+    "createHeatError": "Failed to create heat.",
     "finalizeButton": "Finalize",
     "finalizeConfirm": "Are you sure? This will lock the knockout results.",
     "finalizeHint": "All matches must be completed before finalizing.",
+    "finalizedError": "Failed to finalize knockout.",
     "finalizedMessage": "Knockout is finalized. Results are locked.",
+    "finalizedSuccess": "Knockout finalized.",
     "finalizedTitle": "Finalized",
     "generatePairings": "Generate Pairings",
     "goToRaceControl": "Run",
+    "heatCreatedSuccess": "Heat created for match.",
     "manualPairings": "Manual Pairings",
+    "manualPairingsSavedError": "Failed to save manual pairings.",
+    "manualPairingsSavedSuccess": "Manual pairings saved.",
     "manualPairingsTitle": "Set Manual Pairings",
     "modeAdjacent": "Adjacent (1v2, 3v4, ...)",
     "modeFirstVsLast": "First vs Last (1vN, 2vN-1, ...)",
     "modeManual": "Manual",
     "modeRandom": "Random",
     "pairingMode": "Pairing Mode:",
+    "pairingsGeneratedError": "Failed to generate pairings.",
+    "pairingsGeneratedSuccess": "Pairings generated.",
     "resultsTitle": "Results",
     "roundLabel": "Round {{number}}",
     "savePairings": "Save Pairings",
@@ -274,6 +300,8 @@
     "selectParticipantOrBye": "Select participant or Bye...",
     "setupButton": "Setup",
     "setupDescription": "Configure and start the knockout phase. Pairings will be generated based on qualification rankings.",
+    "setupError": "Failed to setup knockout.",
+    "setupSuccess": "Knockout setup complete.",
     "setupTitle": "Setup Knockout",
     "status": "Status:",
     "statusTitle": "Knockout Status",
@@ -318,20 +346,29 @@
   "races": {
     "control": {
       "accept": "Accept",
+      "acceptError": "Failed to accept result.",
       "arm": "Arm",
       "armedAt": "Armed: {{time}}",
+      "armError": "Failed to arm heat.",
       "cancel": "Cancel",
+      "cancelError": "Failed to cancel heat.",
       "create": "Create Heat",
+      "createError": "Failed to create heat.",
       "createHeat": "Create New Heat",
       "finish": "Finish",
       "finishedAt": "Finished: {{time}}",
+      "finishError": "Failed to finish heat.",
       "heatLabel": "Heat #{{number}}",
+      "loadError": "Failed to load heats.",
       "noHeats": "No heats yet. Create a heat to get started.",
       "noParticipants": "No active participants available.",
       "reject": "Reject",
+      "rejectError": "Failed to reject result.",
       "repeat": "Repeat",
+      "repeatError": "Failed to repeat heat.",
       "start": "Start",
       "startedAt": "Started: {{time}}",
+      "startError": "Failed to start heat.",
       "title": "Race Control"
     }
   },
@@ -410,7 +447,9 @@
   "results": {
     "title": "Results",
     "completeButton": "Complete Event",
+    "completeError": "Failed to complete event.",
     "reopenButton": "Reopen Event",
+    "reopenError": "Failed to reopen event.",
     "qualificationTitle": "Qualification Rankings",
     "knockoutTitle": "Knockout Results",
     "rank": "Rank",
@@ -420,7 +459,8 @@
     "bestTime": "Best Time",
     "runs": "Runs",
     "dnf": "DNF",
-    "empty": "No results available yet."
+    "empty": "No results available yet.",
+    "loadError": "Failed to load results."
   },
   "export": {
     "title": "Export & Backup",
@@ -430,7 +470,14 @@
     "csv": "Export CSV",
     "html": "Export HTML",
     "json": "Export JSON",
-    "backup": "Export Backup"
+    "backup": "Export Backup",
+    "csvExportError": "CSV export failed.",
+    "htmlExportError": "HTML export failed.",
+    "jsonExportError": "JSON export failed.",
+    "backupExportError": "Backup export failed.",
+    "restoreSuccess": "Restore successful.",
+    "restoreFailed": "Restore failed: {{message}}",
+    "invalidBackupFormat": "Invalid backup file format."
   },
   "diagnostics": {
     "title": "Diagnostics",
@@ -464,7 +511,10 @@
     "supportHint": "When reporting an issue, include the following files:",
     "supportLogs": "Logs",
     "supportBackups": "Backups",
-    "supportDb": "Database"
+    "supportDb": "Database",
+    "loadError": "Failed to load diagnostics.",
+    "recoveryResult": "Heat #{{heatNumber}}: {{action}}",
+    "recoveryFailed": "Recovery failed: {{message}}"
   },
   "audit": {
     "title": "Audit Log",
@@ -475,7 +525,8 @@
     "actor": "Actor",
     "refresh": "Refresh",
     "count": "{{count}} entries",
-    "system": "System"
+    "system": "System",
+    "loadError": "Failed to load audit log."
   },
   "spectator": {
     "shell": {

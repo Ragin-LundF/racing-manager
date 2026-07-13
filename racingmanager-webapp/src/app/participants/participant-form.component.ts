@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
@@ -18,6 +18,7 @@ export class ParticipantFormComponent {
   protected readonly route = inject(ActivatedRoute);
   // Zoneless CD: ngModel fields set in an async callback need an explicit nudge.
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
 
   protected isEdit = signal(false);
   protected startNumber: number | null = null;
@@ -56,7 +57,7 @@ export class ParticipantFormComponent {
         this.vehicleCategory = p.vehicle?.category ?? '';
         this.cdr.markForCheck();
       },
-      error: () => this.error.set('Failed to load participant.'),
+      error: () => this.error.set(this.translate.instant('participants.form.loadError')),
     });
   }
 
@@ -73,7 +74,7 @@ export class ParticipantFormComponent {
         club: this.club || null,
       }).pipe(
         catchError((err) => {
-          this.error.set(err?.error?.message ?? 'Update failed.');
+          this.error.set(err?.error?.message ?? this.translate.instant('participants.form.updateError'));
           return of(null);
         }),
       ).subscribe((res) => {
@@ -91,7 +92,7 @@ export class ParticipantFormComponent {
         vehicleCategory: this.vehicleCategory || null,
       }).pipe(
         catchError((err) => {
-          this.error.set(err?.error?.message ?? 'Create failed.');
+          this.error.set(err?.error?.message ?? this.translate.instant('participants.form.createError'));
           return of(null);
         }),
       ).subscribe((res) => {

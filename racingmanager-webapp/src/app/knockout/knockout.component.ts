@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { KnockoutClient } from '../libs/clients/knockout/knockout.client';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
@@ -22,6 +22,7 @@ export class KnockoutComponent {
   private readonly knockoutClient = inject(KnockoutClient);
   private readonly participantClient = inject(ParticipantClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   protected tournament = signal<KnockoutTournamentResponse | null>(null);
   protected matches = signal<KnockoutMatchResponse[]>([]);
@@ -98,14 +99,14 @@ export class KnockoutComponent {
       next: (t) => {
         this.tournament.set(t);
         this.loading.set(false);
-        this.success.set('Knockout setup complete.');
+        this.success.set(this.translate.instant('knockout.setupSuccess'));
         if (this.selectedPairingMode() === 'MANUAL') {
           this.loadQualifiedParticipants();
           this.showManualEditor.set(true);
         }
       },
       error: () => {
-        this.error.set('Failed to setup knockout.');
+        this.error.set(this.translate.instant('knockout.setupError'));
         this.loading.set(false);
       },
     });
@@ -119,11 +120,11 @@ export class KnockoutComponent {
       next: (t) => {
         this.tournament.set(t);
         this.loading.set(false);
-        this.success.set('Pairings generated.');
+        this.success.set(this.translate.instant('knockout.pairingsGeneratedSuccess'));
         this.loadMatches();
       },
       error: () => {
-        this.error.set('Failed to generate pairings.');
+        this.error.set(this.translate.instant('knockout.pairingsGeneratedError'));
         this.loading.set(false);
       },
     });
@@ -137,11 +138,11 @@ export class KnockoutComponent {
       next: () => {
         this.loading.set(false);
         this.showFinalizeConfirm.set(false);
-        this.success.set('Knockout finalized.');
+        this.success.set(this.translate.instant('knockout.finalizedSuccess'));
         this.load();
       },
       error: () => {
-        this.error.set('Failed to finalize knockout.');
+        this.error.set(this.translate.instant('knockout.finalizedError'));
         this.loading.set(false);
       },
     });
@@ -153,11 +154,11 @@ export class KnockoutComponent {
     this.knockoutClient.createHeatForMatch(this.eventId, { matchId: match.id }).subscribe({
       next: () => {
         this.loading.set(false);
-        this.success.set('Heat created for match.');
+        this.success.set(this.translate.instant('knockout.heatCreatedSuccess'));
         this.loadMatches();
       },
       error: () => {
-        this.error.set('Failed to create heat.');
+        this.error.set(this.translate.instant('knockout.createHeatError'));
         this.loading.set(false);
       },
     });
@@ -192,11 +193,11 @@ export class KnockoutComponent {
         this.tournament.set(t);
         this.loading.set(false);
         this.showManualEditor.set(false);
-        this.success.set('Manual pairings saved.');
+        this.success.set(this.translate.instant('knockout.manualPairingsSavedSuccess'));
         this.loadMatches();
       },
       error: () => {
-        this.error.set('Failed to save manual pairings.');
+        this.error.set(this.translate.instant('knockout.manualPairingsSavedError'));
         this.loading.set(false);
       },
     });

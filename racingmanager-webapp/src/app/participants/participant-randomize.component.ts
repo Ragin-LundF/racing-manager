@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
 import { catchError, of } from 'rxjs';
@@ -15,6 +15,7 @@ export class ParticipantRandomizeComponent {
   private readonly participantService = inject(ParticipantClient);
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   protected result = signal<{ seed: number } | null>(null);
   protected alreadyRandomized = signal(false);
@@ -34,7 +35,7 @@ export class ParticipantRandomizeComponent {
         if (body && body.alreadyRandomized) {
           this.alreadyRandomized.set(true);
         } else {
-          this.error.set('Randomization failed.');
+          this.error.set(this.translate.instant('participants.randomize.randomizationError'));
         }
         return of(null);
       }),

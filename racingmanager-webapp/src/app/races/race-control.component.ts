@@ -1,5 +1,5 @@
 import {Component, inject, OnDestroy, signal} from '@angular/core';
-import {TranslatePipe} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {ActivatedRoute} from '@angular/router';
 import {DatePipe} from '@angular/common';
 import {HeatClient} from '../libs/clients/heat/heat.client';
@@ -18,6 +18,7 @@ export class RaceControlComponent implements OnDestroy {
   private readonly heatService = inject(HeatClient);
   private readonly participantService = inject(ParticipantClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   protected heats = signal<HeatResponse[]>([]);
   protected participants = signal<ParticipantResponse[]>([]);
@@ -44,7 +45,7 @@ export class RaceControlComponent implements OnDestroy {
   private loadHeats(): void {
     this.heatService.findByEventId(this.eventId).subscribe({
       next: (heats) => this.heats.set(heats),
-      error: () => this.error.set('Failed to load heats.'),
+      error: () => this.error.set(this.translate.instant('races.control.loadError')),
     });
   }
 
@@ -92,7 +93,7 @@ export class RaceControlComponent implements OnDestroy {
         this.loadHeats();
       },
       error: () => {
-        this.error.set('Failed to create heat.');
+        this.error.set(this.translate.instant('races.control.createError'));
         this.creating.set(false);
       },
     });
@@ -101,49 +102,49 @@ export class RaceControlComponent implements OnDestroy {
   protected onArm(heat: HeatResponse): void {
     this.heatService.arm(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
-      error: () => this.error.set('Failed to arm heat.'),
+      error: () => this.error.set(this.translate.instant('races.control.armError')),
     });
   }
 
   protected onStart(heat: HeatResponse): void {
     this.heatService.start(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
-      error: () => this.error.set('Failed to start heat.'),
+      error: () => this.error.set(this.translate.instant('races.control.startError')),
     });
   }
 
   protected onFinish(heat: HeatResponse): void {
     this.heatService.finish(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
-      error: () => this.error.set('Failed to finish heat.'),
+      error: () => this.error.set(this.translate.instant('races.control.finishError')),
     });
   }
 
   protected onCancel(heat: HeatResponse): void {
     this.heatService.cancel(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
-      error: () => this.error.set('Failed to cancel heat.'),
+      error: () => this.error.set(this.translate.instant('races.control.cancelError')),
     });
   }
 
   protected onAccept(heat: HeatResponse): void {
     this.heatService.acceptResult(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
-      error: () => this.error.set('Failed to accept result.'),
+      error: () => this.error.set(this.translate.instant('races.control.acceptError')),
     });
   }
 
   protected onReject(heat: HeatResponse): void {
     this.heatService.rejectResult(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
-      error: () => this.error.set('Failed to reject result.'),
+      error: () => this.error.set(this.translate.instant('races.control.rejectError')),
     });
   }
 
   protected onRepeat(heat: HeatResponse): void {
     this.heatService.repeat(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
-      error: () => this.error.set('Failed to repeat heat.'),
+      error: () => this.error.set(this.translate.instant('races.control.repeatError')),
     });
   }
 

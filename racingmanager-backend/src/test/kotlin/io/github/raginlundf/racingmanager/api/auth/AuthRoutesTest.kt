@@ -211,6 +211,25 @@ class AuthRoutesTest {
     }
 
     @Test
+    fun `login for a deactivated tenant returns 401 TENANT_DISABLED`() = testApplication {
+        application { configureTestApp() }
+
+        client.post("/api/v1/auth/setup") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123","displayName":"Admin User"}""")
+        }
+        authService.deactivateTenant(AuthService.LOCAL_TENANT_ID, java.util.UUID.randomUUID())
+
+        val response = client.post("/api/v1/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123"}""")
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertTrue(response.bodyAsText().contains("\"code\":\"TENANT_DISABLED\""))
+    }
+
+    @Test
     fun `login with wrong password returns 401`() = testApplication {
         application { configureTestApp() }
 
