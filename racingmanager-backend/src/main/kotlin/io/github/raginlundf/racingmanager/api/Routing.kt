@@ -34,7 +34,7 @@ fun Application.configureRouting(authService: AuthService, eventService: EventSe
         heatRoutes(authService, heatService)
         qualificationRoutes(authService, qualificationService)
         knockoutRoutes(authService, knockoutService)
-        resultsRoutes(authService, resultsService)
+        resultsRoutes(authService, resultsService, eventService)
         auditRoutes(authService, auditService)
         spectatorRoutes(spectatorService, eventRepository, webSocketService)
     }

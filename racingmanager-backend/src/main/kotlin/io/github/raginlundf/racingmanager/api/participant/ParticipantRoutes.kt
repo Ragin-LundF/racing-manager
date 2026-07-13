@@ -1,6 +1,7 @@
 package io.github.raginlundf.racingmanager.api.participant
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.participant.models.CreateParticipantRequestModel
 import io.github.raginlundf.racingmanager.api.participant.models.ImportCsvRequestModel
 import io.github.raginlundf.racingmanager.api.participant.models.ImportErrorModel
@@ -11,7 +12,6 @@ import io.github.raginlundf.racingmanager.api.participant.models.RandomizeRespon
 import io.github.raginlundf.racingmanager.api.participant.models.UpdateParticipantRequestModel
 import io.github.raginlundf.racingmanager.api.participant.models.VehicleResponseModel
 import io.github.raginlundf.racingmanager.application.auth.AuthService
-import io.github.raginlundf.racingmanager.application.auth.SessionResult
 import io.github.raginlundf.racingmanager.application.participant.CreateParticipantResult
 import io.github.raginlundf.racingmanager.application.participant.ParticipantActionResult
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
@@ -20,7 +20,6 @@ import io.github.raginlundf.racingmanager.application.participant.UpdateParticip
 import io.github.raginlundf.racingmanager.application.participant.ImportResult
 import io.github.raginlundf.racingmanager.application.participant.CsvParticipantRow
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -32,14 +31,14 @@ import java.util.UUID
 
 fun Route.participantRoutes(authService: AuthService, participantService: ParticipantService) {
     get("/api/v1/events/{eventId}/participants") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val participants = participantService.findByEventId(eventId)
         call.respond(participants.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/participants/{id}") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val id = UUID.fromString(call.parameters["id"])
         val participant = participantService.findById(id)
             ?: return@get call.respond(
@@ -50,7 +49,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<CreateParticipantRequestModel>()
 
@@ -80,7 +79,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     put("/api/v1/events/{eventId}/participants/{id}") {
-        val session = authenticateRequest(call, authService) ?: return@put
+        val session = call.authenticateRequest(authService) ?: return@put
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<UpdateParticipantRequestModel>()
 
@@ -105,7 +104,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/{id}/deactivate") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
 
         when (val result = participantService.deactivate(id, session.user.id)) {
@@ -117,7 +116,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/{id}/reactivate") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
 
         when (val result = participantService.reactivate(id, session.user.id)) {
@@ -129,7 +128,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/randomize") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<RandomizeRequestModel>()
 
@@ -150,7 +149,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/import") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<ImportCsvRequestModel>()
 
@@ -182,19 +181,6 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
             }
         }
     }
-}
-
-private suspend fun authenticateRequest(call: ApplicationCall, authService: AuthService): SessionResult.Valid? {
-    val sessionId = call.request.headers["X-Session-Id"]
-        ?: return null.also {
-            call.respond(status = HttpStatusCode.Unauthorized, message = ErrorResponseModel("MISSING_SESSION", "Session ID is required"))
-        }
-    val result = authService.getSession(UUID.fromString(sessionId))
-    if (result !is SessionResult.Valid) {
-        call.respond(status = HttpStatusCode.Unauthorized, message = ErrorResponseModel("SESSION_EXPIRED", "Session has expired"))
-        return null
-    }
-    return result
 }
 
 private fun io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity.toResponseModel() = ParticipantResponseModel(

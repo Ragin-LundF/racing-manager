@@ -1,6 +1,7 @@
 package io.github.raginlundf.racingmanager.api.results
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.results.models.BackupResponseModel
 import io.github.raginlundf.racingmanager.api.results.models.EventResultSnapshotResponseModel
 import io.github.raginlundf.racingmanager.api.results.models.EventResultSummaryModel
@@ -12,13 +13,13 @@ import io.github.raginlundf.racingmanager.api.results.models.KnockoutResultEntry
 import io.github.raginlundf.racingmanager.api.results.models.QualificationResultEntryModel
 import io.github.raginlundf.racingmanager.api.results.models.RestoreResponseModel
 import io.github.raginlundf.racingmanager.application.auth.AuthService
-import io.github.raginlundf.racingmanager.application.auth.SessionResult
+import io.github.raginlundf.racingmanager.application.event.EventService
+import io.github.raginlundf.racingmanager.application.event.CompleteEventResult
+import io.github.raginlundf.racingmanager.application.event.ReopenEventResult
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutResultEntry
 import io.github.raginlundf.racingmanager.application.results.BackupExport
-import io.github.raginlundf.racingmanager.application.results.CompleteEventResult
 import io.github.raginlundf.racingmanager.application.results.EventResultSnapshot
 import io.github.raginlundf.racingmanager.application.results.JsonExport
-import io.github.raginlundf.racingmanager.application.results.ReopenEventResult
 import io.github.raginlundf.racingmanager.application.results.RestoreResult
 import io.github.raginlundf.racingmanager.application.results.ResultsService
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
@@ -28,7 +29,6 @@ import io.github.raginlundf.racingmanager.domain.qualification.QualificationRank
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.header
@@ -39,9 +39,9 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import java.util.UUID
 
-fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService) {
+fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService, eventService: EventService) {
     get("/api/v1/events/{eventId}/results/snapshot") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val snapshot = resultsService.getSnapshot(eventId)
             ?: return@get call.respond(
@@ -52,10 +52,10 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     post("/api/v1/events/{eventId}/results/complete") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
 
-        when (val result = resultsService.completeEvent(eventId, session.user.id)) {
+        when (val result = eventService.completeEvent(eventId, session.user.id)) {
             is CompleteEventResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Event completed"))
             }
@@ -69,10 +69,10 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     post("/api/v1/events/{eventId}/results/reopen") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
 
-        when (val result = resultsService.reopenEvent(eventId, session.user.id)) {
+        when (val result = eventService.reopenEvent(eventId, session.user.id)) {
             is ReopenEventResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Event reopened"))
             }
@@ -86,7 +86,7 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/csv") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val result = resultsService.exportCsv(eventId)
             ?: return@get call.respond(
@@ -98,7 +98,7 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/html") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val locale = call.request.headers["Accept-Language"]?.take(2) ?: "en"
         val result = resultsService.exportHtml(eventId, locale)
@@ -110,7 +110,7 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/json") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val result = resultsService.exportJson(eventId)
             ?: return@get call.respond(
@@ -121,7 +121,7 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/backup") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val result = resultsService.exportBackup(eventId)
             ?: return@get call.respond(
@@ -132,7 +132,7 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     post("/api/v1/events/{eventId}/results/restore") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val backup = call.receive<BackupResponseModel>()
 
@@ -151,26 +151,6 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
             }
         }
     }
-}
-
-private suspend fun authenticateRequest(call: ApplicationCall, authService: AuthService): SessionResult.Valid? {
-    val sessionId = call.request.headers["X-Session-Id"]
-        ?: return null.also {
-            call.respond(
-                status = HttpStatusCode.Unauthorized,
-                message = ErrorResponseModel("MISSING_SESSION", "Session ID is required"),
-            )
-        }
-
-    val result = authService.getSession(UUID.fromString(sessionId))
-    if (result !is SessionResult.Valid) {
-        call.respond(
-            status = HttpStatusCode.Unauthorized,
-            message = ErrorResponseModel("SESSION_EXPIRED", "Session has expired"),
-        )
-        return null
-    }
-    return result
 }
 
 private fun EventResultSnapshot.toResponseModel() = EventResultSnapshotResponseModel(

@@ -1,12 +1,12 @@
 package io.github.raginlundf.racingmanager.api.qualification
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationProgressResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationRankingResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.SetupQualificationRequestModel
 import io.github.raginlundf.racingmanager.application.auth.AuthService
-import io.github.raginlundf.racingmanager.application.auth.SessionResult
 import io.github.raginlundf.racingmanager.application.qualification.FinalizeResult
 import io.github.raginlundf.racingmanager.application.qualification.GenerateScheduleResult
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
@@ -18,7 +18,6 @@ import io.github.raginlundf.racingmanager.domain.heat.Measurement
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -29,7 +28,7 @@ import java.util.UUID
 
 fun Route.qualificationRoutes(authService: AuthService, qualificationService: QualificationService) {
     post("/api/v1/events/{eventId}/qualification/setup") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<SetupQualificationRequestModel>()
 
@@ -53,7 +52,7 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     get("/api/v1/events/{eventId}/qualification") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val qualification = qualificationService.findByEventId(eventId)
             ?: return@get call.respond(
@@ -64,7 +63,7 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     post("/api/v1/events/{eventId}/qualification/schedule") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
 
         when (val result = qualificationService.generateSchedule(eventId, session.user.id)) {
@@ -87,28 +86,28 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     get("/api/v1/events/{eventId}/qualification/schedule") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val schedule = qualificationService.getSchedule(eventId)
         call.respond(schedule.map { it.toHeatResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/qualification/rankings") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val rankings = qualificationService.getRankings(eventId)
         call.respond(rankings.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/qualification/progress") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val progress = qualificationService.getProgress(eventId)
         call.respond(progress.toResponseModel())
     }
 
     post("/api/v1/events/{eventId}/qualification/finalize") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
 
         when (val result = qualificationService.finalize(eventId, session.user.id)) {
@@ -128,7 +127,7 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     post("/api/v1/events/{eventId}/qualification/reopen") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
 
         when (val result = qualificationService.reopen(eventId, session.user.id)) {
@@ -143,26 +142,6 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
             }
         }
     }
-}
-
-private suspend fun authenticateRequest(call: ApplicationCall, authService: AuthService): SessionResult.Valid? {
-    val sessionId = call.request.headers["X-Session-Id"]
-        ?: return null.also {
-            call.respond(
-                status = HttpStatusCode.Unauthorized,
-                message = ErrorResponseModel("MISSING_SESSION", "Session ID is required"),
-            )
-        }
-
-    val result = authService.getSession(UUID.fromString(sessionId))
-    if (result !is SessionResult.Valid) {
-        call.respond(
-            status = HttpStatusCode.Unauthorized,
-            message = ErrorResponseModel("SESSION_EXPIRED", "Session has expired"),
-        )
-        return null
-    }
-    return result
 }
 
 private fun QualificationEntity.toResponseModel() = QualificationResponseModel(

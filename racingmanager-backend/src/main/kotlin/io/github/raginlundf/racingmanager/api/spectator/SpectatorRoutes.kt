@@ -15,8 +15,10 @@ import io.github.raginlundf.racingmanager.application.spectator.SpectatorKnockou
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorSnapshot
 import io.github.raginlundf.racingmanager.domain.event.EventEntity
+import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.heat.HeatLaneAssignment
+import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.github.raginlundf.racingmanager.domain.heat.Measurement
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
@@ -31,7 +33,7 @@ import java.util.UUID
 
 fun Route.spectatorRoutes(spectatorService: SpectatorService, eventRepository: EventRepository, webSocketService: SpectatorWebSocketService) {
     get("/api/v1/public/events") {
-        val events = eventRepository.findAll().filter { it.status.name in listOf("ACTIVE", "ARCHIVED") }
+        val events = eventRepository.findAll().filter { it.status in listOf(EventStatus.ACTIVE, EventStatus.ARCHIVED) }
         call.respond(
             SpectatorEventListResponseModel(
                 events = events.map { e ->
@@ -47,12 +49,11 @@ fun Route.spectatorRoutes(spectatorService: SpectatorService, eventRepository: E
 
     webSocket("/api/v1/public/events/{eventId}/live") {
         val eventId = UUID.fromString(call.parameters["eventId"])
-        webSocketService.addConnection(eventId, this)
-        try {
+        webSocketService.addConnection(eventId = eventId, session = this)
+        runCatching {
             for (frame in incoming) {}
-        } catch (_: Exception) {
-        } finally {
-            webSocketService.removeConnection(eventId, this)
+        }.also {
+            webSocketService.removeConnection(eventId = eventId, session = this)
         }
     }
 
@@ -67,7 +68,7 @@ fun Route.spectatorRoutes(spectatorService: SpectatorService, eventRepository: E
     }
 }
 
-private fun SpectatorSnapshot.toResponseModel() = SpectatorSnapshotResponseModel(
+internal fun SpectatorSnapshot.toResponseModel() = SpectatorSnapshotResponseModel(
     event = SpectatorEventModel(
         id = event.id.toString(),
         name = event.name,
@@ -106,7 +107,7 @@ private fun SpectatorSnapshot.toResponseModel() = SpectatorSnapshotResponseModel
 )
 
 private fun HeatEntity.toResponseModel(): SpectatorHeatModel {
-    val finishedMeasurements = measurements.filter { it.outcome.name == "FINISHED" || it.outcome.name == "DNF" }
+    val finishedMeasurements = measurements.filter { it.outcome == LaneOutcome.FINISHED || it.outcome == LaneOutcome.DNF }
     return SpectatorHeatModel(
         id = id.toString(),
         heatNumber = heatNumber,

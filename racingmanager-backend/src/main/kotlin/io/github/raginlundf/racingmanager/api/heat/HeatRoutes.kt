@@ -1,6 +1,7 @@
 package io.github.raginlundf.racingmanager.api.heat
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.heat.models.AddMeasurementRequestModel
 import io.github.raginlundf.racingmanager.api.heat.models.CreateHeatRequestModel
 import io.github.raginlundf.racingmanager.api.heat.models.HeatResponseModel
@@ -22,7 +23,6 @@ import io.github.raginlundf.racingmanager.application.heat.StartHeatResult
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -48,14 +48,14 @@ private data class WsAuthMessage(val type: String? = null, val sessionId: String
 
 fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     get("/api/v1/events/{eventId}/heats") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val heats = heatService.findByEventId(eventId)
         call.respond(heats.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/heats/latest") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val heat = heatService.findLatestByEventId(eventId)
         if (heat == null) {
@@ -66,7 +66,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     get("/api/v1/events/{eventId}/heats/{id}") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val id = UUID.fromString(call.parameters["id"])
         val heat = heatService.findById(id)
         if (heat == null) {
@@ -77,7 +77,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<CreateHeatRequestModel>()
         val participantIds = request.participantIds.map { UUID.fromString(it) }
@@ -102,7 +102,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/arm") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.arm(id, session.user.id)) {
             is ArmHeatResult.Success -> call.respond(result.heat.toResponseModel())
@@ -113,7 +113,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/start") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.start(id, session.user.id)) {
             is StartHeatResult.Success -> call.respond(result.heat.toResponseModel())
@@ -123,7 +123,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/finish") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.finish(id, session.user.id)) {
             is FinishHeatResult.Success -> call.respond(result.heat.toResponseModel())
@@ -133,7 +133,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/cancel") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.cancel(id, session.user.id)) {
             is CancelHeatResult.Success -> call.respond(result.heat.toResponseModel())
@@ -143,7 +143,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/accept") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.acceptResult(id, session.user.id)) {
             is AcceptResult.Success -> call.respond(mapOf("status" to "accepted"))
@@ -153,7 +153,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/reject") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.rejectResult(id, session.user.id)) {
             is RejectResult.Success -> call.respond(mapOf("status" to "rejected"))
@@ -163,7 +163,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/repeat") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.repeat(id, session.user.id)) {
             is RepeatHeatResult.Success -> call.respond(result.heat.toResponseModel())
@@ -172,7 +172,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     put("/api/v1/events/{eventId}/heats/{id}/measurements") {
-        val session = authenticateRequest(call, authService) ?: return@put
+        val session = call.authenticateRequest(authService) ?: return@put
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<AddMeasurementRequestModel>()
         when (val result = heatService.addMeasurement(id, request.lane, request.durationNanos, LaneOutcome.valueOf(request.outcome), session.user.id)) {
@@ -183,12 +183,9 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     webSocket("/api/v1/events/{eventId}/live") {
-        try {
+        runCatching {
             val json = Json { ignoreUnknownKeys = true }
 
-            // Authenticate via the first message so the session id never appears
-            // in the request URL (and thus never lands in access logs). No event
-            // data is sent until the client proves a valid session.
             val authFrame = withTimeoutOrNull(5_000) { incoming.receive() } as? Frame.Text
             val sessionId = authFrame?.let {
                 runCatching { json.decodeFromString<WsAuthMessage>(it.readText()).sessionId }.getOrNull()
@@ -220,9 +217,7 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
                                     heat = heat.toResponseModel(),
                                 ),
                             )
-                            try {
-                                send(Frame.Text(message))
-                            } catch (_: Exception) { }
+                            runCatching { send(Frame.Text(message)) }
                         }
                     }
             }
@@ -237,21 +232,8 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
             }
 
             job.cancel()
-        } catch (_: Exception) { }
-    }
-}
-
-private suspend fun authenticateRequest(call: ApplicationCall, authService: AuthService): SessionResult.Valid? {
-    val sessionId = call.request.headers["X-Session-Id"]
-        ?: return null.also {
-            call.respond(status = HttpStatusCode.Unauthorized, message = ErrorResponseModel("MISSING_SESSION", "Session ID is required"))
         }
-    val result = authService.getSession(UUID.fromString(sessionId))
-    if (result !is SessionResult.Valid) {
-        call.respond(status = HttpStatusCode.Unauthorized, message = ErrorResponseModel("SESSION_EXPIRED", "Session has expired"))
-        return null
     }
-    return result
 }
 
 private fun HeatEntity.toResponseModel() = HeatResponseModel(

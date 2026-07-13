@@ -31,6 +31,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.UserReposi
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.ktor.server.application.Application
+import kotlin.time.Clock
 
 private val logger = KotlinLogging.logger {}
 
@@ -43,10 +44,9 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 private fun Application.seedDemoAdmin(authService: AuthService) {
     val profile = environment.config.propertyOrNull("racingmanager.profile")?.getString() ?: "demo"
     if (profile != "demo") return
-    when (authService.setupAdmin(username = "admin", password = "admin", displayName = "Administrator")) {
-        is SetupResult.Success ->
-            logger.warn { "[demo profile] Seeded default admin 'admin' / 'admin' — change these credentials." }
-        SetupResult.AlreadySetup -> Unit
+    val setupResult = authService.setupAdmin(username = "admin", password = "admin", displayName = "Administrator")
+    if (setupResult is SetupResult.Success) {
+        logger.warn { "[demo profile] Seeded default admin 'admin' / 'admin' — change these credentials." }
     }
 }
 
@@ -86,6 +86,7 @@ fun Application.module() {
             }
         }
     }
+    sessionRepository.deleteExpired(Clock.System.now())
     seedDemoAdmin(authService)
     configureWebSockets()
     spectatorWebSocketService.start()

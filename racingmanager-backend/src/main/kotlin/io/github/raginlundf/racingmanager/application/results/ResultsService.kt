@@ -1,18 +1,20 @@
 package io.github.raginlundf.racingmanager.application.results
 
 import io.github.raginlundf.racingmanager.api.results.models.BackupResponseModel
-import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
-import io.github.raginlundf.racingmanager.domain.event.EventEntity
-import io.github.raginlundf.racingmanager.domain.event.EventStatus
+import io.github.raginlundf.racingmanager.application.qualification.QualificationRankingCalculator
+import io.github.raginlundf.racingmanager.domain.event.MeasurementType
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
-import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchEntity
+import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchStatus
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutResultEntry
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutTournamentEntity
 import io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity
 import io.github.raginlundf.racingmanager.domain.participant.ParticipantStatus
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
+import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
+import io.github.raginlundf.racingmanager.domain.event.EventEntity
+import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
@@ -29,18 +31,6 @@ data class EventResultSnapshot(
     val allHeats: List<HeatEntity>,
     val isSimulated: Boolean,
 )
-
-sealed interface CompleteEventResult {
-    data class Success(val event: EventEntity) : CompleteEventResult
-    data object NotFound : CompleteEventResult
-    data class InvalidStatus(val status: EventStatus) : CompleteEventResult
-}
-
-sealed interface ReopenEventResult {
-    data class Success(val event: EventEntity) : ReopenEventResult
-    data object NotFound : ReopenEventResult
-    data class InvalidStatus(val status: EventStatus) : ReopenEventResult
-}
 
 data class CsvExport(
     val csv: String,
@@ -103,68 +93,8 @@ class ResultsService(
             qualificationRankings = qualificationRankings,
             knockoutResults = knockoutResults,
             allHeats = heats,
-            isSimulated = event.settings.measurementType.name == "SIMULATED",
+            isSimulated = event.settings.measurementType == MeasurementType.SIMULATED,
         )
-    }
-
-    fun completeEvent(eventId: UUID, actorId: UUID): CompleteEventResult {
-        val event = eventRepository.findById(eventId)
-            ?: return CompleteEventResult.NotFound
-
-        if (event.status != EventStatus.ACTIVE) {
-            return CompleteEventResult.InvalidStatus(event.status)
-        }
-
-        val now = clock.now()
-        val completed = event.copy(
-            status = EventStatus.COMPLETED,
-            version = event.version + 1,
-            updatedAt = now,
-        )
-        eventRepository.update(completed)
-
-        auditRepository.insert(
-            AuditEntryEntity(
-                id = UUID.randomUUID(),
-                actorId = actorId,
-                action = "EVENT_COMPLETED",
-                targetType = "Event",
-                targetId = eventId,
-                summary = "Event '''" + event.name + "'' marked as completed",
-                occurredAt = now,
-            ),
-        )
-        return CompleteEventResult.Success(completed)
-    }
-
-    fun reopenEvent(eventId: UUID, actorId: UUID): ReopenEventResult {
-        val event = eventRepository.findById(eventId)
-            ?: return ReopenEventResult.NotFound
-
-        if (event.status != EventStatus.COMPLETED) {
-            return ReopenEventResult.InvalidStatus(event.status)
-        }
-
-        val now = clock.now()
-        val reopened = event.copy(
-            status = EventStatus.ACTIVE,
-            version = event.version + 1,
-            updatedAt = now,
-        )
-        eventRepository.update(reopened)
-
-        auditRepository.insert(
-            AuditEntryEntity(
-                id = UUID.randomUUID(),
-                actorId = actorId,
-                action = "EVENT_REOPENED",
-                targetType = "Event",
-                targetId = eventId,
-                summary = "Event '''" + event.name + "'' reopened",
-                occurredAt = now,
-            ),
-        )
-        return ReopenEventResult.Success(reopened)
     }
 
     fun exportCsv(eventId: UUID): CsvExport? {
@@ -250,42 +180,19 @@ class ResultsService(
         participants: List<ParticipantEntity>,
         heats: List<HeatEntity>,
         qualification: QualificationEntity,
-    ): List<QualificationRanking> {
-        val rankings = participants.map { participant ->
-            val participantHeats = heats.filter { heat ->
-                heat.lanes.any { it.participantId == participant.id }
-            }
-            val measurements = participantHeats.flatMap { it.measurements }
-                .filter { it.lane == participantHeats.flatMap { h -> h.lanes.filter { l -> l.participantId == participant.id } }.firstOrNull()?.lane }
-
-            val finished = measurements.filter { it.outcome == LaneOutcome.FINISHED }
-            val bestTime = finished.minOfOrNull { it.durationNanos }
-            val totalTime = finished.sumOf { it.durationNanos.toLong() }
-            val dnfCount = measurements.count { it.outcome == LaneOutcome.DNF }
-
-            QualificationRanking(
-                participantId = participant.id,
-                startNumber = participant.startNumber,
-                firstName = participant.firstName,
-                lastName = participant.lastName,
-                club = participant.club,
-                bestTimeNanos = bestTime,
-                totalTimeNanos = totalTime,
-                completedRuns = finished.size,
-                dnfCount = dnfCount,
-                rank = 0,
-            )
-        }
-        return rankings.sortedBy { it.bestTimeNanos ?: Long.MAX_VALUE }
-            .mapIndexed { index, ranking -> ranking.copy(rank = index + 1) }
-    }
+    ): List<QualificationRanking> =
+        QualificationRankingCalculator.calculate(
+            participants = participants,
+            heats = heats,
+            qualification = qualification,
+        )
 
     private fun calculateKnockoutResults(
         tournament: KnockoutTournamentEntity,
         matches: List<KnockoutMatchEntity>,
         qualificationRankings: List<QualificationRanking>,
     ): List<KnockoutResultEntry> {
-        val winners = matches.filter { it.winnerId != null && it.status.name == "COMPLETED" }
+        val winners = matches.filter { it.winnerId != null && it.status == KnockoutMatchStatus.COMPLETED }
             .sortedByDescending { it.roundNumber }
         val ranked = mutableListOf<KnockoutResultEntry>()
         var rank = 1

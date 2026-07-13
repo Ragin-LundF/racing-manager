@@ -1,13 +1,13 @@
 package io.github.raginlundf.racingmanager.api.event
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.event.models.ConflictResponseModel
 import io.github.raginlundf.racingmanager.api.event.models.CreateEventRequestModel
 import io.github.raginlundf.racingmanager.api.event.models.EventResponseModel
 import io.github.raginlundf.racingmanager.api.event.models.EventSettingsResponseModel
 import io.github.raginlundf.racingmanager.api.event.models.UpdateEventRequestModel
 import io.github.raginlundf.racingmanager.application.auth.AuthService
-import io.github.raginlundf.racingmanager.application.auth.SessionResult
 import io.github.raginlundf.racingmanager.application.event.ActivateEventResult
 import io.github.raginlundf.racingmanager.application.event.ArchiveEventResult
 import io.github.raginlundf.racingmanager.application.event.CreateEventResult
@@ -18,7 +18,6 @@ import io.github.raginlundf.racingmanager.domain.event.EventSettings
 import io.github.raginlundf.racingmanager.domain.event.LaneType
 import io.github.raginlundf.racingmanager.domain.event.MeasurementType
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -31,7 +30,7 @@ import java.util.UUID
 
 fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     post("/api/v1/events") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val request = call.receive<CreateEventRequestModel>()
 
         val settings = EventSettings(
@@ -54,13 +53,13 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     get("/api/v1/events") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val events = eventService.findAll()
         call.respond(events.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{id}") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val id = UUID.fromString(call.parameters["id"])
         val event = eventService.findById(id)
             ?: return@get call.respond(
@@ -71,7 +70,7 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     put("/api/v1/events/{id}") {
-        val session = authenticateRequest(call, authService) ?: return@put
+        val session = call.authenticateRequest(authService) ?: return@put
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<UpdateEventRequestModel>()
 
@@ -112,7 +111,7 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     delete("/api/v1/events/{id}") {
-        val session = authenticateRequest(call, authService) ?: return@delete
+        val session = call.authenticateRequest(authService) ?: return@delete
         val id = UUID.fromString(call.parameters["id"])
 
         when (eventService.delete(id, session.user.id)) {
@@ -125,7 +124,7 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     post("/api/v1/events/{id}/activate") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
 
         when (val result = eventService.activate(id, 0L, session.user.id)) {
@@ -159,7 +158,7 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     post("/api/v1/events/{id}/archive") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
 
         when (val result = eventService.archive(id, session.user.id)) {
@@ -180,26 +179,6 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
             }
         }
     }
-}
-
-private suspend fun authenticateRequest(call: ApplicationCall, authService: AuthService): SessionResult.Valid? {
-    val sessionId = call.request.headers["X-Session-Id"]
-        ?: return null.also {
-            call.respond(
-                status = HttpStatusCode.Unauthorized,
-                message = ErrorResponseModel("MISSING_SESSION", "Session ID is required"),
-            )
-        }
-
-    val result = authService.getSession(UUID.fromString(sessionId))
-    if (result !is SessionResult.Valid) {
-        call.respond(
-            status = HttpStatusCode.Unauthorized,
-            message = ErrorResponseModel("SESSION_EXPIRED", "Session has expired"),
-        )
-        return null
-    }
-    return result
 }
 
 private fun io.github.raginlundf.racingmanager.domain.event.EventEntity.toResponseModel() = EventResponseModel(

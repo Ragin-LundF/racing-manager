@@ -1,11 +1,11 @@
 package io.github.raginlundf.racingmanager.application.knockout
 
+import io.github.raginlundf.racingmanager.application.qualification.QualificationRankingCalculator
 import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.heat.HeatLaneAssignment
 import io.github.raginlundf.racingmanager.domain.heat.HeatStatus
-import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchEntity
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchStatus
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutRankedParticipant
@@ -199,26 +199,15 @@ class KnockoutService(
             knockoutRepository.insertMatch(match)
         }
 
-        var currentRoundSize = matches.size
-        var roundNumber = 2
-        while (currentRoundSize > 1) {
-            val roundMatches = (1..currentRoundSize / 2).map { matchIndex ->
-                KnockoutMatchEntity(
-                    id = UUID.randomUUID(),
-                    tournamentId = tournament.id,
-                    roundNumber = roundNumber,
-                    matchNumber = matchIndex,
-                    status = KnockoutMatchStatus.PLANNED,
-                    createdAt = now,
-                )
-            }
-            for (m in roundMatches) {
-                knockoutRepository.insertMatch(m)
-            }
-            matches.addAll(roundMatches)
-            currentRoundSize = currentRoundSize / 2 + (if (currentRoundSize % 2 != 0) 1 else 0)
-            roundNumber++
+        val subsequentRounds = generateSubsequentRounds(
+            tournamentId = tournament.id,
+            firstRoundSize = matches.size,
+            createdAt = now,
+        )
+        for (m in subsequentRounds) {
+            knockoutRepository.insertMatch(m)
         }
+        matches.addAll(subsequentRounds)
 
         knockoutRepository.updateStatus(
             id = tournament.id,
@@ -472,61 +461,12 @@ class KnockoutService(
         participants: List<io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity>,
         heats: List<HeatEntity>,
         qualification: io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity,
-    ): List<QualificationRanking> {
-        val participantResults = participants.map { participant ->
-            val participantHeats = heats.filter { heat ->
-                heat.lanes.any { it.participantId == participant.id }
-            }
-
-            val validTimes = participantHeats.flatMap { heat ->
-                heat.measurements.filter { m ->
-                    val lane = heat.lanes.firstOrNull { it.participantId == participant.id }
-                    lane != null && m.lane == lane.lane && m.outcome == LaneOutcome.FINISHED
-                }
-            }.map { it.durationNanos }
-
-            val dnfCount = participantHeats.flatMap { heat ->
-                heat.measurements.filter { m ->
-                    val lane = heat.lanes.firstOrNull { it.participantId == participant.id }
-                    lane != null && m.lane == lane.lane && m.outcome == LaneOutcome.DNF
-                }
-            }.size
-
-            QualificationRanking(
-                participantId = participant.id,
-                startNumber = participant.startNumber,
-                firstName = participant.firstName,
-                lastName = participant.lastName,
-                club = participant.club,
-                bestTimeNanos = validTimes.minOrNull(),
-                totalTimeNanos = if (validTimes.isNotEmpty()) validTimes.sum() else null,
-                completedRuns = validTimes.size,
-                dnfCount = dnfCount,
-                rank = 0,
-            )
-        }
-
-        val sorted = participantResults.sortedWith(
-            compareBy<QualificationRanking> { it.bestTimeNanos != null }
-                .thenBy { it.bestTimeNanos }
-                .thenBy { it.totalTimeNanos },
+    ): List<QualificationRanking> =
+        QualificationRankingCalculator.calculate(
+            participants = participants,
+            heats = heats,
+            qualification = qualification,
         )
-
-        var currentRank = 1
-        var previousBest: Long? = null
-        return sorted.mapIndexed { index, ranking ->
-            val rank = if (index == 0) {
-                currentRank
-            } else if (ranking.bestTimeNanos != null && previousBest != null && ranking.bestTimeNanos == previousBest) {
-                currentRank
-            } else {
-                currentRank = index + 1
-                currentRank
-            }
-            previousBest = ranking.bestTimeNanos
-            ranking.copy(rank = rank)
-        }
-    }
 
     private fun createPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, mode: PairingMode): List<KnockoutMatchEntity> {
         val sorted = participants.sortedBy { it.qualificationRank }
@@ -560,7 +500,24 @@ class KnockoutService(
             )
         }
 
-        var currentRoundSize = matchCount + (if (hasBye) 1 else 0)
+        matches.addAll(
+            generateSubsequentRounds(
+                tournamentId = tournamentId,
+                firstRoundSize = matchCount + (if (hasBye) 1 else 0),
+                createdAt = clock.now(),
+            ),
+        )
+
+        return matches
+    }
+
+    private fun generateSubsequentRounds(
+        tournamentId: UUID,
+        firstRoundSize: Int,
+        createdAt: kotlin.time.Instant,
+    ): List<KnockoutMatchEntity> {
+        val rounds = mutableListOf<KnockoutMatchEntity>()
+        var currentRoundSize = firstRoundSize
         var roundNumber = 2
         while (currentRoundSize > 1) {
             val roundMatches = (1..currentRoundSize / 2).map { matchIndex ->
@@ -570,15 +527,14 @@ class KnockoutService(
                     roundNumber = roundNumber,
                     matchNumber = matchIndex,
                     status = KnockoutMatchStatus.PLANNED,
-                    createdAt = clock.now(),
+                    createdAt = createdAt,
                 )
             }
-            matches.addAll(roundMatches)
+            rounds.addAll(roundMatches)
             currentRoundSize = currentRoundSize / 2 + (if (currentRoundSize % 2 != 0) 1 else 0)
             roundNumber++
         }
-
-        return matches
+        return rounds
     }
 
     private fun createFirstVsLastPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, matchCount: Int): List<KnockoutMatchEntity> {

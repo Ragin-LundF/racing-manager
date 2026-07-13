@@ -202,6 +202,66 @@ class EventService(
         )
         return ArchiveEventResult.Success(archived)
     }
+
+    fun completeEvent(eventId: UUID, actorId: UUID): CompleteEventResult {
+        val event = eventRepository.findById(eventId)
+            ?: return CompleteEventResult.NotFound
+
+        if (event.status != EventStatus.ACTIVE) {
+            return CompleteEventResult.InvalidStatus(event.status)
+        }
+
+        val now = clock.now()
+        val completed = event.copy(
+            status = EventStatus.COMPLETED,
+            version = event.version + 1,
+            updatedAt = now,
+        )
+        eventRepository.update(completed)
+
+        auditRepository.insert(
+            AuditEntryEntity(
+                id = UUID.randomUUID(),
+                actorId = actorId,
+                action = "EVENT_COMPLETED",
+                targetType = "Event",
+                targetId = eventId,
+                summary = "Event '''" + event.name + "'' marked as completed",
+                occurredAt = now,
+            ),
+        )
+        return CompleteEventResult.Success(completed)
+    }
+
+    fun reopenEvent(eventId: UUID, actorId: UUID): ReopenEventResult {
+        val event = eventRepository.findById(eventId)
+            ?: return ReopenEventResult.NotFound
+
+        if (event.status != EventStatus.COMPLETED) {
+            return ReopenEventResult.InvalidStatus(event.status)
+        }
+
+        val now = clock.now()
+        val reopened = event.copy(
+            status = EventStatus.ACTIVE,
+            version = event.version + 1,
+            updatedAt = now,
+        )
+        eventRepository.update(reopened)
+
+        auditRepository.insert(
+            AuditEntryEntity(
+                id = UUID.randomUUID(),
+                actorId = actorId,
+                action = "EVENT_REOPENED",
+                targetType = "Event",
+                targetId = eventId,
+                summary = "Event '''" + event.name + "'' reopened",
+                occurredAt = now,
+            ),
+        )
+        return ReopenEventResult.Success(reopened)
+    }
 }
 
 sealed interface CreateEventResult {
@@ -231,4 +291,16 @@ sealed interface ArchiveEventResult {
     data class Success(val event: EventEntity) : ArchiveEventResult
     data object NotFound : ArchiveEventResult
     data class InvalidStatus(val current: EventStatus) : ArchiveEventResult
+}
+
+sealed interface CompleteEventResult {
+    data class Success(val event: EventEntity) : CompleteEventResult
+    data object NotFound : CompleteEventResult
+    data class InvalidStatus(val status: EventStatus) : CompleteEventResult
+}
+
+sealed interface ReopenEventResult {
+    data class Success(val event: EventEntity) : ReopenEventResult
+    data object NotFound : ReopenEventResult
+    data class InvalidStatus(val status: EventStatus) : ReopenEventResult
 }

@@ -157,8 +157,8 @@ class AuthService(
         }
 
         val newHash = passwordHasher.hash(newPassword)
-        // TODO: update password hash in repository
-        sessionRepository.deleteByUserId(userId)
+        userRepository.updatePassword(id = userId, newHash = newHash)
+        sessionRepository.deleteByUserId(userId = userId)
 
         auditRepository.insert(
             AuditEntryEntity(

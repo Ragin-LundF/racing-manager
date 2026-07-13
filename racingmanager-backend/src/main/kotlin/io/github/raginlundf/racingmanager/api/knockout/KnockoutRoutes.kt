@@ -1,6 +1,7 @@
 package io.github.raginlundf.racingmanager.api.knockout
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.knockout.models.CreateHeatForMatchRequestModel
 import io.github.raginlundf.racingmanager.api.knockout.models.KnockoutMatchResponseModel
 import io.github.raginlundf.racingmanager.api.knockout.models.KnockoutResultEntryResponseModel
@@ -10,7 +11,6 @@ import io.github.raginlundf.racingmanager.api.knockout.models.RecordMatchResultR
 import io.github.raginlundf.racingmanager.api.knockout.models.SetManualPairingsRequestModel
 import io.github.raginlundf.racingmanager.api.knockout.models.SetupKnockoutRequestModel
 import io.github.raginlundf.racingmanager.application.auth.AuthService
-import io.github.raginlundf.racingmanager.application.auth.SessionResult
 import io.github.raginlundf.racingmanager.application.knockout.CreateHeatForMatchResult
 import io.github.raginlundf.racingmanager.application.knockout.FinalizeKnockoutResult
 import io.github.raginlundf.racingmanager.application.knockout.GeneratePairingsResult
@@ -24,7 +24,6 @@ import io.github.raginlundf.racingmanager.domain.knockout.KnockoutTournamentEnti
 import io.github.raginlundf.racingmanager.domain.knockout.PairingMode
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -35,7 +34,7 @@ import java.util.UUID
 
 fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutService) {
     post("/api/v1/events/{eventId}/knockout/setup") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<SetupKnockoutRequestModel>()
         val pairingMode = try {
@@ -68,7 +67,7 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val tournament = knockoutService.findByEventId(eventId)
             ?: return@get call.respond(
@@ -79,14 +78,14 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout/qualified-participants") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val participants = knockoutService.getQualifiedParticipants(eventId)
         call.respond(participants.map { it.toQualifiedResponseModel() })
     }
 
     post("/api/v1/events/{eventId}/knockout/manual-pairings") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<SetManualPairingsRequestModel>()
         val pairings = request.pairings.map { p ->
@@ -116,7 +115,7 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     post("/api/v1/events/{eventId}/knockout/pairings") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
 
         when (val result = knockoutService.generatePairings(eventId, session.user.id)) {
@@ -139,14 +138,14 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout/matches") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val matches = knockoutService.getMatches(eventId)
         call.respond(matches.map { it.toResponseModel() })
     }
 
     post("/api/v1/events/{eventId}/knockout/heat") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<CreateHeatForMatchRequestModel>()
         val matchId = UUID.fromString(request.matchId)
@@ -171,7 +170,7 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     post("/api/v1/events/{eventId}/knockout/result") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
         val request = call.receive<RecordMatchResultRequestModel>()
         val matchId = UUID.fromString(request.matchId)
@@ -198,7 +197,7 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     post("/api/v1/events/{eventId}/knockout/finalize") {
-        val session = authenticateRequest(call, authService) ?: return@post
+        val session = call.authenticateRequest(authService) ?: return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
 
         when (val result = knockoutService.finalize(eventId, session.user.id)) {
@@ -218,31 +217,11 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout/results") {
-        val session = authenticateRequest(call, authService) ?: return@get
+        val session = call.authenticateRequest(authService) ?: return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
         val results = knockoutService.getResults(eventId)
         call.respond(results.map { it.toResponseModel() })
     }
-}
-
-private suspend fun authenticateRequest(call: ApplicationCall, authService: AuthService): SessionResult.Valid? {
-    val sessionId = call.request.headers["X-Session-Id"]
-        ?: return null.also {
-            call.respond(
-                status = HttpStatusCode.Unauthorized,
-                message = ErrorResponseModel("MISSING_SESSION", "Session ID is required"),
-            )
-        }
-
-    val result = authService.getSession(UUID.fromString(sessionId))
-    if (result !is SessionResult.Valid) {
-        call.respond(
-            status = HttpStatusCode.Unauthorized,
-            message = ErrorResponseModel("SESSION_EXPIRED", "Session has expired"),
-        )
-        return null
-    }
-    return result
 }
 
 private fun KnockoutTournamentEntity.toResponseModel() = KnockoutTournamentResponseModel(
