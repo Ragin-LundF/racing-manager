@@ -268,6 +268,25 @@ keys — through environment variables. Keep secrets in a root-only
    }
    ```
 
+For Apache it looks like this:
+
+```apache
+ProxyPreserveHost On
+
+ProxyPass        "/" "http://localhost:8085/"
+ProxyPassReverse "/" "http://localhost:8085/"
+ 
+RewriteEngine On                                                                                                                                                                                                                              
+
+# Real backend requests pass through untouched:                                                                                                                                                                                               
+#  - anything with a file extension (.js/.css/.png/index.html …)                                                                                                                                                                              
+#  - your API namespace (adjust /api to whatever the backend uses)                                                                                                                                                                            
+RewriteCond %{REQUEST_URI} !\.[a-zA-Z0-9]+$                                                                                                                                                                                                   
+RewriteCond %{REQUEST_URI} !^/api/                                                                                                                                                                                                            
+# Everything else is an Angular route → serve the SPA shell                                                                                                                                                                                   
+RewriteRule ^ /index.html [PT]
+```
+
 ### Changing the port
 
 The app listens on `8080` by default. If that port is already taken by another
