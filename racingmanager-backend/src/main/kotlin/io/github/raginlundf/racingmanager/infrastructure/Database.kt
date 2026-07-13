@@ -17,6 +17,34 @@ import java.time.format.DateTimeFormatter
 private val logger = KotlinLogging.logger {}
 
 fun Application.configureDatabase(): javax.sql.DataSource {
+    val url = environment.config.propertyOrNull("racingmanager.database.url")?.getString()
+
+    // A JDBC URL (e.g. MariaDB) switches away from the embedded SQLite default.
+    // Exposed auto-detects the dialect from the connection and Liquibase is
+    // DB-agnostic, so only the datasource assembly differs between the two.
+    val hikariConfig = if (url != null) {
+        configureExternalDatabase(url)
+    } else {
+        configureSqliteDatabase()
+    }.apply {
+        maximumPoolSize = 5
+        minimumIdle = 1
+        idleTimeout = 30_000
+        connectionTimeout = 10_000
+        isAutoCommit = false
+    }
+
+    val dataSource = HikariDataSource(hikariConfig)
+
+    ExposedDatabase.connect(dataSource)
+
+    runLiquibaseMigration(dataSource)
+
+    logger.info { "Database initialized (${hikariConfig.jdbcUrl.substringBefore('?')})" }
+    return dataSource
+}
+
+private fun Application.configureSqliteDatabase(): HikariConfig {
     val dbPath = environment.config.propertyOrNull("racingmanager.database.path")
         ?.getString()
         ?: resolveDefaultDatabasePath()
@@ -31,24 +59,29 @@ fun Application.configureDatabase(): javax.sql.DataSource {
         createPreMigrationBackup(dbFile)
     }
 
-    val hikariConfig = HikariConfig().apply {
+    return HikariConfig().apply {
         jdbcUrl = "jdbc:sqlite:$dbPath?journal_mode=WAL&synchronous=NORMAL&busy_timeout=5000"
         driverClassName = "org.sqlite.JDBC"
-        maximumPoolSize = 5
-        minimumIdle = 1
-        idleTimeout = 30_000
-        connectionTimeout = 10_000
-        isAutoCommit = false
     }
+}
 
-    val dataSource = HikariDataSource(hikariConfig)
+private fun Application.configureExternalDatabase(url: String): HikariConfig {
+    // Credentials come from the environment for hosted deployments, never files.
+    val user = environment.config.propertyOrNull("racingmanager.database.user")?.getString()
+    val password = environment.config.propertyOrNull("racingmanager.database.password")?.getString()
 
-    ExposedDatabase.connect(dataSource)
+    return HikariConfig().apply {
+        jdbcUrl = url
+        driverClassName = driverClassNameFor(url)
+        if (user != null) username = user
+        if (password != null) this.password = password
+    }
+}
 
-    runLiquibaseMigration(dataSource)
-
-    logger.info { "Database initialized at $dbPath" }
-    return dataSource
+private fun driverClassNameFor(url: String): String = when {
+    url.startsWith("jdbc:mariadb:") -> "org.mariadb.jdbc.Driver"
+    url.startsWith("jdbc:sqlite:") -> "org.sqlite.JDBC"
+    else -> error("Unsupported jdbc url '$url': only jdbc:mariadb: and jdbc:sqlite: are supported")
 }
 
 private fun createPreMigrationBackup(dbFile: Path) {

@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.exposed.kotlin.datetime)
     implementation(libs.liquibase.core)
     implementation(libs.sqlite.jdbc)
+    implementation(libs.mariadb.jdbc)
     implementation(libs.hikaricp)
 
     // Security

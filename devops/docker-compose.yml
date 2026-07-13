@@ -1,0 +1,29 @@
+# Local MariaDB for developing/testing the hosted database backend.
+#   docker compose -f devops/docker-compose.yml up -d
+# Then run the backend with:
+#   RACINGMANAGER_DB_URL=jdbc:mariadb://localhost:3306/racingmanager
+#   RACINGMANAGER_DB_USER=racingmanager
+#   RACINGMANAGER_DB_PASSWORD=racingmanager
+# These are dev-only credentials — do NOT reuse them in production.
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: racingmanager-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: racingmanager
+      MARIADB_USER: racingmanager
+      MARIADB_PASSWORD: racingmanager
+      MARIADB_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mariadb-data:
