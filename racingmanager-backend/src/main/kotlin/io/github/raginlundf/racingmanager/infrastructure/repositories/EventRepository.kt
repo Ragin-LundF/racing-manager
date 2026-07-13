@@ -5,7 +5,9 @@ import io.github.raginlundf.racingmanager.domain.event.EventSettings
 import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.domain.event.LaneType
 import io.github.raginlundf.racingmanager.domain.event.MeasurementType
+import io.github.raginlundf.racingmanager.domain.event.SyncStatus
 import io.github.raginlundf.racingmanager.infrastructure.tables.EventTable
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteAll
@@ -21,50 +23,17 @@ class EventRepository {
     fun findById(id: UUID): EventEntity? = transaction {
         EventTable.selectAll().where { EventTable.id eq id }
             .singleOrNull()
-            ?.let { row ->
-                EventEntity(
-                    id = row[EventTable.id],
-                    name = row[EventTable.name],
-                    description = row[EventTable.description],
-                    status = EventStatus.valueOf(row[EventTable.status]),
-                    settings = EventSettings(
-                        laneType = LaneType.valueOf(row[EventTable.laneType]),
-                        measurementType = MeasurementType.valueOf(row[EventTable.measurementType]),
-                        maxParticipants = row[EventTable.maxParticipants],
-                    ),
-                    version = row[EventTable.version],
-                    createdBy = row[EventTable.createdBy],
-                    createdAt = row[EventTable.createdAt],
-                    updatedAt = row[EventTable.updatedAt],
-                    activatedAt = row[EventTable.activatedAt],
-                )
-            }
+            ?.toEventEntity()
     }
 
     fun findAll(): List<EventEntity> = transaction {
-        EventTable.selectAll().map { row ->
-            EventEntity(
-                id = row[EventTable.id],
-                name = row[EventTable.name],
-                description = row[EventTable.description],
-                status = EventStatus.valueOf(row[EventTable.status]),
-                settings = EventSettings(
-                    laneType = LaneType.valueOf(row[EventTable.laneType]),
-                    measurementType = MeasurementType.valueOf(row[EventTable.measurementType]),
-                    maxParticipants = row[EventTable.maxParticipants],
-                ),
-                version = row[EventTable.version],
-                createdBy = row[EventTable.createdBy],
-                createdAt = row[EventTable.createdAt],
-                updatedAt = row[EventTable.updatedAt],
-                activatedAt = row[EventTable.activatedAt],
-            )
-        }
+        EventTable.selectAll().map { it.toEventEntity() }
     }
 
     fun insert(event: EventEntity) = transaction {
         EventTable.insert {
             it[id] = event.id
+            it[tenantId] = event.tenantId
             it[name] = event.name
             it[description] = event.description
             it[status] = event.status.name
@@ -76,6 +45,10 @@ class EventRepository {
             it[createdAt] = event.createdAt
             it[updatedAt] = event.updatedAt
             it[activatedAt] = event.activatedAt
+            it[originTenantId] = event.originTenantId
+            it[originPackageId] = event.originPackageId
+            it[lockedForSync] = event.lockedForSync
+            it[syncStatus] = event.syncStatus?.name
         }
     }
 
@@ -90,6 +63,8 @@ class EventRepository {
             it[version] = event.version
             it[updatedAt] = event.updatedAt
             it[activatedAt] = event.activatedAt
+            it[lockedForSync] = event.lockedForSync
+            it[syncStatus] = event.syncStatus?.name
         }
         count > 0
     }
@@ -98,7 +73,43 @@ class EventRepository {
         EventTable.deleteWhere { EventTable.id eq id } > 0
     }
 
+    /** Defense-in-depth tenant filter: returns the event only if it belongs to
+        [tenantId], so a route-level check that is missed or bypassed cannot
+        leak another tenant's event through this query alone. */
+    fun findByIdForTenant(id: UUID, tenantId: UUID): EventEntity? = transaction {
+        EventTable.selectAll().where { (EventTable.id eq id) and (EventTable.tenantId eq tenantId) }
+            .singleOrNull()
+            ?.toEventEntity()
+    }
+
+    fun findAllForTenant(tenantId: UUID): List<EventEntity> = transaction {
+        EventTable.selectAll().where { EventTable.tenantId eq tenantId }
+            .map { it.toEventEntity() }
+    }
+
     fun deleteAll() = transaction {
         EventTable.deleteAll()
     }
+
+    private fun ResultRow.toEventEntity() = EventEntity(
+        id = this[EventTable.id],
+        tenantId = this[EventTable.tenantId],
+        name = this[EventTable.name],
+        description = this[EventTable.description],
+        status = EventStatus.valueOf(this[EventTable.status]),
+        settings = EventSettings(
+            laneType = LaneType.valueOf(this[EventTable.laneType]),
+            measurementType = MeasurementType.valueOf(this[EventTable.measurementType]),
+            maxParticipants = this[EventTable.maxParticipants],
+        ),
+        version = this[EventTable.version],
+        createdBy = this[EventTable.createdBy],
+        createdAt = this[EventTable.createdAt],
+        updatedAt = this[EventTable.updatedAt],
+        activatedAt = this[EventTable.activatedAt],
+        originTenantId = this[EventTable.originTenantId],
+        originPackageId = this[EventTable.originPackageId],
+        lockedForSync = this[EventTable.lockedForSync],
+        syncStatus = this[EventTable.syncStatus]?.let { SyncStatus.valueOf(it) },
+    )
 }

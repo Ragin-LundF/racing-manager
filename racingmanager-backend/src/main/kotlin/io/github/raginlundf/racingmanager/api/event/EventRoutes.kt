@@ -7,16 +7,21 @@ import io.github.raginlundf.racingmanager.api.event.models.CreateEventRequestMod
 import io.github.raginlundf.racingmanager.api.event.models.EventResponseModel
 import io.github.raginlundf.racingmanager.api.event.models.EventSettingsResponseModel
 import io.github.raginlundf.racingmanager.api.event.models.UpdateEventRequestModel
-import io.github.raginlundf.racingmanager.application.auth.AuthService
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.api.requireTenantEvent
+import io.github.raginlundf.racingmanager.application.auth.Scopes
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.application.event.ActivateEventResult
 import io.github.raginlundf.racingmanager.application.event.ArchiveEventResult
 import io.github.raginlundf.racingmanager.application.event.CreateEventResult
 import io.github.raginlundf.racingmanager.application.event.DeleteEventResult
 import io.github.raginlundf.racingmanager.application.event.EventService
+import io.github.raginlundf.racingmanager.application.event.ReactivateEventResult
 import io.github.raginlundf.racingmanager.application.event.UpdateEventResult
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
 import io.github.raginlundf.racingmanager.domain.event.LaneType
 import io.github.raginlundf.racingmanager.domain.event.MeasurementType
+import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
@@ -28,9 +33,10 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import java.util.UUID
 
-fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
+fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventRepository: EventRepository) {
     post("/api/v1/events") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val request = call.receive<CreateEventRequestModel>()
 
         val settings = EventSettings(
@@ -43,7 +49,8 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
             name = request.name,
             description = request.description,
             settings = settings,
-            actorId = session.user.id,
+            actorId = principal.userId,
+            tenantId = principal.tenantId,
         )
 
         call.respond(
@@ -53,25 +60,25 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     get("/api/v1/events") {
-        val session = call.authenticateRequest(authService) ?: return@get
-        val events = eventService.findAll()
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val events = eventService.findAllForTenant(principal.tenantId)
         call.respond(events.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{id}") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val id = UUID.fromString(call.parameters["id"])
-        val event = eventService.findById(id)
-            ?: return@get call.respond(
-                status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
-            )
+        val event = call.requireTenantEvent(principal, id, eventRepository) ?: return@get
         call.respond(event.toResponseModel())
     }
 
     put("/api/v1/events/{id}") {
-        val session = call.authenticateRequest(authService) ?: return@put
+        val principal = call.authenticateRequest(jwtService) ?: return@put
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@put
         val id = UUID.fromString(call.parameters["id"])
+        call.requireTenantEvent(principal, id, eventRepository) ?: return@put
         val request = call.receive<UpdateEventRequestModel>()
 
         val settings = EventSettings(
@@ -80,7 +87,7 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
             maxParticipants = request.maxParticipants,
         )
 
-        when (val result = eventService.update(id, request.name, request.description, settings, request.expectedVersion, session.user.id)) {
+        when (val result = eventService.update(id, request.name, request.description, settings, request.expectedVersion, principal.userId)) {
             is UpdateEventResult.Success -> {
                 call.respond(result.event.toResponseModel())
             }
@@ -107,14 +114,22 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
                     ),
                 )
             }
+            is UpdateEventResult.Locked -> {
+                call.respond(
+                    status = HttpStatusCode.Locked,
+                    message = ErrorResponseModel("EVENT_LOCKED_FOR_SYNC", "Event is checked out to a local instance and locked until results are synced back"),
+                )
+            }
         }
     }
 
     delete("/api/v1/events/{id}") {
-        val session = call.authenticateRequest(authService) ?: return@delete
+        val principal = call.authenticateRequest(jwtService) ?: return@delete
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@delete
         val id = UUID.fromString(call.parameters["id"])
+        call.requireTenantEvent(principal, id, eventRepository) ?: return@delete
 
-        when (eventService.delete(id, session.user.id)) {
+        when (eventService.delete(id, principal.userId)) {
             is DeleteEventResult.Success -> call.respond(status = HttpStatusCode.NoContent, message = Unit)
             is DeleteEventResult.NotFound -> call.respond(
                 status = HttpStatusCode.NotFound,
@@ -124,10 +139,12 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     post("/api/v1/events/{id}/activate") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val id = UUID.fromString(call.parameters["id"])
+        call.requireTenantEvent(principal, id, eventRepository) ?: return@post
 
-        when (val result = eventService.activate(id, 0L, session.user.id)) {
+        when (val result = eventService.activate(id, 0L, principal.userId)) {
             is ActivateEventResult.Success -> {
                 call.respond(result.event.toResponseModel())
             }
@@ -158,10 +175,12 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
     }
 
     post("/api/v1/events/{id}/archive") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val id = UUID.fromString(call.parameters["id"])
+        call.requireTenantEvent(principal, id, eventRepository) ?: return@post
 
-        when (val result = eventService.archive(id, session.user.id)) {
+        when (val result = eventService.archive(id, principal.userId)) {
             is ArchiveEventResult.Success -> {
                 call.respond(result.event.toResponseModel())
             }
@@ -175,6 +194,31 @@ fun Route.eventRoutes(authService: AuthService, eventService: EventService) {
                 call.respond(
                     status = HttpStatusCode.Conflict,
                     message = ErrorResponseModel("INVALID_STATUS", "Event must be in ACTIVE status to archive"),
+                )
+            }
+        }
+    }
+
+    post("/api/v1/events/{id}/reactivate") {
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val id = UUID.fromString(call.parameters["id"])
+        call.requireTenantEvent(principal, id, eventRepository) ?: return@post
+
+        when (val result = eventService.reactivate(id, principal.userId)) {
+            is ReactivateEventResult.Success -> {
+                call.respond(result.event.toResponseModel())
+            }
+            is ReactivateEventResult.NotFound -> {
+                call.respond(
+                    status = HttpStatusCode.NotFound,
+                    message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                )
+            }
+            is ReactivateEventResult.InvalidStatus -> {
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel("INVALID_STATUS", "Event must be in ARCHIVED status to reactivate"),
                 )
             }
         }

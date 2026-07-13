@@ -1,11 +1,14 @@
 package io.github.raginlundf.racingmanager.api.participant
 
 import io.github.raginlundf.racingmanager.api.configureRouting
+import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
 import io.github.raginlundf.racingmanager.application.diagnostics.DiagnosticsService
 import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
 import io.github.raginlundf.racingmanager.application.audit.AuditService
+import io.github.raginlundf.racingmanager.application.bootstrap.LocalPackageService
+import io.github.raginlundf.racingmanager.application.sync.SyncService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
@@ -17,12 +20,23 @@ import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.github.raginlundf.racingmanager.infrastructure.repositories.KnockoutRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.LocalInstanceRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.ImportedPackageRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.PairedInstanceRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.PairingCodeRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SpectatorExchangeCodeRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SyncedResultRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
+import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.ktor.client.request.get
@@ -45,12 +59,13 @@ import kotlin.test.assertTrue
 class ParticipantRoutesTest {
 
     private val userRepository = UserRepository()
-    private val sessionRepository = SessionRepository()
+    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
+    private val jwtService = JwtService(jwtKeyProvider)
     private val auditRepository = AuditRepository()
     private val eventRepository = EventRepository()
     private val participantRepository = ParticipantRepository()
     private val passwordHasher = PasswordHasher()
-    private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
+    private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
     private val heatRepository = HeatRepository()
@@ -61,6 +76,14 @@ class ParticipantRoutesTest {
     private val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
     private val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
     private val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
+    private val spectatorExchangeCodeRepository = SpectatorExchangeCodeRepository()
+    private val importedPackageRepository = ImportedPackageRepository()
+    private val localInstanceRepository = LocalInstanceRepository()
+    private val localPackageService = LocalPackageService(eventRepository, participantRepository, TenantRepository(), importedPackageRepository, localInstanceRepository, jwtKeyProvider)
+    private val pairingCodeRepository = PairingCodeRepository()
+    private val pairedInstanceRepository = PairedInstanceRepository()
+    private val syncedResultRepository = SyncedResultRepository()
+    private val syncService = SyncService(pairingCodeRepository, pairedInstanceRepository, syncedResultRepository, eventRepository, auditRepository)
     private val resultsService = ResultsService(eventRepository, participantRepository, heatRepository, qualificationRepository, knockoutRepository, auditRepository)
     private val auditService = AuditService(auditRepository)
     private val diagnosticsService = DiagnosticsService(
@@ -81,6 +104,7 @@ class ParticipantRoutesTest {
     @BeforeTest
     fun setUp() {
         DatabaseTestHelper.setUp()
+        jwtKeyProvider.ensureKeyExists()
     }
 
     @AfterTest
@@ -92,7 +116,7 @@ class ParticipantRoutesTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService)
+        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, DeploymentMode.LOCAL, spectatorExchangeCodeRepository, localPackageService, syncService)
     }
 
     private fun String.extractField(field: String): String {
@@ -113,21 +137,21 @@ class ParticipantRoutesTest {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123"}""")
         }.bodyAsText()
-        val sid = loginBody.extractField("sessionId")
+        val sid = loginBody.extractField("accessToken")
 
         val createEventBody = client.post("/api/v1/events") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"name":"Test Event"}""")
         }.bodyAsText()
         val eventId = createEventBody.extractField("id")
 
         client.post("/api/v1/events/$eventId/activate") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
         }
 
         val response = client.post("/api/v1/events/$eventId/participants") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"startNumber":1,"firstName":"John","lastName":"Doe"}""")
         }
@@ -151,27 +175,27 @@ class ParticipantRoutesTest {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123"}""")
         }.bodyAsText()
-        val sid = loginBody.extractField("sessionId")
+        val sid = loginBody.extractField("accessToken")
 
         val createEventBody = client.post("/api/v1/events") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"name":"Test Event"}""")
         }.bodyAsText()
         val eventId = createEventBody.extractField("id")
 
         client.post("/api/v1/events/$eventId/activate") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
         }
 
         client.post("/api/v1/events/$eventId/participants") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"startNumber":1,"firstName":"John","lastName":"Doe"}""")
         }
 
         val response = client.post("/api/v1/events/$eventId/participants") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"startNumber":1,"firstName":"Jane","lastName":"Smith"}""")
         }
@@ -192,17 +216,17 @@ class ParticipantRoutesTest {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123"}""")
         }.bodyAsText()
-        val sid = loginBody.extractField("sessionId")
+        val sid = loginBody.extractField("accessToken")
 
         val createEventBody = client.post("/api/v1/events") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"name":"Test Event"}""")
         }.bodyAsText()
         val eventId = createEventBody.extractField("id")
 
         val response = client.get("/api/v1/events/$eventId/participants") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
         }
 
         assertEquals(HttpStatusCode.OK, response.status)
@@ -221,32 +245,32 @@ class ParticipantRoutesTest {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123"}""")
         }.bodyAsText()
-        val sid = loginBody.extractField("sessionId")
+        val sid = loginBody.extractField("accessToken")
 
         val createEventBody = client.post("/api/v1/events") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"name":"Test Event"}""")
         }.bodyAsText()
         val eventId = createEventBody.extractField("id")
 
         client.post("/api/v1/events/$eventId/activate") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
         }
 
         client.post("/api/v1/events/$eventId/participants") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"startNumber":1,"firstName":"A","lastName":"A"}""")
         }
         client.post("/api/v1/events/$eventId/participants") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"startNumber":2,"firstName":"B","lastName":"B"}""")
         }
 
         val response = client.post("/api/v1/events/$eventId/participants/randomize") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"force":false}""")
         }
@@ -267,21 +291,21 @@ class ParticipantRoutesTest {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123"}""")
         }.bodyAsText()
-        val sid = loginBody.extractField("sessionId")
+        val sid = loginBody.extractField("accessToken")
 
         val createEventBody = client.post("/api/v1/events") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"name":"Test Event"}""")
         }.bodyAsText()
         val eventId = createEventBody.extractField("id")
 
         client.post("/api/v1/events/$eventId/activate") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
         }
 
         val response = client.post("/api/v1/events/$eventId/participants/import") {
-            header("X-Session-Id", sid)
+            header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"rows":[{"startNumber":1,"firstName":"John","lastName":"Doe"},{"startNumber":2,"firstName":"Jane","lastName":"Smith"}]}""")
         }

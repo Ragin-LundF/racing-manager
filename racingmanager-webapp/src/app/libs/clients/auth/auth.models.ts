@@ -17,14 +17,49 @@ export interface SetupStatusResponse {
 export interface LoginRequest {
   username: string;
   password: string;
+  tenantSlug?: string;
 }
 
 export interface LoginResponse {
-  sessionId: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  tenantId: string;
+  scopes: string[];
   userId: string;
   username: string;
   displayName: string;
   role: string;
+}
+
+export interface RegisterRequest {
+  tenantName: string;
+  tenantSlug: string;
+  username: string;
+  password: string;
+  displayName: string;
+}
+
+export interface RegisterResponse {
+  tenantId: string;
+  tenantSlug: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  scopes: string[];
+  userId: string;
+  username: string;
+  displayName: string;
+  role: string;
+}
+
+export interface RefreshRequest {
+  refreshToken: string;
+}
+
+export interface RefreshResponse {
+  accessToken: string;
+  expiresIn: number;
 }
 
 export interface SessionResponse {

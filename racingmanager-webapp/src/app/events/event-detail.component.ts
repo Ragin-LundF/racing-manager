@@ -2,7 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { EventResponse } from '../libs/clients/event/event.models';
-import { TranslatePipe } from '@ngx-translate/core';
+import { SpectatorClient } from '../libs/clients/spectator/spectator.client';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-event-detail',
@@ -13,6 +14,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 })
 export class EventDetailComponent {
   private readonly eventService = inject(EventClient);
+  private readonly spectatorClient = inject(SpectatorClient);
+  private readonly translate = inject(TranslateService);
   protected readonly route = inject(ActivatedRoute);
 
   protected event = signal<EventResponse | null>(null);
@@ -42,9 +45,36 @@ export class EventDetailComponent {
   protected onArchive(): void {
     const event = this.event();
     if (!event) return;
+    // ponytail: native confirm — a styled modal is more code than the ask warrants.
+    if (!confirm(this.translate.instant('events.detail.archiveConfirm', { name: event.name }))) return;
+
     this.eventService.archive(event.id).subscribe({
       next: (updated) => this.event.set(updated),
       error: () => this.error.set('Failed to archive event.'),
+    });
+  }
+
+  protected onReactivate(): void {
+    const event = this.event();
+    if (!event) return;
+    // ponytail: native confirm — a styled modal is more code than the ask warrants.
+    if (!confirm(this.translate.instant('events.detail.reactivateConfirm', { name: event.name }))) return;
+
+    this.eventService.reactivate(event.id).subscribe({
+      next: (updated) => this.event.set(updated),
+      error: () => this.error.set('Failed to reactivate event.'),
+    });
+  }
+
+  /** Issues a one-time spectator exchange code and opens `/spectator` with it
+      in the URL fragment — the reusable spectator JWT itself never appears
+      in a URL, browser history, or referrer (design §G.4). */
+  protected onOpenSpectatorView(): void {
+    const event = this.event();
+    if (!event) return;
+    this.spectatorClient.issueToken(event.id).subscribe({
+      next: (res) => window.open(`${window.location.origin}/spectator#code=${encodeURIComponent(res.exchangeCode)}`, '_blank'),
+      error: () => this.error.set('Failed to open spectator view.'),
     });
   }
 }

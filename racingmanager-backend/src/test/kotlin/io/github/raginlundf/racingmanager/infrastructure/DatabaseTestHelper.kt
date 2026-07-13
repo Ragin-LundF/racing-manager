@@ -52,7 +52,11 @@ object DatabaseTestHelper {
             exec("DROP TABLE IF EXISTS events")
             exec("DROP TABLE IF EXISTS audit_entries")
             exec("DROP TABLE IF EXISTS sessions")
+            exec("DROP TABLE IF EXISTS refresh_tokens")
+            exec("DROP TABLE IF EXISTS memberships")
             exec("DROP TABLE IF EXISTS users")
+            exec("DROP TABLE IF EXISTS tenants")
+            exec("DROP TABLE IF EXISTS signing_keys")
             exec("DROP TABLE IF EXISTS DATABASECHANGELOG")
             exec("DROP TABLE IF EXISTS DATABASECHANGELOGLOCK")
         }

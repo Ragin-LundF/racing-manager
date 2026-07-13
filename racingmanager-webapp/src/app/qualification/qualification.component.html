@@ -25,9 +25,11 @@
   @if (qualification(); as q) {
     <div class="section">
       <h3>{{ 'qualification.statusTitle' | translate }}</h3>
-      <p><strong>{{ 'qualification.status' | translate }}</strong> {{ q.status }}</p>
-      <p><strong>{{ 'qualification.seed' | translate }}</strong> {{ q.seed }}</p>
-      <p><strong>{{ 'qualification.runs' | translate }}</strong> {{ q.numberOfRuns }}</p>
+      <div class="meta">
+        <span class="chip" [class]="statusChipClass(q.status)">{{ 'qualification.status' | translate }}: {{ q.status }}</span>
+        <span class="chip chip-muted">{{ 'qualification.seed' | translate }}: {{ q.seed }}</span>
+        <span class="chip chip-muted">{{ 'qualification.runs' | translate }}: {{ q.numberOfRuns }}</span>
+      </div>
 
       @if (q.status === 'PENDING') {
         <button class="primary" (click)="onGenerateSchedule()" [disabled]="loading()">{{ 'qualification.generateSchedule' | translate }}</button>

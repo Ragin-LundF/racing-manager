@@ -63,6 +63,11 @@ class DiagnosticsService(
         }
     }
 
+    /** Server-startup recovery check (design §J.1) — deliberately global
+        (logged, never returned through a tenant-scoped API response) since it
+        runs once before any request exists to scope it to. Every
+        tenant-facing path below goes through [findUnfinishedHeatsForTenant]
+        instead. */
     fun findUnfinishedHeats(): List<UnfinishedHeat> {
         val unfinishedStatuses = setOf(HeatStatus.ARMED, HeatStatus.STARTED)
         val allHeats = heatRepository.findAll()
@@ -75,28 +80,46 @@ class DiagnosticsService(
             }
     }
 
-    fun recoverHeat(heatId: UUID, action: String): RecoveryAction? {
+    /** Tenant-scoped equivalent of [findUnfinishedHeats] — walks only this
+        tenant's own events rather than every heat in the database, so a
+        `rm:admin` from one tenant can never see another tenant's unfinished
+        heats (design §J.1). */
+    private fun findUnfinishedHeatsForTenant(tenantId: UUID): List<UnfinishedHeat> {
+        val unfinishedStatuses = setOf(HeatStatus.ARMED, HeatStatus.STARTED)
+        return eventRepository.findAllForTenant(tenantId).flatMap { event ->
+            heatRepository.findByEventId(event.id)
+                .filter { it.status in unfinishedStatuses }
+                .map { heat -> UnfinishedHeat(heat, event) }
+        }
+    }
+
+    /** Rejects recovery of a heat belonging to another tenant (design §J.1) —
+        returns null exactly as if the heat didn't exist, matching the
+        no-cross-tenant-existence-disclosure convention used everywhere else
+        in this codebase. */
+    fun recoverHeat(heatId: UUID, action: String, tenantId: UUID): RecoveryAction? {
         val heat = heatRepository.findById(heatId) ?: return null
+        eventRepository.findByIdForTenant(heat.eventId, tenantId) ?: return null
         return when (action) {
             "cancel" -> {
-                heatRepository.updateStatus(heatId, HeatStatus.CANCELLED)
+                heatRepository.updateStatus(heat.id, HeatStatus.CANCELLED)
                 RecoveryAction(heatId, "cancelled")
             }
             "reset" -> {
-                heatRepository.updateStatus(heatId, HeatStatus.PLANNED)
+                heatRepository.updateStatus(heat.id, HeatStatus.PLANNED)
                 RecoveryAction(heatId, "reset_to_planned")
             }
             else -> null
         }
     }
 
-    fun getBundle(): DiagnosticsBundle {
+    fun getBundle(tenantId: UUID): DiagnosticsBundle {
         val db = checkDatabase()
-        val events = eventRepository.findAll()
+        val events = eventRepository.findAllForTenant(tenantId)
         val allParticipants = events.sumOf { event ->
             participantRepository.countByEventId(event.id)
         }
-        val allHeats = heatRepository.findAll().size
+        val allHeats = events.sumOf { event -> heatRepository.findByEventId(event.id).size }
 
         return DiagnosticsBundle(
             database = db,
@@ -109,7 +132,7 @@ class DiagnosticsService(
                 totalParticipants = allParticipants.toInt(),
                 totalHeats = allHeats,
             ),
-            unfinishedHeats = findUnfinishedHeats(),
+            unfinishedHeats = findUnfinishedHeatsForTenant(tenantId),
             version = "1.0-SNAPSHOT",
         )
     }

@@ -13,6 +13,9 @@
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_events_tenant" references="tenants(id)"/>
+            </column>
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>

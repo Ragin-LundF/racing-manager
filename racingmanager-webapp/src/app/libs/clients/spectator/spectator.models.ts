@@ -1,11 +1,12 @@
-export interface SpectatorEventListItem {
-  id: string;
-  name: string;
-  status: string;
+export interface SpectatorTokenResponse {
+  exchangeCode: string;
+  expiresIn: number;
 }
 
-export interface SpectatorEventListResponse {
-  events: SpectatorEventListItem[];
+export interface SpectatorExchangeResponse {
+  accessToken: string;
+  expiresIn: number;
+  eventId: string;
 }
 
 export interface SpectatorEventModel {

@@ -4,6 +4,7 @@ import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.domain.event.EventEntity
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
 import io.github.raginlundf.racingmanager.domain.event.EventStatus
+import io.github.raginlundf.racingmanager.domain.event.SyncStatus
 import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
@@ -23,10 +24,12 @@ class EventService(
         description: String?,
         settings: EventSettings,
         actorId: UUID,
+        tenantId: UUID,
     ): CreateEventResult {
         val now = clock.now()
         val event = EventEntity(
             id = UUID.randomUUID(),
+            tenantId = tenantId,
             name = name,
             description = description,
             status = EventStatus.DRAFT,
@@ -54,6 +57,8 @@ class EventService(
 
     fun findAll(): List<EventEntity> = eventRepository.findAll()
 
+    fun findAllForTenant(tenantId: UUID): List<EventEntity> = eventRepository.findAllForTenant(tenantId)
+
     fun update(
         id: UUID,
         name: String,
@@ -64,6 +69,10 @@ class EventService(
     ): UpdateEventResult {
         val existing = eventRepository.findById(id)
             ?: return UpdateEventResult.NotFound
+
+        if (existing.lockedForSync) {
+            return UpdateEventResult.Locked
+        }
 
         if (existing.status != EventStatus.DRAFT) {
             return UpdateEventResult.CannotModifyActiveEvent
@@ -147,6 +156,10 @@ class EventService(
             version = existing.version + 1,
             updatedAt = now,
             activatedAt = now,
+            // An imported event becomes "actively being run locally" the moment
+            // it's activated (design §I.4) — organically-created events have no
+            // sync status and this is a no-op for them.
+            syncStatus = if (existing.syncStatus == SyncStatus.IMPORTED) SyncStatus.LOCAL_ACTIVE else existing.syncStatus,
         )
 
         val success = eventRepository.update(activated)
@@ -201,6 +214,37 @@ class EventService(
             ),
         )
         return ArchiveEventResult.Success(archived)
+    }
+
+    fun reactivate(id: UUID, actorId: UUID): ReactivateEventResult {
+        val existing = eventRepository.findById(id)
+            ?: return ReactivateEventResult.NotFound
+
+        if (existing.status != EventStatus.ARCHIVED) {
+            return ReactivateEventResult.InvalidStatus(existing.status)
+        }
+
+        val now = clock.now()
+        val reactivated = existing.copy(
+            status = EventStatus.ACTIVE,
+            version = existing.version + 1,
+            updatedAt = now,
+        )
+
+        eventRepository.update(reactivated)
+
+        auditRepository.insert(
+            AuditEntryEntity(
+                id = UUID.randomUUID(),
+                actorId = actorId,
+                action = "EVENT_REACTIVATED",
+                targetType = "Event",
+                targetId = id,
+                summary = "Event '${reactivated.name}' reactivated",
+                occurredAt = now,
+            ),
+        )
+        return ReactivateEventResult.Success(reactivated)
     }
 
     fun completeEvent(eventId: UUID, actorId: UUID): CompleteEventResult {
@@ -273,6 +317,10 @@ sealed interface UpdateEventResult {
     data object NotFound : UpdateEventResult
     data object CannotModifyActiveEvent : UpdateEventResult
     data class Conflict(val expected: Long, val actual: Long) : UpdateEventResult
+
+    /** Checked out to a local instance for offline execution (design §I.3) —
+        rejected until the local instance syncs its results back. */
+    data object Locked : UpdateEventResult
 }
 
 sealed interface ActivateEventResult {
@@ -291,6 +339,12 @@ sealed interface ArchiveEventResult {
     data class Success(val event: EventEntity) : ArchiveEventResult
     data object NotFound : ArchiveEventResult
     data class InvalidStatus(val current: EventStatus) : ArchiveEventResult
+}
+
+sealed interface ReactivateEventResult {
+    data class Success(val event: EventEntity) : ReactivateEventResult
+    data object NotFound : ReactivateEventResult
+    data class InvalidStatus(val current: EventStatus) : ReactivateEventResult
 }
 
 sealed interface CompleteEventResult {

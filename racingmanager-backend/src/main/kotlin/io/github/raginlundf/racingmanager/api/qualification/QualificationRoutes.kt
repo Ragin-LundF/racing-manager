@@ -6,7 +6,11 @@ import io.github.raginlundf.racingmanager.api.qualification.models.Qualification
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationRankingResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.SetupQualificationRequestModel
-import io.github.raginlundf.racingmanager.application.auth.AuthService
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.api.requireTenantEvent
+import io.github.raginlundf.racingmanager.application.auth.Scopes
+import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.application.qualification.FinalizeResult
 import io.github.raginlundf.racingmanager.application.qualification.GenerateScheduleResult
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
@@ -26,13 +30,15 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import java.util.UUID
 
-fun Route.qualificationRoutes(authService: AuthService, qualificationService: QualificationService) {
+fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: QualificationService, eventRepository: EventRepository) {
     post("/api/v1/events/{eventId}/qualification/setup") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<SetupQualificationRequestModel>()
 
-        when (val result = qualificationService.setup(eventId, request.numberOfRuns, session.user.id)) {
+        when (val result = qualificationService.setup(eventId, request.numberOfRuns, principal.userId)) {
             is SetupQualificationResult.Success -> {
                 call.respond(status = HttpStatusCode.Created, message = result.qualification.toResponseModel())
             }
@@ -52,8 +58,10 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     get("/api/v1/events/{eventId}/qualification") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val qualification = qualificationService.findByEventId(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
@@ -63,10 +71,12 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     post("/api/v1/events/{eventId}/qualification/schedule") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
 
-        when (val result = qualificationService.generateSchedule(eventId, session.user.id)) {
+        when (val result = qualificationService.generateSchedule(eventId, principal.userId)) {
             is GenerateScheduleResult.Success -> {
                 call.respond(result.qualification.toResponseModel())
             }
@@ -86,31 +96,39 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     get("/api/v1/events/{eventId}/qualification/schedule") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val schedule = qualificationService.getSchedule(eventId)
         call.respond(schedule.map { it.toHeatResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/qualification/rankings") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val rankings = qualificationService.getRankings(eventId)
         call.respond(rankings.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/qualification/progress") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val progress = qualificationService.getProgress(eventId)
         call.respond(progress.toResponseModel())
     }
 
     post("/api/v1/events/{eventId}/qualification/finalize") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
 
-        when (val result = qualificationService.finalize(eventId, session.user.id)) {
+        when (val result = qualificationService.finalize(eventId, principal.userId)) {
             is FinalizeResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Qualification finalized"))
             }
@@ -127,10 +145,12 @@ fun Route.qualificationRoutes(authService: AuthService, qualificationService: Qu
     }
 
     post("/api/v1/events/{eventId}/qualification/reopen") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
 
-        when (val result = qualificationService.reopen(eventId, session.user.id)) {
+        when (val result = qualificationService.reopen(eventId, principal.userId)) {
             is ReopenResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Qualification reopened"))
             }

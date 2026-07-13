@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="create-pairing-codes-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="pairing_codes"/></not>
+        </preConditions>
+        <createTable tableName="pairing_codes">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_pairing_codes_tenant" references="tenants(id)"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-paired-instances-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="paired_instances"/></not>
+        </preConditions>
+        <createTable tableName="paired_instances">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_paired_instances_tenant" references="tenants(id)"/>
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="paired_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_sync_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-synced-results-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="synced_results"/></not>
+        </preConditions>
+        <createTable tableName="synced_results">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_synced_results_event" references="events(id)"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_synced_results_tenant" references="tenants(id)"/>
+            </column>
+            <column name="local_instance_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_synced_results_instance" references="paired_instances(id)"/>
+            </column>
+            <column name="results_json" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="synced_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

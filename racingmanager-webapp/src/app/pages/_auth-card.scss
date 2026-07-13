@@ -54,6 +54,15 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.auth-card a {
+  text-align: center;
+  color: var(--color-focus);
+  font-size: 13px;
+  text-decoration: none;
+}
+.auth-card a:hover {
+  text-decoration: underline;
+}
 .error {
   color: var(--color-error);
   margin: 0;

@@ -19,7 +19,12 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatReposi
 import io.github.raginlundf.racingmanager.infrastructure.repositories.KnockoutRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
+import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import kotlinx.coroutines.runBlocking
@@ -39,12 +44,13 @@ class KnockoutServiceTest {
     private val auditRepository = AuditRepository()
     private val userRepository = UserRepository()
     private val passwordHasher = PasswordHasher()
-    private val sessionRepository = SessionRepository()
+    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
+    private val jwtService = JwtService(jwtKeyProvider)
     private val participantRepository = ParticipantRepository()
     private val heatRepository = HeatRepository()
     private val qualificationRepository = QualificationRepository()
     private val knockoutRepository = KnockoutRepository()
-    private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
+    private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
     private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository)
@@ -52,16 +58,19 @@ class KnockoutServiceTest {
     private val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
 
     private lateinit var actorId: UUID
+    private lateinit var tenantId: UUID
     private lateinit var eventId: UUID
     private lateinit var participantIds: List<UUID>
 
     @BeforeTest
     fun setUp() {
         DatabaseTestHelper.setUp()
+        jwtKeyProvider.ensureKeyExists()
         val result = authService.setupAdmin("admin", "password123", "Admin User")
         actorId = (result as SetupResult.Success).user.id
+        tenantId = (result as SetupResult.Success).user.tenantId
 
-        val created = eventService.create("Test Event", null, EventSettings(), actorId)
+        val created = eventService.create("Test Event", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
         eventService.activate(event.id, event.version, actorId)
         eventId = event.id
@@ -132,7 +141,7 @@ class KnockoutServiceTest {
 
     @Test
     fun `setup returns EventNotActive for draft event`() {
-        val draftEvent = eventService.create("Draft", null, EventSettings(), actorId)
+        val draftEvent = eventService.create("Draft", null, EventSettings(), actorId, tenantId)
         val draftId = (draftEvent as CreateEventResult.Success).event.id
 
         val result = knockoutService.setup(draftId, PairingMode.FIRST_VS_LAST, actorId)

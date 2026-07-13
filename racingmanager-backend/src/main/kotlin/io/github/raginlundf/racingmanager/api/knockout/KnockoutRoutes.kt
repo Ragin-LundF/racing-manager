@@ -10,7 +10,11 @@ import io.github.raginlundf.racingmanager.api.knockout.models.QualifiedParticipa
 import io.github.raginlundf.racingmanager.api.knockout.models.RecordMatchResultRequestModel
 import io.github.raginlundf.racingmanager.api.knockout.models.SetManualPairingsRequestModel
 import io.github.raginlundf.racingmanager.api.knockout.models.SetupKnockoutRequestModel
-import io.github.raginlundf.racingmanager.application.auth.AuthService
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.api.requireTenantEvent
+import io.github.raginlundf.racingmanager.application.auth.Scopes
+import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.application.knockout.CreateHeatForMatchResult
 import io.github.raginlundf.racingmanager.application.knockout.FinalizeKnockoutResult
 import io.github.raginlundf.racingmanager.application.knockout.GeneratePairingsResult
@@ -32,10 +36,12 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import java.util.UUID
 
-fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutService) {
+fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutService, eventRepository: EventRepository) {
     post("/api/v1/events/{eventId}/knockout/setup") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<SetupKnockoutRequestModel>()
         val pairingMode = try {
             PairingMode.valueOf(request.pairingMode)
@@ -44,7 +50,7 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
             return@post
         }
 
-        when (val result = knockoutService.setup(eventId, pairingMode, session.user.id)) {
+        when (val result = knockoutService.setup(eventId, pairingMode, principal.userId)) {
             is SetupKnockoutResult.Success -> {
                 call.respond(status = HttpStatusCode.Created, message = result.tournament.toResponseModel())
             }
@@ -67,8 +73,10 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val tournament = knockoutService.findByEventId(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
@@ -78,21 +86,25 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout/qualified-participants") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val participants = knockoutService.getQualifiedParticipants(eventId)
         call.respond(participants.map { it.toQualifiedResponseModel() })
     }
 
     post("/api/v1/events/{eventId}/knockout/manual-pairings") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<SetManualPairingsRequestModel>()
         val pairings = request.pairings.map { p ->
             Pair(UUID.fromString(p.participant1Id), p.participant2Id?.let { UUID.fromString(it) })
         }
 
-        when (val result = knockoutService.setManualPairings(eventId, pairings, session.user.id)) {
+        when (val result = knockoutService.setManualPairings(eventId, pairings, principal.userId)) {
             is SetManualPairingsResult.Success -> {
                 call.respond(result.tournament.toResponseModel())
             }
@@ -115,10 +127,12 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     post("/api/v1/events/{eventId}/knockout/pairings") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
 
-        when (val result = knockoutService.generatePairings(eventId, session.user.id)) {
+        when (val result = knockoutService.generatePairings(eventId, principal.userId)) {
             is GeneratePairingsResult.Success -> {
                 call.respond(result.tournament.toResponseModel())
             }
@@ -138,19 +152,23 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout/matches") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val matches = knockoutService.getMatches(eventId)
         call.respond(matches.map { it.toResponseModel() })
     }
 
     post("/api/v1/events/{eventId}/knockout/heat") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<CreateHeatForMatchRequestModel>()
         val matchId = UUID.fromString(request.matchId)
 
-        when (val result = knockoutService.createHeatForMatch(eventId, matchId, session.user.id)) {
+        when (val result = knockoutService.createHeatForMatch(eventId, matchId, principal.userId)) {
             is CreateHeatForMatchResult.Success -> {
                 call.respond(status = HttpStatusCode.Created, message = result.heat)
             }
@@ -170,14 +188,16 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     post("/api/v1/events/{eventId}/knockout/result") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<RecordMatchResultRequestModel>()
         val matchId = UUID.fromString(request.matchId)
         val winnerId = UUID.fromString(request.winnerId)
         val heatId = UUID.fromString(request.heatId)
 
-        when (val result = knockoutService.recordMatchResult(eventId, matchId, winnerId, heatId, session.user.id)) {
+        when (val result = knockoutService.recordMatchResult(eventId, matchId, winnerId, heatId, principal.userId)) {
             is RecordMatchResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Match result recorded"))
             }
@@ -197,10 +217,12 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     post("/api/v1/events/{eventId}/knockout/finalize") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
 
-        when (val result = knockoutService.finalize(eventId, session.user.id)) {
+        when (val result = knockoutService.finalize(eventId, principal.userId)) {
             is FinalizeKnockoutResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Knockout finalized"))
             }
@@ -217,8 +239,10 @@ fun Route.knockoutRoutes(authService: AuthService, knockoutService: KnockoutServ
     }
 
     get("/api/v1/events/{eventId}/knockout/results") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val results = knockoutService.getResults(eventId)
         call.respond(results.map { it.toResponseModel() })
     }

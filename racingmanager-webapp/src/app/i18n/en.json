@@ -21,13 +21,20 @@
       "archive": "Archive",
       "edit": "Edit",
       "info": "Status: {{status}} | Lanes: {{lanes}} | Measurement: {{measurement}}",
+      "statusLabel": "Status",
+      "lanesLabel": "Lanes",
+      "measurementLabel": "Measurement",
       "knockout": "Knockout",
       "qualification": "Qualification",
       "raceControl": "Race Control",
       "results": "Results",
       "export": "Export",
       "audit": "Audit Log",
-      "diagnostics": "Diagnostics"
+      "diagnostics": "Diagnostics",
+      "openSpectatorView": "Open Spectator View",
+      "reactivate": "Reactivate",
+      "archiveConfirm": "Archive event \"{{name}}\"? This will stop the running competition.",
+      "reactivateConfirm": "Reactivate event \"{{name}}\"?"
     },
     "form": {
       "cancel": "Cancel",
@@ -83,6 +90,42 @@
     "username": {
       "label": "Username",
       "required": "Username is required."
+    },
+    "tenantSlug": {
+      "label": "Workspace (optional)"
+    },
+    "registerLink": "Register a new event organization"
+  },
+  "register": {
+    "title": "Register Event Organization",
+    "tenantName": {
+      "label": "Organization Name",
+      "required": "Organization name is required."
+    },
+    "tenantSlug": {
+      "label": "Short Name (URL)",
+      "required": "Short name is required."
+    },
+    "username": {
+      "label": "Username",
+      "required": "Username is required (min. 3 characters)."
+    },
+    "displayName": {
+      "label": "Display Name",
+      "required": "Display name is required."
+    },
+    "password": {
+      "label": "Password",
+      "required": "Password is required (min. 8 characters).",
+      "mismatch": "Passwords do not match."
+    },
+    "confirmPassword": "Confirm Password",
+    "submit": "Register",
+    "loginLink": "Already registered? Log in",
+    "error": {
+      "generic": "Registration failed. Please try again.",
+      "slugTaken": "This short name is already taken.",
+      "notHosted": "Registration is not available on this installation."
     }
   },
   "participants": {
@@ -372,14 +415,16 @@
     "time": "Time",
     "action": "Action",
     "summary": "Summary",
-    "actor": "Actor"
+    "actor": "Actor",
+    "refresh": "Refresh",
+    "count": "{{count}} entries",
+    "system": "System"
   },
   "spectator": {
     "shell": {
-      "placeholder": "Select an event to display live results.",
+      "placeholder": "Waiting for live data…",
       "title": "Spectator View"
     },
-    "selectEvent": "Select Event",
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit Fullscreen",
     "reducedMotion": "Reduced Motion",
@@ -417,6 +462,7 @@
     "roundLabel": "Round {{number}}",
     "bye": "Bye",
     "winner": "Winner",
-    "dnf": "DNF"
+    "dnf": "DNF",
+    "invalidLink": "This spectator link is invalid or has expired. Ask the event organizer for a new one."
   }
 }

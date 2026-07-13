@@ -5,30 +5,32 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="create-users-table" author="ragin">
+    <changeSet id="create-spectator-exchange-codes-table" author="ragin">
         <preConditions onFail="MARK_RAN">
-            <not><tableExists tableName="users"/></not>
+            <not><tableExists tableName="spectator_exchange_codes"/></not>
         </preConditions>
-        <createTable tableName="users">
+        <createTable tableName="spectator_exchange_codes">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="username" type="VARCHAR(255)">
-                <constraints unique="true" nullable="false"/>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_spectator_exchange_codes_tenant" references="tenants(id)"/>
             </column>
-            <column name="password_hash" type="VARCHAR(512)">
-                <constraints nullable="false"/>
+            <column name="event_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_spectator_exchange_codes_event" references="events(id)"/>
             </column>
-            <column name="display_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="role" type="VARCHAR(50)">
+            <column name="token" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
                 <constraints nullable="false"/>
             </column>
-            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
     </changeSet>
 </databaseChangeLog>

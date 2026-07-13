@@ -16,7 +16,12 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepos
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
+import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import kotlinx.coroutines.runBlocking
@@ -35,10 +40,11 @@ class DiagnosticsServiceTest {
     private val auditRepository = AuditRepository()
     private val userRepository = UserRepository()
     private val passwordHasher = PasswordHasher()
-    private val sessionRepository = SessionRepository()
+    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
+    private val jwtService = JwtService(jwtKeyProvider)
     private val participantRepository = ParticipantRepository()
     private val heatRepository = HeatRepository()
-    private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
+    private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
     private val measurementGateway = SimulationMeasurementGateway()
@@ -46,6 +52,7 @@ class DiagnosticsServiceTest {
 
     private lateinit var diagnosticsService: DiagnosticsService
     private lateinit var actorId: UUID
+    private lateinit var tenantId: UUID
     private lateinit var eventId: UUID
     private lateinit var participantId1: UUID
     private lateinit var participantId2: UUID
@@ -53,13 +60,15 @@ class DiagnosticsServiceTest {
     @BeforeTest
     fun setUp() {
         DatabaseTestHelper.setUp()
+        jwtKeyProvider.ensureKeyExists()
         val ds = DatabaseTestHelper.dataSource
         diagnosticsService = DiagnosticsService(ds!!, eventRepository, participantRepository, heatRepository)
 
         val result = authService.setupAdmin("admin", "password123", "Admin User")
         actorId = (result as SetupResult.Success).user.id
+        tenantId = (result as SetupResult.Success).user.tenantId
 
-        val created = eventService.create("Test Event", null, EventSettings(), actorId)
+        val created = eventService.create("Test Event", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
         eventService.activate(event.id, event.version, actorId)
         eventId = event.id
@@ -119,7 +128,7 @@ class DiagnosticsServiceTest {
         val heatId = (created as CreateHeatResult.Success).heat.id
         heatService.arm(heatId, actorId)
 
-        val result = diagnosticsService.recoverHeat(heatId, "cancel")
+        val result = diagnosticsService.recoverHeat(heatId, "cancel", tenantId)
         assertNotNull(result)
         assertEquals("cancelled", result.action)
 
@@ -135,7 +144,7 @@ class DiagnosticsServiceTest {
         heatService.arm(heatId, actorId)
         heatService.start(heatId, actorId)
 
-        val result = diagnosticsService.recoverHeat(heatId, "reset")
+        val result = diagnosticsService.recoverHeat(heatId, "reset", tenantId)
         assertNotNull(result)
         assertEquals("reset_to_planned", result.action)
 
@@ -146,13 +155,13 @@ class DiagnosticsServiceTest {
 
     @Test
     fun `recoverHeat returns null for unknown heat`() {
-        val result = diagnosticsService.recoverHeat(UUID.randomUUID(), "cancel")
+        val result = diagnosticsService.recoverHeat(UUID.randomUUID(), "cancel", tenantId)
         assertEquals(null, result)
     }
 
     @Test
     fun `getBundle returns diagnostics bundle`() {
-        val bundle = diagnosticsService.getBundle()
+        val bundle = diagnosticsService.getBundle(tenantId)
         assertTrue(bundle.database.connected)
         assertEquals(1, bundle.events.total)
         assertEquals(1, bundle.events.active)

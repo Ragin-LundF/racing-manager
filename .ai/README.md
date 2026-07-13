@@ -28,8 +28,12 @@ wired into Gradle via `@angular/build`, but day-to-day UI work uses npm directly
 - **kotlinx.serialization** (JSON) for wire models; **kotlinx.coroutines**.
 - **Exposed 1.3** (JDBC DSL) over **SQLite** (`org.xerial:sqlite-jdbc`) with a
   **HikariCP** pool; SQLite runs in WAL mode. **Liquibase** manages the schema.
-- **BCrypt** (`at.favre.lib:bcrypt`) for password hashing; sessions are stored
-  server-side and carried via the `X-Session-Id` header.
+- **BCrypt** (`at.favre.lib:bcrypt`) for password hashing. Auth is JWT-based
+  (RS256, `com.auth0:java-jwt`): short-lived access tokens carried via
+  `Authorization: Bearer`, opaque DB-backed refresh tokens. Multi-tenant
+  (`tenants`/`memberships`), scoped `rm:supervisor`/`rm:admin`/`rm:user`/
+  `rm:spectator`. See `.plan/tenant/implementation-plan.md` for the full
+  tenant/JWT/sync design and its slice-by-slice implementation notes.
 - **Logging:** kotlin-logging over Log4j2.
 - **Tests:** JUnit 5 platform + `kotlin.test`, Ktor `server-test-host`,
   `kotlinx-coroutines-test`.
@@ -45,6 +49,12 @@ Package layers (`io.github.raginlundf.racingmanager.*`):
 
 Config: `src/main/resources/application.conf`. The `demo` profile seeds a default
 `admin` / `admin` user on first run.
+
+`openapi/openapi-*.yaml` documents the auth/tenant/admin/spectator/bootstrap/sync
+API surface added by the tenant plan. **Deviation from `module-architecture.md`'s
+generated-module description below:** this repo hand-writes Ktor routes and DTOs
+directly; these OpenAPI files are a contract reference for API consumers, not a
+codegen input — there is no `<module>-rest-api`/`<module>-dto` generation step.
 
 ### Webapp — `racingmanager-webapp`
 

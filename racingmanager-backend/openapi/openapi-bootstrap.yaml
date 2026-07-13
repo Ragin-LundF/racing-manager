@@ -1,0 +1,111 @@
+openapi: 3.0.3
+info:
+  title: Racing Manager — Hosted→local bootstrap package API
+  version: "1.0"
+  description: |
+    Hosted→local bootstrap package (design §H). Issuance signs a self-contained artifact with the deployment's
+    JWT RSA signing key; import verifies integrity against the artifact's own embedded public key.
+    Neither operation accepts a tenant-selection parameter — both always act on the caller's own tenant.
+
+    > Note: *Signature verification proves the artifact was not corrupted or tampered with in transit — it does
+    > not prove sender authenticity against a trust root. See the tenant implementation plan's Slice H deviation
+    > notes.*
+servers:
+  - url: /api/v1
+paths:
+  /tenant/local-packages:
+    post:
+      summary: Issue a signed bootstrap package for one or more events.
+      description: Requires `rm:admin` in `hosted` mode. Only the caller's own tenant's events may be selected.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventIds]
+              properties:
+                eventIds:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Signed artifact.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocalPackageArtifact" }
+        "404":
+          description: One or more events were not found in this tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /tenant/local-packages/import:
+    post:
+      summary: Import a bootstrap package into the caller's own (local) tenant.
+      description: |
+        Requires `rm:admin` in `local` mode.
+        The whole event + participant import happens in one transaction — a failure leaves no partial state.
+        Re-importing the same package is idempotent (returns the original result, no duplicate writes).
+        Set `dryRun` to preview what would be imported without writing anything.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [artifact]
+              properties:
+                artifact: { $ref: "#/components/schemas/LocalPackageArtifact" }
+                dryRun: { type: boolean, default: false }
+      responses:
+        "201":
+          description: Import result (or preview, if `dryRun`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocalPackageImportResult" }
+        "400":
+          description: Artifact is malformed, fails signature verification, or has expired.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    LocalPackageArtifact:
+      type: object
+      required: [payload, signature, kid, publicKey]
+      properties:
+        payload:
+          type: string
+          description: Base64 of the canonical UTF-8 JSON-encoded package contents.
+        signature:
+          type: string
+          description: Base64 RSA (SHA256withRSA) signature over the decoded payload bytes.
+        kid: { type: string }
+        publicKey:
+          type: string
+          description: Base64 X.509-encoded RSA public key used to self-verify the signature.
+    LocalPackageImportResult:
+      type: object
+      required: [localInstanceId, tenantId, importedEventIds, alreadyImported, dryRun, originTenantDisplayName]
+      properties:
+        localInstanceId: { type: string, description: Empty string when `dryRun` is true. }
+        tenantId: { type: string, format: uuid }
+        importedEventIds:
+          type: array
+          items: { type: string, format: uuid }
+        alreadyImported: { type: boolean }
+        dryRun: { type: boolean }
+        originTenantDisplayName: { type: string }

@@ -27,10 +27,19 @@ export class AuditComponent {
     this.load();
   }
 
-  private load(): void {
+  protected load(): void {
+    this.error.set('');
     this.auditClient.findByEventId(this.eventId).subscribe({
       next: (data) => this.entries.set(data),
       error: () => this.error.set('Failed to load audit log.'),
     });
+  }
+
+  /** Colors the action chip by intent so the log reads at a glance instead
+      of as a wall of identical monospace tags. */
+  protected actionChipClass(action: string): string {
+    if (/DELETE|CANCEL|ARCHIVE|REVOKE|REMOVE/.test(action)) return 'chip-error';
+    if (/CREATE|REGISTER|ADD|ACTIVATE|ISSUE/.test(action)) return 'chip-success';
+    return 'chip-muted';
   }
 }

@@ -21,13 +21,20 @@
       "archive": "Archivieren",
       "edit": "Bearbeiten",
       "info": "Status: {{status}} | Spuren: {{lanes}} | Messung: {{measurement}}",
+      "statusLabel": "Status",
+      "lanesLabel": "Spuren",
+      "measurementLabel": "Messung",
       "knockout": "K.o.-Phase",
       "qualification": "Qualifikation",
       "raceControl": "Rennsteuerung",
       "results": "Ergebnisse",
       "export": "Export",
       "audit": "Prüfprotokoll",
-      "diagnostics": "Diagnose"
+      "diagnostics": "Diagnose",
+      "openSpectatorView": "Zuschaueransicht öffnen",
+      "reactivate": "Reaktivieren",
+      "archiveConfirm": "Veranstaltung \"{{name}}\" archivieren? Der Wettbewerb wird dadurch beendet.",
+      "reactivateConfirm": "Veranstaltung \"{{name}}\" reaktivieren?"
     },
     "form": {
       "cancel": "Abbrechen",
@@ -83,6 +90,42 @@
     "username": {
       "label": "Benutzername",
       "required": "Benutzername ist erforderlich."
+    },
+    "tenantSlug": {
+      "label": "Arbeitsbereich (optional)"
+    },
+    "registerLink": "Neue Veranstaltungsorganisation registrieren"
+  },
+  "register": {
+    "title": "Veranstaltungsorganisation registrieren",
+    "tenantName": {
+      "label": "Name der Organisation",
+      "required": "Name der Organisation ist erforderlich."
+    },
+    "tenantSlug": {
+      "label": "Kurzname (URL)",
+      "required": "Kurzname ist erforderlich."
+    },
+    "username": {
+      "label": "Benutzername",
+      "required": "Benutzername ist erforderlich (min. 3 Zeichen)."
+    },
+    "displayName": {
+      "label": "Anzeigename",
+      "required": "Anzeigename ist erforderlich."
+    },
+    "password": {
+      "label": "Passwort",
+      "required": "Passwort ist erforderlich (min. 8 Zeichen).",
+      "mismatch": "Passwörter stimmen nicht überein."
+    },
+    "confirmPassword": "Passwort bestätigen",
+    "submit": "Registrieren",
+    "loginLink": "Bereits registriert? Anmelden",
+    "error": {
+      "generic": "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "slugTaken": "Dieser Kurzname ist bereits vergeben.",
+      "notHosted": "Die Registrierung ist in dieser Installation nicht verfügbar."
     }
   },
   "participants": {
@@ -372,14 +415,16 @@
     "time": "Zeit",
     "action": "Aktion",
     "summary": "Zusammenfassung",
-    "actor": "Akteur"
+    "actor": "Akteur",
+    "refresh": "Aktualisieren",
+    "count": "{{count}} Einträge",
+    "system": "System"
   },
   "spectator": {
     "shell": {
-      "placeholder": "Wählen Sie eine Veranstaltung aus, um Live-Ergebnisse anzuzeigen.",
+      "placeholder": "Warte auf Live-Daten…",
       "title": "Zuschaueransicht"
     },
-    "selectEvent": "Veranstaltung wählen",
     "fullscreen": "Vollbild",
     "exitFullscreen": "Vollbild beenden",
     "reducedMotion": "Reduzierte Animation",
@@ -417,6 +462,7 @@
     "roundLabel": "Runde {{number}}",
     "bye": "Freilos",
     "winner": "Sieger",
-    "dnf": "DNF"
+    "dnf": "DNF",
+    "invalidLink": "Dieser Zuschauer-Link ist ungültig oder abgelaufen. Bitten Sie den Veranstalter um einen neuen Link."
   }
 }

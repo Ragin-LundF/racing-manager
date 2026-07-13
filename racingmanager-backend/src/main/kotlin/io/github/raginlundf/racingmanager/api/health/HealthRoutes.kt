@@ -1,5 +1,6 @@
 package io.github.raginlundf.racingmanager.api.health
 
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.health.models.BuildInfoResponseModel
 import io.github.raginlundf.racingmanager.api.health.models.DatabaseHealthModel
 import io.github.raginlundf.racingmanager.api.health.models.DiagnosticsResponseModel
@@ -9,7 +10,10 @@ import io.github.raginlundf.racingmanager.api.health.models.ReadinessCheckModel
 import io.github.raginlundf.racingmanager.api.health.models.ReadinessResponseModel
 import io.github.raginlundf.racingmanager.api.health.models.RecoveryActionResponseModel
 import io.github.raginlundf.racingmanager.api.health.models.UnfinishedHeatModel
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.application.auth.Scopes
 import io.github.raginlundf.racingmanager.application.diagnostics.DiagnosticsService
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveParameters
@@ -18,7 +22,15 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
-fun Route.healthRoutes(diagnosticsService: DiagnosticsService) {
+/** `/health`, `/readiness`, `/build-info` are liveness/build metadata and stay
+    public — standard liveness-probe convention, and they carry no tenant or
+    operational data. `/diagnostics` and `/diagnostics/recover` expose
+    cross-event operational internals and are gated to `rm:admin` (design §7:
+    "operational diagnostics should not accidentally become available to every
+    authenticated user") **and** scoped to `principal.tenantId` (design §J.1)
+    — an admin in a hosted multi-tenant deployment sees and can only recover
+    their own tenant's events/heats, never another tenant's. */
+fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtService) {
     get("/api/v1/health") {
         val db = diagnosticsService.checkDatabase()
         val status = if (db.connected) "UP" else "DOWN"
@@ -44,7 +56,9 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService) {
     }
 
     get("/api/v1/diagnostics") {
-        val bundle = diagnosticsService.getBundle()
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN)) return@get
+        val bundle = diagnosticsService.getBundle(principal.tenantId)
         call.respond(
             DiagnosticsResponseModel(
                 database = DatabaseHealthModel(connected = bundle.database.connected, pingMs = bundle.database.pingMs),
@@ -73,6 +87,8 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService) {
     }
 
     post("/api/v1/diagnostics/recover") {
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN)) return@post
         val params = call.receiveParameters()
         val heatId = params["heatId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing heatId")
         val action = params["action"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing action")
@@ -81,7 +97,7 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService) {
         } catch (e: IllegalArgumentException) {
             return@post call.respond(HttpStatusCode.BadRequest, "Invalid heatId")
         }
-        val result = diagnosticsService.recoverHeat(parsedId, action)
+        val result = diagnosticsService.recoverHeat(parsedId, action, principal.tenantId)
             ?: return@post call.respond(HttpStatusCode.NotFound, "Heat not found")
         call.respond(RecoveryActionResponseModel(heatId = result.heatId.toString(), action = result.action))
     }

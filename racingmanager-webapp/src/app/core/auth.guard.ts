@@ -23,3 +23,18 @@ export const redirectIfAuthenticatedGuard: CanActivateFn = () => {
 
   return true;
 };
+
+/** Gates `rm:admin`-only pages (audit, diagnostics). Assumes `authGuard`
+    already ran on the parent route — an unauthenticated user has no scopes
+    and is redirected to `/racemanager` here rather than `/login`, since the
+    parent guard is what owns the "not logged in" redirect. */
+export const adminGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (auth.hasScope('rm:admin')) {
+    return true;
+  }
+
+  return router.parseUrl('/racemanager');
+};

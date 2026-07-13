@@ -163,6 +163,12 @@ export class QualificationComponent {
     return `${seconds.toFixed(3)}s`;
   }
 
+  protected statusChipClass(status: string): string {
+    if (status === 'SCHEDULED' || status === 'IN_PROGRESS') return 'chip-success';
+    if (status === 'FINALIZED') return 'chip-warning';
+    return 'chip-muted';
+  }
+
   protected heatStatusClass(status: string): string {
     if (status === 'FINISHED' || status === 'TIMEOUT') return 'finished';
     if (status === 'ARMED' || status === 'STARTED') return 'in-progress';

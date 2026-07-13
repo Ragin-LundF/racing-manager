@@ -1,7 +1,8 @@
 import { Routes } from '@angular/router';
-import { authGuard, redirectIfAuthenticatedGuard } from './core/auth.guard';
+import { adminGuard, authGuard, redirectIfAuthenticatedGuard } from './core/auth.guard';
 import { SetupComponent } from './pages/setup/setup.component';
 import { LoginComponent } from './pages/login/login.component';
+import { RegisterComponent } from './pages/register/register.component';
 import { RaceManagerShellComponent } from './shell/racemanager/racemanager.component';
 import { SpectatorShellComponent } from './shell/spectator/spectator.component';
 import { EventListComponent } from './events/event-list.component';
@@ -26,6 +27,7 @@ export const routes: Routes = [
 
   { path: 'setup', component: SetupComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [redirectIfAuthenticatedGuard] },
 
   {
     path: 'racemanager',
@@ -33,7 +35,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', component: EventListComponent },
-      { path: 'diagnostics', component: DiagnosticsComponent },
+      { path: 'diagnostics', component: DiagnosticsComponent, canActivate: [adminGuard] },
       { path: 'new', component: EventFormComponent },
       {
         path: ':id',
@@ -50,8 +52,8 @@ export const routes: Routes = [
           { path: 'knockout', component: KnockoutComponent },
           { path: 'results', component: ResultsComponent },
           { path: 'export', component: ExportComponent },
-          { path: 'audit', component: AuditComponent },
-          { path: 'diagnostics', component: DiagnosticsComponent },
+          { path: 'audit', component: AuditComponent, canActivate: [adminGuard] },
+          { path: 'diagnostics', component: DiagnosticsComponent, canActivate: [adminGuard] },
         ],
       },
     ],

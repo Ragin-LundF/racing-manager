@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: Racing Manager — Token-bound spectator API
+  version: "1.0"
+  description: |
+    Token-bound spectator access (design §F) — replaces the formerly-open `/api/v1/public/*` surface.
+    An operator exchanges an event for a one-time code; the spectator view trades that code for an `rm:spectator`
+    JWT bound to exactly one `event_id`. `GET /spectator/snapshot` and `webSocket /spectator/live` derive the event
+    **only** from the token — neither takes an `eventId` parameter, so there is no URL-level event-selection
+    surface to attack.
+
+
+    > Note: *`webSocket /api/v1/spectator/live` is not representable in OpenAPI 3 (HTTP-only) and is documented
+    > here instead: connect, then send `{"type":"auth","token":"<spectator JWT>"}` as the first text frame within
+    > 5 seconds or the server closes the connection. The server then pushes the same snapshot shape as
+    > `GET /spectator/snapshot` on every change to the token's bound event.*
+servers:
+  - url: /api/v1
+paths:
+  /events/{eventId}/spectator-token:
+    post:
+      summary: Issue a one-time exchange code for a spectator token.
+      description: |
+        Requires `rm:admin` or `rm:user` for the event's own tenant.
+        The event must be `ACTIVE` or `ARCHIVED`.
+        Returns an exchange code, never the raw JWT — the JWT itself is only handed out via `/spectator/exchange`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Exchange code issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [exchangeCode, expiresIn]
+                properties:
+                  exchangeCode: { type: string }
+                  expiresIn: { type: integer, format: int64 }
+        "409":
+          description: Event is not `ACTIVE` or `ARCHIVED`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /spectator/exchange:
+    post:
+      summary: Trade a one-time exchange code for a spectator JWT.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+      responses:
+        "200":
+          description: Spectator token issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, expiresIn, eventId]
+                properties:
+                  accessToken: { type: string }
+                  expiresIn: { type: integer, format: int64 }
+                  eventId: { type: string, format: uuid }
+        "400":
+          description: Code is invalid, expired, or already used.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /spectator/snapshot:
+    get:
+      summary: The event snapshot for the presented spectator token.
+      security: [{ spectatorAuth: [] }]
+      responses:
+        "200":
+          description: Snapshot for the token's bound event.
+        "403":
+          description: Token has no `rm:spectator` scope, or has no bound event.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  securitySchemes:
+    spectatorAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: An `rm:spectator`-scoped JWT obtained via `/spectator/exchange`.
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }

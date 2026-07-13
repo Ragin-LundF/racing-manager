@@ -1,8 +1,12 @@
 package io.github.raginlundf.racingmanager.api.spectator
 
-import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorEventListItemModel
-import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorEventListResponseModel
+import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.api.requireTenantEvent
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorEventModel
+import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorExchangeRequestModel
+import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorExchangeResponseModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorHeatModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorKnockoutMatchModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorKnockoutRoundModel
@@ -10,61 +14,169 @@ import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorKnockout
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorLaneModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorRankingEntryModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorSnapshotResponseModel
+import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorTokenResponseModel
+import io.github.raginlundf.racingmanager.application.auth.Scopes
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorKnockoutMatch
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorKnockoutRound
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorSnapshot
-import io.github.raginlundf.racingmanager.domain.event.EventEntity
 import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
-import io.github.raginlundf.racingmanager.domain.heat.HeatLaneAssignment
 import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
-import io.github.raginlundf.racingmanager.domain.heat.Measurement
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
+import io.github.raginlundf.racingmanager.domain.spectator.SpectatorExchangeCodeEntity
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SpectatorExchangeCodeRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
+import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.CloseReason
+import io.ktor.websocket.Frame
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import java.util.UUID
 
-fun Route.spectatorRoutes(spectatorService: SpectatorService, eventRepository: EventRepository, webSocketService: SpectatorWebSocketService) {
-    get("/api/v1/public/events") {
-        val events = eventRepository.findAll().filter { it.status in listOf(EventStatus.ACTIVE, EventStatus.ARCHIVED) }
+@Serializable
+private data class WsAuthMessage(val type: String? = null, val token: String)
+
+private val SPECTATOR_TOKEN_TTL = 4.hours
+private val EXCHANGE_CODE_TTL = 5.minutes
+private val SPECTATOR_ELIGIBLE_STATUSES = setOf(EventStatus.ACTIVE, EventStatus.ARCHIVED)
+
+/** Token-bound spectator access (design §F): replaces the formerly-open
+    `/api/v1/public` surface. An operator exchanges an event for a one-time
+    code (never the raw JWT); the spectator UI trades that code for an
+    `rm:spectator` JWT which is bound to exactly one `event_id` — every read
+    route below derives the event from the token, never from a URL parameter,
+    so there is no "switch event via URL" surface to attack in the first place. */
+fun Route.spectatorRoutes(
+    jwtService: JwtService,
+    spectatorService: SpectatorService,
+    eventRepository: EventRepository,
+    webSocketService: SpectatorWebSocketService,
+    exchangeCodeRepository: SpectatorExchangeCodeRepository,
+) {
+    val clock = Clock.System
+
+    post("/api/v1/events/{eventId}/spectator-token") {
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        val event = call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
+        if (event.status !in SPECTATOR_ELIGIBLE_STATUSES) {
+            call.respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel("EVENT_NOT_ELIGIBLE", "Event must be ACTIVE or ARCHIVED for spectator access"),
+            )
+            return@post
+        }
+
+        val now = clock.now()
+        val token = jwtService.issueAccessToken(
+            userId = UUID.randomUUID(),
+            tenantId = principal.tenantId,
+            scopes = setOf(Scopes.SPECTATOR),
+            eventId = eventId,
+            ttl = SPECTATOR_TOKEN_TTL,
+        )
+        val code = UUID.randomUUID()
+        exchangeCodeRepository.insert(
+            SpectatorExchangeCodeEntity(
+                id = code,
+                tenantId = principal.tenantId,
+                eventId = eventId,
+                token = token,
+                createdAt = now,
+                expiresAt = now.plus(EXCHANGE_CODE_TTL),
+            ),
+        )
         call.respond(
-            SpectatorEventListResponseModel(
-                events = events.map { e ->
-                    SpectatorEventListItemModel(
-                        id = e.id.toString(),
-                        name = e.name,
-                        status = e.status.name,
-                    )
-                },
+            status = HttpStatusCode.Created,
+            message = SpectatorTokenResponseModel(exchangeCode = code.toString(), expiresIn = EXCHANGE_CODE_TTL.inWholeSeconds),
+        )
+    }
+
+    post("/api/v1/spectator/exchange") {
+        val request = call.receive<SpectatorExchangeRequestModel>()
+        val code = runCatching { UUID.fromString(request.code) }.getOrNull()
+        if (code == null) {
+            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_CODE", "Malformed exchange code"))
+            return@post
+        }
+        val entry = exchangeCodeRepository.consume(code, clock.now())
+        if (entry == null) {
+            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_CODE", "Exchange code is invalid, expired, or already used"))
+            return@post
+        }
+        val principal = jwtService.verifyAccessToken(entry.token)
+        val expiresIn = principal?.let { (it.expiresAt - clock.now()).inWholeSeconds } ?: 0L
+        call.respond(
+            SpectatorExchangeResponseModel(
+                accessToken = entry.token,
+                expiresIn = expiresIn,
+                eventId = entry.eventId.toString(),
             ),
         )
     }
 
-    webSocket("/api/v1/public/events/{eventId}/live") {
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        webSocketService.addConnection(eventId = eventId, session = this)
-        runCatching {
-            for (frame in incoming) {}
-        }.also {
-            webSocketService.removeConnection(eventId = eventId, session = this)
+    get("/api/v1/spectator/snapshot") {
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.SPECTATOR)) return@get
+        val eventId = principal.eventId
+        if (eventId == null) {
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("FORBIDDEN", "Not a spectator token"))
+            return@get
         }
+        val snapshot = spectatorService.getSnapshot(eventId)
+            ?: return@get call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+        call.respond(snapshot.toResponseModel())
     }
 
-    get("/api/v1/public/events/{eventId}/snapshot") {
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        val snapshot = spectatorService.getSnapshot(eventId)
-            ?: return@get call.respond(
-                status = HttpStatusCode.NotFound,
-                message = mapOf("error" to "Event not found"),
-            )
-        call.respond(snapshot.toResponseModel())
+    webSocket("/api/v1/spectator/live") {
+        runCatching {
+            val json = Json { ignoreUnknownKeys = true }
+
+            val authFrame = withTimeoutOrNull(5_000) { incoming.receive() } as? Frame.Text
+            val token = authFrame?.let {
+                runCatching { json.decodeFromString<WsAuthMessage>(it.readText()).token }.getOrNull()
+            }
+            if (token == null) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Access token required"))
+                return@webSocket
+            }
+            val principal = jwtService.verifyAccessToken(token)
+            if (principal == null || !principal.hasAnyScope(Scopes.SPECTATOR)) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Invalid or insufficient spectator token"))
+                return@webSocket
+            }
+            val eventId = principal.eventId
+            if (eventId == null) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Not a spectator token"))
+                return@webSocket
+            }
+
+            webSocketService.addConnection(eventId = eventId, session = this)
+            try {
+                for (frame in incoming) {}
+            } finally {
+                webSocketService.removeConnection(eventId = eventId, session = this)
+            }
+        }
     }
 }
 

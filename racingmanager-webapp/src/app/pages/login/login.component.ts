@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth.service';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
@@ -8,7 +8,7 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, LocaleSelectorComponent, TranslatePipe],
+  imports: [FormsModule, LocaleSelectorComponent, RouterLink, TranslatePipe],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -43,8 +43,15 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
             <small>{{ 'login.password.required' | translate }}</small>
           }
 
+          <label>
+            <span>{{ 'login.tenantSlug.label' | translate }}</span>
+            <input name="tenantSlug" [(ngModel)]="tenantSlug" />
+          </label>
+
           <button type="submit" [disabled]="form.invalid">{{ 'login.submit' | translate }}</button>
         </form>
+
+        <a [routerLink]="['/register']">{{ 'login.registerLink' | translate }}</a>
       </div>
     </div>
   `,
@@ -57,12 +64,13 @@ export class LoginComponent {
 
   protected username = '';
   protected password = '';
+  protected tenantSlug = '';
   protected errorMessage = signal<string | null>(null);
 
   protected onSubmit(): void {
     this.errorMessage.set(null);
     this.authService
-      .login({ username: this.username, password: this.password })
+      .login({ username: this.username, password: this.password, tenantSlug: this.tenantSlug || undefined })
       .subscribe((res) => {
         if ('code' in res) {
           this.errorMessage.set(this.localizeError(res.code));

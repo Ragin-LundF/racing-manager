@@ -10,7 +10,12 @@ import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
+import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import kotlin.test.AfterTest
@@ -28,21 +33,25 @@ class ParticipantServiceTest {
     private val eventRepository = EventRepository()
     private val auditRepository = AuditRepository()
     private val userRepository = UserRepository()
-    private val sessionRepository = SessionRepository()
+    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
+    private val jwtService = JwtService(jwtKeyProvider)
     private val passwordHasher = PasswordHasher()
-    private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
+    private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
 
     private lateinit var actorId: UUID
+    private lateinit var tenantId: UUID
     private lateinit var eventId: UUID
 
     @BeforeTest
     fun setUp() {
         DatabaseTestHelper.setUp()
+        jwtKeyProvider.ensureKeyExists()
         val setupResult = authService.setupAdmin("admin", "password123", "Admin")
         actorId = (setupResult as SetupResult.Success).user.id
-        val eventResult = eventService.create("Test Event", null, EventSettings(), actorId)
+        tenantId = (setupResult as SetupResult.Success).user.tenantId
+        val eventResult = eventService.create("Test Event", null, EventSettings(), actorId, tenantId)
         val created = eventService.activate((eventResult as CreateEventResult.Success).event.id, 0L, actorId)
         eventId = (created as io.github.raginlundf.racingmanager.application.event.ActivateEventResult.Success).event.id
     }
@@ -71,7 +80,7 @@ class ParticipantServiceTest {
 
     @Test
     fun `create participant for non-active event returns error`() {
-        val draftEvent = eventService.create("Draft", null, EventSettings(), actorId)
+        val draftEvent = eventService.create("Draft", null, EventSettings(), actorId, tenantId)
         val draftId = (draftEvent as CreateEventResult.Success).event.id
         val result = participantService.create(draftId, 1, "John", "Doe", null, null, null, actorId)
         assertIs<CreateParticipantResult.EventNotActive>(result)

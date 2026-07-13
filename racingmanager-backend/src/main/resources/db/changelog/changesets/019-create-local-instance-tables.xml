@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="create-local-instance-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="local_instance"/></not>
+        </preConditions>
+        <createTable tableName="local_instance">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-imported-packages-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="imported_packages"/></not>
+        </preConditions>
+        <createTable tableName="imported_packages">
+            <column name="package_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="origin_tenant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="imported_event_ids" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="imported_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

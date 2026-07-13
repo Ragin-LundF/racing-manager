@@ -2,15 +2,6 @@
   <header class="top-bar">
     <h1 class="event-name">{{ eventName() || ('spectator.shell.title' | translate) }}</h1>
     <div class="top-actions">
-      <select [ngModel]="selectedEventId()" (ngModelChange)="onEventSelect($event)">
-        <option value="">{{ 'spectator.selectEvent' | translate }}</option>
-        @for (event of events(); track event.id) {
-          <option [value]="event.id" [disabled]="event.status !== 'ACTIVE'">
-            {{ event.name }}
-          </option>
-        }
-      </select>
-
       <app-locale-selector />
 
       <button (click)="toggleFullscreen()" [title]="'spectator.fullscreen' | translate">
@@ -29,8 +20,8 @@
     </div>
   </header>
 
-  @if (error()) {
-    <div class="error-banner">{{ error() }}</div>
+  @if (error(); as key) {
+    <div class="error-banner">{{ key | translate }}</div>
   }
 
   @if (!hasLiveData()) {

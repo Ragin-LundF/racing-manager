@@ -1,0 +1,227 @@
+openapi: 3.0.3
+info:
+  title: Racing Manager — Auth API
+  version: "1.0"
+  description: |
+    Registration, login, token refresh, and session APIs (design §B/§C/§D).
+    Note: *this file documents the hand-written Ktor routes in `api/auth/AuthRoutes.kt`; this repo does not generate
+    routes or DTOs from OpenAPI (see the module-architecture deviation note in the tenant implementation plan) — this
+    spec is the contract reference, not a codegen input.*
+servers:
+  - url: /api/v1
+paths:
+  /register:
+    post:
+      summary: Register a new tenant and its first admin.
+      description: |
+        Only available when the deployment runs in `hosted` mode.
+        Creates the tenant, its first `ADMIN` user, and the membership atomically, then issues tokens immediately.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantName, tenantSlug, username, password, displayName]
+              properties:
+                tenantName: { type: string }
+                tenantSlug: { type: string }
+                username: { type: string }
+                password: { type: string, format: password }
+                displayName: { type: string }
+      responses:
+        "201":
+          description: Tenant and admin created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegisterResponse" }
+        "403":
+          description: Not running in hosted mode.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Tenant slug already taken.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /auth/setup-status:
+    get:
+      summary: Whether the local instance still needs its first admin.
+      security: []
+      responses:
+        "200":
+          description: Setup status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [firstRun]
+                properties:
+                  firstRun: { type: boolean }
+  /auth/setup:
+    post:
+      summary: Create the first admin for a local instance.
+      description: Only succeeds once — subsequent calls return `409`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, displayName]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+                displayName: { type: string }
+      responses:
+        "201":
+          description: Admin created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SetupResponse" }
+        "409":
+          description: Already set up.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /auth/login:
+    post:
+      summary: Exchange credentials for an access and refresh token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+                tenantSlug:
+                  type: string
+                  nullable: true
+                  description: |
+                    Disambiguates a username that collides across tenants.
+                    Omit unless a prior login attempt failed for a known-correct password.
+      responses:
+        "200":
+          description: Login succeeded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401":
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /auth/refresh:
+    post:
+      summary: Exchange a refresh token for a new access token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: New access token issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, expiresIn]
+                properties:
+                  accessToken: { type: string }
+                  expiresIn: { type: integer, format: int64 }
+        "401":
+          description: Refresh token is invalid, expired, or revoked.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /auth/session:
+    get:
+      summary: The current user's profile.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Current user.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [userId, username, displayName, role]
+                properties:
+                  userId: { type: string, format: uuid }
+                  username: { type: string }
+                  displayName: { type: string }
+                  role: { type: string, enum: [ADMIN, DIRECTOR, SUPERVISOR] }
+        "401":
+          description: Missing or invalid access token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /auth/logout:
+    post:
+      summary: Revoke a refresh token.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string, nullable: true }
+      responses:
+        "204":
+          description: Logged out.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    LoginResponse:
+      type: object
+      required: [accessToken, refreshToken, expiresIn, tenantId, scopes, userId, username, displayName, role]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, format: int64 }
+        tenantId: { type: string, format: uuid }
+        scopes:
+          type: array
+          items: { type: string, enum: [rm:supervisor, rm:admin, rm:user, rm:spectator] }
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }
+        role: { type: string, enum: [ADMIN, DIRECTOR, SUPERVISOR] }
+    RegisterResponse:
+      allOf:
+        - $ref: "#/components/schemas/LoginResponse"
+        - type: object
+          required: [tenantId, tenantSlug]
+          properties:
+            tenantSlug: { type: string }
+    SetupResponse:
+      type: object
+      required: [userId, username, displayName]
+      properties:
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }

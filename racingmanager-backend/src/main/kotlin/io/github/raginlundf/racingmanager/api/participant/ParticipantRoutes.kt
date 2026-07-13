@@ -11,7 +11,11 @@ import io.github.raginlundf.racingmanager.api.participant.models.RandomizeReques
 import io.github.raginlundf.racingmanager.api.participant.models.RandomizeResponseModel
 import io.github.raginlundf.racingmanager.api.participant.models.UpdateParticipantRequestModel
 import io.github.raginlundf.racingmanager.api.participant.models.VehicleResponseModel
-import io.github.raginlundf.racingmanager.application.auth.AuthService
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.api.requireTenantEvent
+import io.github.raginlundf.racingmanager.application.auth.Scopes
+import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.application.participant.CreateParticipantResult
 import io.github.raginlundf.racingmanager.application.participant.ParticipantActionResult
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
@@ -29,16 +33,21 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import java.util.UUID
 
-fun Route.participantRoutes(authService: AuthService, participantService: ParticipantService) {
+fun Route.participantRoutes(jwtService: JwtService, participantService: ParticipantService, eventRepository: EventRepository) {
     get("/api/v1/events/{eventId}/participants") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val participants = participantService.findByEventId(eventId)
         call.respond(participants.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/participants/{id}") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val id = UUID.fromString(call.parameters["id"])
         val participant = participantService.findById(id)
             ?: return@get call.respond(
@@ -49,8 +58,10 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<CreateParticipantRequestModel>()
 
         when (val result = participantService.create(
@@ -61,7 +72,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
             club = request.club,
             vehicleName = request.vehicleName,
             vehicleCategory = request.vehicleCategory,
-            actorId = session.user.id,
+            actorId = principal.userId,
         )) {
             is CreateParticipantResult.Success -> {
                 call.respond(status = HttpStatusCode.Created, message = result.participant.toResponseModel())
@@ -79,7 +90,10 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     put("/api/v1/events/{eventId}/participants/{id}") {
-        val session = call.authenticateRequest(authService) ?: return@put
+        val principal = call.authenticateRequest(jwtService) ?: return@put
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@put
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@put
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<UpdateParticipantRequestModel>()
 
@@ -89,7 +103,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
             firstName = request.firstName,
             lastName = request.lastName,
             club = request.club,
-            actorId = session.user.id,
+            actorId = principal.userId,
         )) {
             is UpdateParticipantResult.Success -> {
                 call.respond(result.participant.toResponseModel())
@@ -104,10 +118,13 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/{id}/deactivate") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
 
-        when (val result = participantService.deactivate(id, session.user.id)) {
+        when (val result = participantService.deactivate(id, principal.userId)) {
             is ParticipantActionResult.Success -> call.respond(result.participant.toResponseModel())
             is ParticipantActionResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("PARTICIPANT_NOT_FOUND", "Participant not found"))
             is ParticipantActionResult.AlreadyInactive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("ALREADY_INACTIVE", "Participant is already inactive"))
@@ -116,10 +133,13 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/{id}/reactivate") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
 
-        when (val result = participantService.reactivate(id, session.user.id)) {
+        when (val result = participantService.reactivate(id, principal.userId)) {
             is ParticipantActionResult.Success -> call.respond(result.participant.toResponseModel())
             is ParticipantActionResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("PARTICIPANT_NOT_FOUND", "Participant not found"))
             is ParticipantActionResult.AlreadyInactive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("ALREADY_INACTIVE", "Participant is already inactive"))
@@ -128,11 +148,13 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/randomize") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<RandomizeRequestModel>()
 
-        when (val result = participantService.randomize(eventId, session.user.id, request.force)) {
+        when (val result = participantService.randomize(eventId, principal.userId, request.force)) {
             is RandomizeResult.Success -> {
                 call.respond(RandomizeResponseModel(seed = result.seed))
             }
@@ -149,8 +171,10 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
     }
 
     post("/api/v1/events/{eventId}/participants/import") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<ImportCsvRequestModel>()
 
         val rows = request.rows.map { row ->
@@ -164,7 +188,7 @@ fun Route.participantRoutes(authService: AuthService, participantService: Partic
             )
         }
 
-        when (val result = participantService.importCsv(eventId, rows, session.user.id)) {
+        when (val result = participantService.importCsv(eventId, rows, principal.userId)) {
             is ImportResult.Completed -> {
                 call.respond(
                     ImportResponseModel(

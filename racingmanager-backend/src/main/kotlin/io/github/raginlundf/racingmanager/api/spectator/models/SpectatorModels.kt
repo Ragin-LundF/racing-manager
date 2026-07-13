@@ -84,13 +84,19 @@ data class SpectatorKnockoutMatchModel(
 )
 
 @Serializable
-data class SpectatorEventListResponseModel(
-    val events: List<SpectatorEventListItemModel> = emptyList(),
+data class SpectatorTokenResponseModel(
+    val exchangeCode: String,
+    val expiresIn: Long,
 )
 
 @Serializable
-data class SpectatorEventListItemModel(
-    val id: String,
-    val name: String,
-    val status: String,
+data class SpectatorExchangeRequestModel(
+    val code: String,
+)
+
+@Serializable
+data class SpectatorExchangeResponseModel(
+    val accessToken: String,
+    val expiresIn: Long,
+    val eventId: String,
 )

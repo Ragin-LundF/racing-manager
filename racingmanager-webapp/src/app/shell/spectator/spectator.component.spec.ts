@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SpectatorShellComponent } from './spectator.component';
 import { SpectatorClient } from '../../libs/clients/spectator/spectator.client';
-import { of } from 'rxjs';
-import { SpectatorEventListResponse, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
+import { of, throwError } from 'rxjs';
+import { SpectatorExchangeResponse, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
 import { provideRouter } from '@angular/router';
 import { provideTestTranslate } from '../../testing/translate.testing';
 import { WritableSignal } from '@angular/core';
@@ -14,12 +14,13 @@ interface TestComponent {
   fullscreen: WritableSignal<boolean>;
   reducedMotion: WritableSignal<boolean>;
   snapshot: WritableSignal<SpectatorSnapshotResponse | null>;
+  error: WritableSignal<string | null>;
 }
 
-const mockEvents: SpectatorEventListResponse = {
-  events: [
-    { id: 'e1', name: 'Test Event', status: 'ACTIVE' },
-  ],
+const mockExchange: SpectatorExchangeResponse = {
+  accessToken: 'spectator-jwt',
+  expiresIn: 14400,
+  eventId: 'e1',
 };
 
 const mockSnapshot: SpectatorSnapshotResponse = {
@@ -61,66 +62,129 @@ const mockSnapshot: SpectatorSnapshotResponse = {
   },
 };
 
-describe('SpectatorShellComponent', () => {
-  let component: SpectatorShellComponent;
-  let fixture: ComponentFixture<SpectatorShellComponent>;
+async function createComponent(spectatorClient: Partial<SpectatorClient>): Promise<ComponentFixture<SpectatorShellComponent>> {
+  await TestBed.configureTestingModule({
+    imports: [SpectatorShellComponent],
+    providers: [
+      { provide: SpectatorClient, useValue: spectatorClient },
+      provideRouter([]),
+      ...provideTestTranslate(),
+    ],
+  }).compileComponents();
 
-  beforeEach(async () => {
+  const fixture = TestBed.createComponent(SpectatorShellComponent);
+  fixture.detectChanges();
+  return fixture;
+}
+
+describe('SpectatorShellComponent', () => {
+  afterEach(() => {
+    window.location.hash = '';
+  });
+
+  it('should create and exchange the code from the URL fragment', async () => {
+    window.location.hash = '#code=abc123';
     const spectatorClient = {
-      getEvents: () => of(mockEvents),
+      exchange: () => of(mockExchange),
       getSnapshot: () => of(mockSnapshot),
       getLiveWebSocketUrl: () => 'ws://localhost/test',
     };
-
-    await TestBed.configureTestingModule({
-      imports: [SpectatorShellComponent],
-      providers: [
-        { provide: SpectatorClient, useValue: spectatorClient },
-        provideRouter([]),
-        ...provideTestTranslate(),
-      ],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(SpectatorShellComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    const fixture = await createComponent(spectatorClient);
+    expect(fixture.componentInstance).toBeTruthy();
+    const c = fixture.componentInstance as unknown as TestComponent;
+    expect(c.error()).toBeNull();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('shows an invalid-link error when the URL has no exchange code', async () => {
+    window.location.hash = '';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
+    expect(c.error()).toBe('spectator.invalidLink');
   });
 
-  it('should format nanos', () => {
-    const c = component as unknown as TestComponent;
+  it('shows an invalid-link error when the exchange code is rejected', async () => {
+    window.location.hash = '#code=expired';
+    const spectatorClient = {
+      exchange: () => throwError(() => new Error('invalid code')),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
+    expect(c.error()).toBe('spectator.invalidLink');
+  });
+
+  it('should format nanos', async () => {
+    window.location.hash = '#code=abc123';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
     expect(c.formatNanos(1_500_000_000)).toBe('1.500s');
     expect(c.formatNanos(null)).toBe('—');
   });
 
-  it('should toggle fullscreen', () => {
-    const c = component as unknown as TestComponent;
+  it('should toggle fullscreen', async () => {
+    window.location.hash = '#code=abc123';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
     c.fullscreen.set(true);
     expect(c.fullscreen()).toBe(true);
     c.fullscreen.set(false);
     expect(c.fullscreen()).toBe(false);
   });
 
-  it('should toggle reduced motion', () => {
-    const c = component as unknown as TestComponent;
+  it('should toggle reduced motion', async () => {
+    window.location.hash = '#code=abc123';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
     c.toggleReducedMotion();
     expect(c.reducedMotion()).toBe(true);
     c.toggleReducedMotion();
     expect(c.reducedMotion()).toBe(false);
   });
 
-  it('should get participant name from lanes', () => {
-    const c = component as unknown as TestComponent;
+  it('should get participant name from lanes', async () => {
+    window.location.hash = '#code=abc123';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
     c.snapshot.set(mockSnapshot);
     const name = c.getParticipantName('p1');
     expect(name).toContain('Alice');
   });
 
-  it('should return placeholder for unknown participant', () => {
-    const c = component as unknown as TestComponent;
+  it('should return placeholder for unknown participant', async () => {
+    window.location.hash = '#code=abc123';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
     c.snapshot.set(mockSnapshot);
     const name = c.getParticipantName('unknown-id');
     expect(name).toBeTruthy();

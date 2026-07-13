@@ -1,0 +1,153 @@
+openapi: 3.0.3
+info:
+  title: Racing Manager — Tenant self-service API
+  version: "1.0"
+  description: |
+    Tenant admin self-service — profile, settings, and user management (design §E.1).
+    All routes require `rm:admin` and are always scoped to the caller's own tenant; none accept a tenant-selection
+    parameter, so there is no cross-tenant surface to guard.
+servers:
+  - url: /api/v1
+paths:
+  /tenant:
+    get:
+      summary: The caller's own tenant profile.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Tenant profile.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+        "403":
+          description: Caller lacks `rm:admin`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    put:
+      summary: Update the caller's own tenant profile/settings.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string, nullable: true }
+                settings: { type: string, nullable: true, description: Opaque JSON blob (locale/branding/retention). }
+      responses:
+        "200":
+          description: Updated tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+  /tenant/users:
+    get:
+      summary: List the caller's tenant's users.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Tenant users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TenantUser" }
+    post:
+      summary: Create a user in the caller's own tenant.
+      description: Defaults to the `DIRECTOR` role — a caller can never self-grant `rm:admin` this way.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, displayName]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+                displayName: { type: string }
+      responses:
+        "201":
+          description: User created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantUser" }
+        "409":
+          description: Username already taken within this tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /tenant/users/{userId}:
+    put:
+      summary: Update a tenant user's role or membership status.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [ADMIN, DIRECTOR], nullable: true }
+                status: { type: string, enum: [ACTIVE, DISABLED], nullable: true }
+      responses:
+        "200":
+          description: Updated user.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantUser" }
+    delete:
+      summary: Deactivate a tenant user.
+      description: |
+        Soft-deactivation only (`status=DISABLED`) — there is no hard-delete path.
+        Revokes the user's outstanding refresh tokens.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: Deactivated user.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantUser" }
+components:
+  parameters:
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    Tenant:
+      type: object
+      required: [id, slug, displayName, status]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string, nullable: true }
+        displayName: { type: string }
+        status: { type: string, enum: [ACTIVE, DISABLED, PENDING_DELETION] }
+        settings: { type: string, nullable: true }
+    TenantUser:
+      type: object
+      required: [userId, username, displayName, role, status]
+      properties:
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }
+        role: { type: string, enum: [ADMIN, DIRECTOR] }
+        status: { type: string, enum: [ACTIVE, DISABLED] }

@@ -5,8 +5,8 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <include file="changesets/001-create-users-table.xml" relativeToChangelogFile="true"/>
-    <include file="changesets/002-create-sessions-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/001-create-tenants-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/002-create-users-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/003-create-audit-entries-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/004-create-events-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/005-create-participants-table.xml" relativeToChangelogFile="true"/>
@@ -18,4 +18,12 @@
     <include file="changesets/011-create-measurements-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/012-create-knockout-tournaments-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/013-create-knockout-matches-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/014-create-signing-keys-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/015-create-memberships-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/016-create-refresh-tokens-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/017-create-spectator-exchange-codes-table.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/018-add-event-origin-columns.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/019-create-local-instance-tables.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/020-add-event-sync-columns.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/021-create-sync-tables.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

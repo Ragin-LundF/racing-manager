@@ -5,13 +5,17 @@ import { API_BASE_URL } from '../core/api.config';
 import {
   LoginRequest,
   LoginResponse,
+  RefreshRequest,
+  RefreshResponse,
+  RegisterRequest,
+  RegisterResponse,
   SessionResponse,
   SetupRequest,
   SetupResponse,
   SetupStatusResponse,
 } from './auth.models';
 
-/** Raw HTTP for the auth API. Session state lives in AuthService (core). */
+/** Raw HTTP for the auth API. Token/session state lives in AuthService (core). */
 @Injectable({ providedIn: 'root' })
 export class AuthClient {
   private readonly http = inject(HttpClient);
@@ -29,8 +33,16 @@ export class AuthClient {
     return this.http.post<LoginResponse>(`${this.baseUrl}/api/v1/auth/login`, request);
   }
 
-  logout(): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/api/v1/auth/logout`, {});
+  register(request: RegisterRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.baseUrl}/api/v1/register`, request);
+  }
+
+  refresh(request: RefreshRequest): Observable<RefreshResponse> {
+    return this.http.post<RefreshResponse>(`${this.baseUrl}/api/v1/auth/refresh`, request);
+  }
+
+  logout(refreshToken: string | null): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/api/v1/auth/logout`, refreshToken ? { refreshToken } : {});
   }
 
   getSession(): Observable<SessionResponse> {

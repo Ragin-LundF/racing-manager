@@ -1,45 +1,130 @@
 .audit {
-  padding: var(--space-lg);
-
   .header {
-    margin-bottom: var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .count {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+
+  .toolbar button {
+    height: var(--control-height-compact);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-raised);
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--color-text-muted);
+    }
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-
-    th, td {
-      padding: var(--space-sm);
-      text-align: left;
-      border-bottom: 1px solid var(--color-border);
-    }
-
-    th {
-      font-weight: 600;
-      color: var(--color-text-secondary);
-      font-size: 0.85rem;
-    }
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    font-size: 14px;
   }
 
-  .action-badge {
-    display: inline-block;
-    padding: 2px var(--space-xs);
-    border-radius: var(--radius-sm);
-    background: var(--color-info-bg);
-    color: var(--color-info);
+  th, td {
+    padding: 0 var(--space-4);
+    height: 44px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  tbody tr:hover {
+    background: var(--color-bg-raised);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  thead th {
+    background: var(--color-bg-raised);
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .time {
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  code {
+    background: var(--color-bg-raised);
+    padding: 2px 6px;
+    border-radius: var(--radius-control);
     font-size: 0.8rem;
+  }
+
+  .muted {
+    color: var(--color-text-muted);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px var(--space-2);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
     font-family: monospace;
+    border: 1px solid transparent;
+  }
+
+  .chip-success {
+    color: var(--color-success);
+    border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+    background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  }
+
+  .chip-error {
+    color: var(--color-error);
+    border-color: color-mix(in srgb, var(--color-error) 40%, transparent);
+    background: color-mix(in srgb, var(--color-error) 14%, transparent);
+  }
+
+  .chip-muted {
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+    background: var(--color-bg-raised);
   }
 
   .empty {
     color: var(--color-text-secondary);
     text-align: center;
-    padding: var(--space-xl);
+    padding: var(--space-8);
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
   }
 
   .error {
     color: var(--color-error);
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-3);
   }
 }

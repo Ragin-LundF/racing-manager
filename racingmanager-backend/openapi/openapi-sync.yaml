@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: Racing Manager — Local instance pairing & sync API
+  version: "1.0"
+  description: |
+    Hosted-side pairing and results upload-back (design §I). `/local-instances/pair` is deliberately public — a
+    fresh local instance has no tenant-scoped credential yet; the one-time pairing code is the authorization,
+    never a copied admin password. Every other route requires `rm:admin` in `hosted` mode, scoped to the caller's
+    own tenant.
+servers:
+  - url: /api/v1
+paths:
+  /tenant/local-instances/pairing-token:
+    post:
+      summary: Issue a short-lived, single-use pairing code.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201":
+          description: Pairing code issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pairingCode, expiresIn]
+                properties:
+                  pairingCode: { type: string }
+                  expiresIn: { type: integer, format: int64 }
+  /local-instances/pair:
+    post:
+      summary: Register a local instance against the tenant that issued the pairing code.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pairingCode, localInstanceId]
+              properties:
+                pairingCode: { type: string }
+                localInstanceId:
+                  type: string
+                  description: The stable id the local instance generated for itself on first bootstrap import.
+      responses:
+        "201":
+          description: Paired.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [localInstanceId, tenantId]
+                properties:
+                  localInstanceId: { type: string, format: uuid }
+                  tenantId: { type: string, format: uuid }
+        "400":
+          description: Pairing code is invalid, expired, or already used.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /tenant/local-instances:
+    get:
+      summary: List local instances paired to the caller's tenant.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Paired instances.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PairedInstance" }
+  /tenant/local-instances/{id}/revoke:
+    post:
+      summary: Revoke a paired local instance.
+      description: A revoked instance's subsequent sync-results calls are rejected. Re-pairing reactivates it.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/instanceId"
+      responses:
+        "204":
+          description: Revoked.
+        "404":
+          description: Instance not found in the caller's tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /tenant/local-instances/{id}/sync-results:
+    post:
+      summary: Upload a local instance's results for an event it had checked out.
+      description: |
+        The event must currently be locked (checked out via a bootstrap package); on success it is unlocked and
+        marked `SYNCED`.
+        `results` is carried opaquely — the same JSON shape already produced by
+        `GET /events/{eventId}/results/backup` — and stored verbatim as an origin-audited record.
+        This release does not reconstruct heat/measurement rows from it (see the tenant plan's Slice I deviation
+        notes).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/instanceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventId, results]
+              properties:
+                eventId: { type: string, format: uuid }
+                results: {}
+      responses:
+        "201":
+          description: Results synced.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [syncedResultId, eventId, status]
+                properties:
+                  syncedResultId: { type: string, format: uuid }
+                  eventId: { type: string, format: uuid }
+                  status: { type: string, enum: [SYNCED] }
+        "403":
+          description: Instance has been revoked.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Instance or event not found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Event was never checked out for local execution — nothing to sync.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  parameters:
+    instanceId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    PairedInstance:
+      type: object
+      required: [id, status, pairedAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [ACTIVE, REVOKED] }
+        pairedAt: { type: string, format: date-time }
+        lastSyncAt: { type: string, format: date-time, nullable: true }

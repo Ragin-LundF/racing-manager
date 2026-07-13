@@ -5,11 +5,23 @@
 
   @if (event(); as e) {
     <div class="header">
-      <div>
+      <div class="header-top">
         <h2>{{ e.name }}</h2>
         <p>{{ e.description }}</p>
-        <p>{{ 'events.detail.info' | translate: { status: e.status, lanes: ('enum.' + e.settings.laneType | translate), measurement: ('enum.' + e.settings.measurementType | translate) } }}</p>
       </div>
+
+      <div class="meta">
+        <span class="chip" [class.chip-success]="e.status === 'ACTIVE'" [class.chip-muted]="e.status !== 'ACTIVE'">
+          {{ 'events.detail.statusLabel' | translate }}: {{ e.status }}
+        </span>
+        <span class="chip chip-muted">
+          {{ 'events.detail.lanesLabel' | translate }}: {{ 'enum.' + e.settings.laneType | translate }}
+        </span>
+        <span class="chip chip-muted">
+          {{ 'events.detail.measurementLabel' | translate }}: {{ 'enum.' + e.settings.measurementType | translate }}
+        </span>
+      </div>
+
       <div class="actions">
         @if (e.status === 'DRAFT') {
           <button (click)="onActivate()">{{ 'events.detail.activate' | translate }}</button>
@@ -26,6 +38,12 @@
         }
         @if (e.status === 'ACTIVE') {
           <button (click)="onArchive()">{{ 'events.detail.archive' | translate }}</button>
+        }
+        @if (e.status === 'ACTIVE' || e.status === 'ARCHIVED') {
+          <button (click)="onOpenSpectatorView()">{{ 'events.detail.openSpectatorView' | translate }}</button>
+        }
+        @if (e.status === 'ARCHIVED') {
+          <button (click)="onReactivate()">{{ 'events.detail.reactivate' | translate }}</button>
         }
       </div>
     </div>

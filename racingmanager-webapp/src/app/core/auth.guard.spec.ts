@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from './auth.service';
-import { authGuard, redirectIfAuthenticatedGuard } from './auth.guard';
+import { adminGuard, authGuard, redirectIfAuthenticatedGuard } from './auth.guard';
 import { provideHttpClient } from '@angular/common/http';
 import { API_BASE_URL } from '../libs/clients/core/api.config';
 
@@ -66,5 +66,33 @@ describe('redirectIfAuthenticatedGuard', () => {
       redirectIfAuthenticatedGuard(mockRouteSnapshot(), mockRouterStateSnapshot()),
     );
     expect(result).toBe(true);
+  });
+});
+
+describe('adminGuard', () => {
+  let auth: AuthService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      providers: [provideHttpClient(), { provide: API_BASE_URL, useValue: 'http://localhost:8080' }],
+    }).compileComponents();
+
+    auth = TestBed.inject(AuthService);
+  });
+
+  function setScopes(scopes: string[]): void {
+    (auth as unknown as { auth: { scopes: string[] } }).auth = { scopes } as never;
+  }
+
+  it('allows an rm:admin token through', () => {
+    setScopes(['rm:admin']);
+    const result = TestBed.runInInjectionContext(() => adminGuard(mockRouteSnapshot(), mockRouterStateSnapshot()));
+    expect(result).toBe(true);
+  });
+
+  it('redirects an rm:user token to /racemanager', () => {
+    setScopes(['rm:user']);
+    const result = TestBed.runInInjectionContext(() => adminGuard(mockRouteSnapshot(), mockRouterStateSnapshot()));
+    expect(result.toString()).toContain('/racemanager');
   });
 });

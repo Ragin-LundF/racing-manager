@@ -1,11 +1,14 @@
 package io.github.raginlundf.racingmanager.api.auth
 
 import io.github.raginlundf.racingmanager.api.configureRouting
+import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
 import io.github.raginlundf.racingmanager.api.configureSerialization
 import io.github.raginlundf.racingmanager.api.configureStatusPages
 import io.github.raginlundf.racingmanager.application.diagnostics.DiagnosticsService
 import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
 import io.github.raginlundf.racingmanager.application.audit.AuditService
+import io.github.raginlundf.racingmanager.application.bootstrap.LocalPackageService
+import io.github.raginlundf.racingmanager.application.sync.SyncService
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.heat.HeatService
@@ -17,13 +20,24 @@ import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.github.raginlundf.racingmanager.infrastructure.repositories.KnockoutRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.LocalInstanceRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.ImportedPackageRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.PairedInstanceRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.PairingCodeRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SpectatorExchangeCodeRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SyncedResultRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
+import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -44,10 +58,19 @@ import kotlin.test.assertTrue
 class AuthRoutesTest {
 
     private val userRepository = UserRepository()
-    private val sessionRepository = SessionRepository()
     private val auditRepository = AuditRepository()
     private val passwordHasher = PasswordHasher()
-    private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
+    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
+    private val jwtService = JwtService(jwtKeyProvider)
+    private val authService = AuthService(
+        userRepository,
+        TenantRepository(),
+        MembershipRepository(),
+        RefreshTokenRepository(),
+        auditRepository,
+        passwordHasher,
+        jwtService,
+    )
     private val eventRepository = EventRepository()
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantRepository = ParticipantRepository()
@@ -60,6 +83,14 @@ class AuthRoutesTest {
     private val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
     private val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
     private val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
+    private val spectatorExchangeCodeRepository = SpectatorExchangeCodeRepository()
+    private val importedPackageRepository = ImportedPackageRepository()
+    private val localInstanceRepository = LocalInstanceRepository()
+    private val localPackageService = LocalPackageService(eventRepository, participantRepository, TenantRepository(), importedPackageRepository, localInstanceRepository, jwtKeyProvider)
+    private val pairingCodeRepository = PairingCodeRepository()
+    private val pairedInstanceRepository = PairedInstanceRepository()
+    private val syncedResultRepository = SyncedResultRepository()
+    private val syncService = SyncService(pairingCodeRepository, pairedInstanceRepository, syncedResultRepository, eventRepository, auditRepository)
     private val resultsService = ResultsService(eventRepository, participantRepository, heatRepository, qualificationRepository, knockoutRepository, auditRepository)
     private val auditService = AuditService(auditRepository)
     private val diagnosticsService = DiagnosticsService(
@@ -80,6 +111,7 @@ class AuthRoutesTest {
     @BeforeTest
     fun setUp() {
         DatabaseTestHelper.setUp()
+        jwtKeyProvider.ensureKeyExists()
     }
 
     @AfterTest
@@ -131,7 +163,7 @@ class AuthRoutesTest {
     }
 
     @Test
-    fun `login with valid credentials returns 200 and session`() = testApplication {
+    fun `login with valid credentials returns 200 and tokens`() = testApplication {
         application { configureTestApp() }
 
         client.post("/api/v1/auth/setup") {
@@ -146,9 +178,11 @@ class AuthRoutesTest {
 
         assertEquals(HttpStatusCode.OK, response.status)
         val body = response.bodyAsText()
-        assertTrue(body.contains("\"sessionId\""))
+        assertTrue(body.contains("\"accessToken\""))
+        assertTrue(body.contains("\"refreshToken\""))
         assertTrue(body.contains("\"username\":\"admin\""))
         assertTrue(body.contains("\"role\":\"ADMIN\""))
+        assertTrue(body.contains("\"scopes\":[\"rm:admin\"]"))
     }
 
     @Test
@@ -170,7 +204,7 @@ class AuthRoutesTest {
     }
 
     @Test
-    fun `session returns user info for valid session`() = testApplication {
+    fun `session returns user info for a valid access token`() = testApplication {
         application { configureTestApp() }
 
         client.post("/api/v1/auth/setup") {
@@ -182,10 +216,10 @@ class AuthRoutesTest {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123"}""")
         }
-        val sessionId = extractSessionId(loginResponse.bodyAsText())
+        val accessToken = loginResponse.bodyAsText().extractField("accessToken")
 
         val response = client.get("/api/v1/auth/session") {
-            header("X-Session-Id", sessionId)
+            header("Authorization", "Bearer $accessToken")
         }
 
         assertEquals(HttpStatusCode.OK, response.status)
@@ -195,52 +229,75 @@ class AuthRoutesTest {
     }
 
     @Test
-    fun `session returns 401 for missing header`() = testApplication {
+    fun `session returns 401 for missing bearer token`() = testApplication {
         application { configureTestApp() }
 
         val response = client.get("/api/v1/auth/session")
 
         assertEquals(HttpStatusCode.Unauthorized, response.status)
-        assertTrue(response.bodyAsText().contains("\"code\":\"MISSING_SESSION\""))
+        assertTrue(response.bodyAsText().contains("\"code\":\"MISSING_TOKEN\""))
     }
 
     @Test
-    fun `session returns 401 for unknown session`() = testApplication {
+    fun `session returns 401 for an invalid access token`() = testApplication {
         application { configureTestApp() }
 
         val response = client.get("/api/v1/auth/session") {
-            header("X-Session-Id", "00000000-0000-0000-0000-000000000000")
+            header("Authorization", "Bearer not-a-real-token")
         }
 
         assertEquals(HttpStatusCode.Unauthorized, response.status)
-        assertTrue(response.bodyAsText().contains("\"code\":\"SESSION_NOT_FOUND\""))
+        assertTrue(response.bodyAsText().contains("\"code\":\"INVALID_TOKEN\""))
     }
 
     @Test
-    fun `logout returns 204 and invalidates session`() = testApplication {
+    fun `refresh with a valid refresh token returns a new access token`() = testApplication {
         application { configureTestApp() }
 
         client.post("/api/v1/auth/setup") {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123","displayName":"Admin User"}""")
         }
-
         val loginResponse = client.post("/api/v1/auth/login") {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"admin","password":"password123"}""")
         }
-        val sessionId = extractSessionId(loginResponse.bodyAsText())
+        val refreshToken = loginResponse.bodyAsText().extractField("refreshToken")
+
+        val response = client.post("/api/v1/auth/refresh") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"refreshToken":"$refreshToken"}""")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.bodyAsText().contains("\"accessToken\""))
+    }
+
+    @Test
+    fun `logout returns 204 and revokes the refresh token`() = testApplication {
+        application { configureTestApp() }
+
+        client.post("/api/v1/auth/setup") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123","displayName":"Admin User"}""")
+        }
+        val loginResponse = client.post("/api/v1/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123"}""")
+        }
+        val refreshToken = loginResponse.bodyAsText().extractField("refreshToken")
 
         val logoutResponse = client.post("/api/v1/auth/logout") {
-            header("X-Session-Id", sessionId)
+            contentType(ContentType.Application.Json)
+            setBody("""{"refreshToken":"$refreshToken"}""")
         }
-
         assertEquals(HttpStatusCode.NoContent, logoutResponse.status)
 
-        val sessionResponse = client.get("/api/v1/auth/session") {
-            header("X-Session-Id", sessionId)
+        val refreshResponse = client.post("/api/v1/auth/refresh") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"refreshToken":"$refreshToken"}""")
         }
-        assertEquals(HttpStatusCode.Unauthorized, sessionResponse.status)
+        assertEquals(HttpStatusCode.Unauthorized, refreshResponse.status)
     }
 
     @Test
@@ -262,12 +319,12 @@ class AuthRoutesTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService)
+        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, DeploymentMode.LOCAL, spectatorExchangeCodeRepository, localPackageService, syncService)
     }
 
-    private fun extractSessionId(body: String): String {
-        val regex = """"sessionId":"([^"]+)"""".toRegex()
-        return regex.find(body)?.groupValues?.get(1)
-            ?: throw IllegalStateException("Could not extract sessionId from: $body")
+    private fun String.extractField(field: String): String {
+        val regex = """"$field":"([^"]+)"""".toRegex()
+        return regex.find(this)?.groupValues?.get(1)
+            ?: throw IllegalStateException("Could not extract $field from: $this")
     }
 }

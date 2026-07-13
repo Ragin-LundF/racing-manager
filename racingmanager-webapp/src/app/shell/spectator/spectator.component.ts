@@ -1,20 +1,15 @@
 import { Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { interval, Subscription, switchMap, tap } from 'rxjs';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 import { SpectatorClient } from '../../libs/clients/spectator/spectator.client';
-import {
-  SpectatorEventListItem,
-  SpectatorKnockoutStateModel,
-  SpectatorSnapshotResponse,
-} from '../../libs/clients/spectator/spectator.models';
+import { SpectatorKnockoutStateModel, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
 
 @Component({
   selector: 'app-spectator-shell',
   standalone: true,
-  imports: [FormsModule, TranslatePipe, LocaleSelectorComponent],
+  imports: [TranslatePipe, LocaleSelectorComponent],
   templateUrl: './spectator.component.html',
   styleUrl: './spectator.component.scss',
 })
@@ -22,8 +17,10 @@ export class SpectatorShellComponent implements OnInit {
   private readonly spectatorClient = inject(SpectatorClient);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly events = signal<SpectatorEventListItem[]>([]);
-  protected readonly selectedEventId = signal<string>('');
+  /** The exchanged spectator JWT — held only for this view's lifetime, never
+      persisted (design §F/§G): a page reload requires a fresh handoff code. */
+  private spectatorToken: string | null = null;
+
   protected readonly snapshot = signal<SpectatorSnapshotResponse | null>(null);
   protected readonly lastKnownSnapshot = signal<SpectatorSnapshotResponse | null>(null);
   protected readonly connected = signal(false);
@@ -70,19 +67,26 @@ export class SpectatorShellComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadEvents();
-    this.connectToEvent();
+    const code = this.readExchangeCode();
+    if (!code) {
+      this.error.set('spectator.invalidLink');
+      return;
+    }
+    this.spectatorClient.exchange(code).subscribe({
+      next: (res) => {
+        this.spectatorToken = res.accessToken;
+        this.connectToEvent();
+      },
+      error: () => this.error.set('spectator.invalidLink'),
+    });
   }
 
-  protected onEventSelect(eventId: string): void {
-    this.selectedEventId.set(eventId);
-    this.disconnect();
-    this.snapshot.set(null);
-    this.lastKnownSnapshot.set(null);
-    this.error.set(null);
-    if (eventId) {
-      this.connectToEvent();
-    }
+  /** The one-time handoff code travels in the URL fragment, never the query
+      string or path, so it never reaches server access logs or history
+      entries that get shared/copied as a full URL (design §G.4). */
+  private readExchangeCode(): string | null {
+    const match = /(?:^|#)code=([^&]+)/.exec(window.location.hash);
+    return match ? decodeURIComponent(match[1]) : null;
   }
 
   protected toggleFullscreen(): void {
@@ -97,39 +101,21 @@ export class SpectatorShellComponent implements OnInit {
     this.reducedMotion.update((v) => !v);
   }
 
-  private loadEvents(): void {
-    this.spectatorClient.getEvents().subscribe({
-      next: (res) => {
-        this.events.set(res.events);
-        // Auto-select the active event and connect immediately (the ngOnInit
-        // connect ran before this async result, with an empty id).
-        const active = res.events.find((e) => e.status === 'ACTIVE');
-        if (active && !this.selectedEventId()) {
-          this.selectedEventId.set(active.id);
-          this.connectToEvent();
-        }
-      },
-      error: () => this.error.set('Failed to load events'),
-    });
-  }
-
   private connectToEvent(): void {
-    const eventId = this.selectedEventId();
-    if (!eventId) return;
-
     this.connected.set(false);
     this.error.set(null);
 
     // Prime with the current snapshot right away so the view shows live state
     // on every open; the WebSocket (or polling) then pushes future changes.
-    this.primeSnapshot(eventId);
-    this.tryWebSocket(eventId);
+    this.primeSnapshot();
+    this.tryWebSocket();
   }
 
-  private primeSnapshot(eventId: string): void {
-    this.spectatorClient.getSnapshot(eventId).subscribe({
+  private primeSnapshot(): void {
+    const token = this.spectatorToken;
+    if (!token) return;
+    this.spectatorClient.getSnapshot(token).subscribe({
       next: (data) => {
-        if (this.selectedEventId() !== eventId) return;
         this.snapshot.set(data);
         this.lastKnownSnapshot.set(data);
       },
@@ -139,12 +125,15 @@ export class SpectatorShellComponent implements OnInit {
     });
   }
 
-  private tryWebSocket(eventId: string): void {
+  private tryWebSocket(): void {
+    const token = this.spectatorToken;
+    if (!token) return;
     try {
-      const url = this.spectatorClient.getLiveWebSocketUrl(eventId);
+      const url = this.spectatorClient.getLiveWebSocketUrl();
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
+        this.ws?.send(JSON.stringify({ type: 'auth', token }));
         this.connected.set(true);
         this.error.set(null);
       };
@@ -162,25 +151,27 @@ export class SpectatorShellComponent implements OnInit {
       this.ws.onclose = () => {
         this.connected.set(false);
         this.ws = null;
-        this.scheduleReconnect(eventId);
-        this.startPolling(eventId);
+        this.scheduleReconnect();
+        this.startPolling();
       };
 
       this.ws.onerror = () => {
         this.ws?.close();
       };
     } catch {
-      this.startPolling(eventId);
+      this.startPolling();
     }
   }
 
-  private startPolling(eventId: string): void {
+  private startPolling(): void {
+    const token = this.spectatorToken;
+    if (!token) return;
     this.stopPolling();
     this.pollSubscription = interval(5000)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         switchMap(() =>
-          this.spectatorClient.getSnapshot(eventId).pipe(
+          this.spectatorClient.getSnapshot(token).pipe(
             tap({
               next: (data) => {
                 this.snapshot.set(data);
@@ -202,26 +193,16 @@ export class SpectatorShellComponent implements OnInit {
     this.pollSubscription = null;
   }
 
-  private scheduleReconnect(eventId: string): void {
+  private scheduleReconnect(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
     }
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      if (this.selectedEventId() === eventId && !this.ws) {
-        this.tryWebSocket(eventId);
+      if (!this.ws) {
+        this.tryWebSocket();
       }
     }, 10000);
-  }
-
-  private disconnect(): void {
-    this.ws?.close();
-    this.ws = null;
-    this.stopPolling();
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
   }
 
   protected formatNanos(nanos: number | undefined | null): string {

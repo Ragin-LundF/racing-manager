@@ -12,7 +12,11 @@ import io.github.raginlundf.racingmanager.api.results.models.JsonExportResponseM
 import io.github.raginlundf.racingmanager.api.results.models.KnockoutResultEntryModel
 import io.github.raginlundf.racingmanager.api.results.models.QualificationResultEntryModel
 import io.github.raginlundf.racingmanager.api.results.models.RestoreResponseModel
-import io.github.raginlundf.racingmanager.application.auth.AuthService
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.api.requireTenantEvent
+import io.github.raginlundf.racingmanager.application.auth.Scopes
+import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.application.event.CompleteEventResult
 import io.github.raginlundf.racingmanager.application.event.ReopenEventResult
@@ -39,10 +43,12 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import java.util.UUID
 
-fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService, eventService: EventService) {
+fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, eventService: EventService, eventRepository: EventRepository) {
     get("/api/v1/events/{eventId}/results/snapshot") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val snapshot = resultsService.getSnapshot(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
@@ -52,10 +58,12 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     post("/api/v1/events/{eventId}/results/complete") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
 
-        when (val result = eventService.completeEvent(eventId, session.user.id)) {
+        when (val result = eventService.completeEvent(eventId, principal.userId)) {
             is CompleteEventResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Event completed"))
             }
@@ -69,10 +77,12 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     post("/api/v1/events/{eventId}/results/reopen") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
 
-        when (val result = eventService.reopenEvent(eventId, session.user.id)) {
+        when (val result = eventService.reopenEvent(eventId, principal.userId)) {
             is ReopenEventResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Event reopened"))
             }
@@ -86,8 +96,10 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/csv") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val result = resultsService.exportCsv(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
@@ -98,8 +110,10 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/html") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val locale = call.request.headers["Accept-Language"]?.take(2) ?: "en"
         val result = resultsService.exportHtml(eventId, locale)
             ?: return@get call.respond(
@@ -110,8 +124,10 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/json") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val result = resultsService.exportJson(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
@@ -121,8 +137,10 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     get("/api/v1/events/{eventId}/results/backup") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val result = resultsService.exportBackup(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
@@ -132,11 +150,13 @@ fun Route.resultsRoutes(authService: AuthService, resultsService: ResultsService
     }
 
     post("/api/v1/events/{eventId}/results/restore") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val backup = call.receive<BackupResponseModel>()
 
-        when (val result = resultsService.restoreFromBackup(eventId, backup, session.user.id)) {
+        when (val result = resultsService.restoreFromBackup(eventId, backup, principal.userId)) {
             is RestoreResult.Success -> {
                 call.respond(status = HttpStatusCode.OK, message = result.toResponseModel())
             }

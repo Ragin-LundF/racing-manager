@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="create-signing-keys-table" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="signing_keys"/></not>
+        </preConditions>
+        <createTable tableName="signing_keys">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="kid" type="VARCHAR(64)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="algorithm" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_key" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="private_key" type="TEXT"/>
+            <column name="active" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

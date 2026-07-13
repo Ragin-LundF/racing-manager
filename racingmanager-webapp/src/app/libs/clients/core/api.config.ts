@@ -7,5 +7,6 @@ export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
   factory: () => 'http://localhost:8080',
 });
 
-/** localStorage key holding the current session id. */
-export const SESSION_STORAGE_KEY = 'racingmanager_session';
+/** localStorage key holding the current access/refresh token pair (JSON, see
+    `StoredAuth` in auth.service.ts). */
+export const AUTH_STORAGE_KEY = 'racingmanager_auth';

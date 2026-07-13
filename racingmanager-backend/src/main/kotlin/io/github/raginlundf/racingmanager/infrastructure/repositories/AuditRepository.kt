@@ -2,11 +2,14 @@ package io.github.raginlundf.racingmanager.infrastructure.repositories
 
 import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.infrastructure.tables.AuditEntryTable
+import io.github.raginlundf.racingmanager.infrastructure.tables.UserTable
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.util.UUID
@@ -27,11 +30,16 @@ class AuditRepository {
         }
     }
 
+    /** `audit_entries` has no `tenant_id` column of its own — every entry
+        already carries a resolvable `actor_id` (login only audits once a user
+        is found), so [tenantId] filters by joining to the actor's tenant
+        instead of denormalizing tenant onto every entry. */
     fun query(
         action: String? = null,
         targetType: String? = null,
         targetId: UUID? = null,
         actorId: UUID? = null,
+        tenantId: UUID? = null,
         limit: Int = 100,
         offset: Int = 0,
     ): List<AuditEntryEntity> = transaction {
@@ -41,10 +49,18 @@ class AuditRepository {
         if (targetId != null) conditions.add(AuditEntryTable.targetId eq targetId)
         if (actorId != null) conditions.add(AuditEntryTable.actorId eq actorId)
 
-        AuditEntryTable.selectAll()
-            .let { query ->
-                if (conditions.isEmpty()) query
-                else query.where { conditions.reduce { a, b -> a and b } }
+        val query = if (tenantId != null) {
+            conditions.add(UserTable.tenantId eq tenantId)
+            AuditEntryTable.join(UserTable, JoinType.INNER, AuditEntryTable.actorId, UserTable.id)
+                .select(AuditEntryTable.columns)
+        } else {
+            AuditEntryTable.selectAll()
+        }
+
+        query
+            .let { q ->
+                if (conditions.isEmpty()) q
+                else q.where { conditions.reduce { a, b -> a and b } }
             }
             .orderBy(AuditEntryTable.occurredAt to SortOrder.DESC)
             .limit(limit)

@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: Racing Manager — Supervisor (platform admin) API
+  version: "1.0"
+  description: |
+    Hosted-platform supervisor APIs (design §E.2/§3/§7). `rm:supervisor` is a platform-level scope, never a tenant
+    role — these routes only ever touch tenant **metadata**, never race data.
+servers:
+  - url: /api/v1
+paths:
+  /admin/setup-status:
+    get:
+      summary: Whether the platform still needs its first supervisor.
+      security: []
+      responses:
+        "200":
+          description: Setup status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [firstRun]
+                properties:
+                  firstRun: { type: boolean }
+  /admin/setup:
+    post:
+      summary: Create the first supervisor.
+      description: Only available in `hosted` mode; only succeeds once.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, displayName]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+                displayName: { type: string }
+      responses:
+        "201":
+          description: Supervisor created.
+        "403":
+          description: Not running in hosted mode.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: A supervisor already exists.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /admin/tenants:
+    get:
+      summary: List every tenant's metadata (excludes the reserved platform tenant).
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Tenant list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Tenant" }
+        "403":
+          description: Caller lacks `rm:supervisor`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /admin/tenants/{id}:
+    put:
+      summary: Update a tenant's metadata.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/tenantId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string, nullable: true }
+                settings: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Updated tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+    delete:
+      summary: Request deletion of a tenant.
+      description: |
+        Soft-delete only (`status=PENDING_DELETION`) — requires the tenant's exact slug as confirmation.
+        No purge job exists in this release; retention/purge is deferred.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/tenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmSlug]
+              properties:
+                confirmSlug: { type: string }
+      responses:
+        "200":
+          description: Tenant marked for deletion.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+        "400":
+          description: confirmSlug does not match this tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /admin/tenants/{id}/deactivate:
+    post:
+      summary: Deactivate a tenant.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/tenantId"
+      responses:
+        "200":
+          description: Deactivated tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+components:
+  parameters:
+    tenantId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    Tenant:
+      type: object
+      required: [id, slug, displayName, status]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string, nullable: true }
+        displayName: { type: string }
+        status: { type: string, enum: [ACTIVE, DISABLED, PENDING_DELETION] }
+        settings: { type: string, nullable: true }

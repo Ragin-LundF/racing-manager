@@ -36,4 +36,8 @@ export class EventClient {
   archive(id: string): Observable<EventResponse> {
     return this.http.post<EventResponse>(`${this.baseUrl}/api/v1/events/${id}/archive`, {});
   }
+
+  reactivate(id: string): Observable<EventResponse> {
+    return this.http.post<EventResponse>(`${this.baseUrl}/api/v1/events/${id}/reactivate`, {});
+  }
 }

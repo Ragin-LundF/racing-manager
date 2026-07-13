@@ -8,9 +8,14 @@ import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.SessionRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
+import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
+import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import kotlin.test.AfterTest
@@ -28,17 +33,30 @@ class EventServiceTest {
     private val auditRepository = AuditRepository()
     private val userRepository = UserRepository()
     private val passwordHasher = PasswordHasher()
-    private val sessionRepository = SessionRepository()
-    private val authService = AuthService(userRepository, sessionRepository, auditRepository, passwordHasher)
+    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
+    private val jwtService = JwtService(jwtKeyProvider)
+    private val authService = AuthService(
+        userRepository,
+        TenantRepository(),
+        MembershipRepository(),
+        RefreshTokenRepository(),
+        auditRepository,
+        passwordHasher,
+        jwtService,
+    )
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
 
     private lateinit var actorId: UUID
+    private lateinit var tenantId: UUID
 
     @BeforeTest
     fun setUp() {
         DatabaseTestHelper.setUp()
+        jwtKeyProvider.ensureKeyExists()
         val result = authService.setupAdmin("admin", "password123", "Admin User")
-        actorId = (result as io.github.raginlundf.racingmanager.application.auth.SetupResult.Success).user.id
+        val user = (result as io.github.raginlundf.racingmanager.application.auth.SetupResult.Success).user
+        actorId = user.id
+        tenantId = user.tenantId
     }
 
     @AfterTest
@@ -49,7 +67,7 @@ class EventServiceTest {
     @Test
     fun `create event returns Success with DRAFT status`() {
         val settings = EventSettings()
-        val result = eventService.create("Test Event", null, settings, actorId)
+        val result = eventService.create("Test Event", null, settings, actorId, tenantId)
 
         val success = assertIs<CreateEventResult.Success>(result)
         assertEquals("Test Event", success.event.name)
@@ -65,7 +83,7 @@ class EventServiceTest {
             measurementType = MeasurementType.MANUAL,
             maxParticipants = 100,
         )
-        val result = eventService.create("Custom Event", "With description", settings, actorId)
+        val result = eventService.create("Custom Event", "With description", settings, actorId, tenantId)
 
         val success = assertIs<CreateEventResult.Success>(result)
         assertEquals(LaneType.FOUR_LANE, success.event.settings.laneType)
@@ -76,7 +94,7 @@ class EventServiceTest {
 
     @Test
     fun `delete removes the event`() {
-        val created = eventService.create("Doomed", null, EventSettings(), actorId)
+        val created = eventService.create("Doomed", null, EventSettings(), actorId, tenantId)
         val id = (created as CreateEventResult.Success).event.id
 
         val result = eventService.delete(id, actorId)
@@ -92,7 +110,7 @@ class EventServiceTest {
 
     @Test
     fun `findById returns created event`() {
-        val created = eventService.create("Find Me", null, EventSettings(), actorId)
+        val created = eventService.create("Find Me", null, EventSettings(), actorId, tenantId)
         val id = (created as CreateEventResult.Success).event.id
 
         val found = eventService.findById(id)
@@ -108,8 +126,8 @@ class EventServiceTest {
 
     @Test
     fun `findAll returns all events`() {
-        eventService.create("Event 1", null, EventSettings(), actorId)
-        eventService.create("Event 2", null, EventSettings(), actorId)
+        eventService.create("Event 1", null, EventSettings(), actorId, tenantId)
+        eventService.create("Event 2", null, EventSettings(), actorId, tenantId)
 
         val events = eventService.findAll()
         assertEquals(2, events.size)
@@ -117,7 +135,7 @@ class EventServiceTest {
 
     @Test
     fun `update event modifies name and settings`() {
-        val created = eventService.create("Original", null, EventSettings(), actorId)
+        val created = eventService.create("Original", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
 
         val newSettings = EventSettings(laneType = LaneType.EIGHT_LANE, measurementType = MeasurementType.ELECTRONIC)
@@ -133,7 +151,7 @@ class EventServiceTest {
 
     @Test
     fun `update with wrong version returns Conflict`() {
-        val created = eventService.create("Original", null, EventSettings(), actorId)
+        val created = eventService.create("Original", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
 
         val result = eventService.update(event.id, "Updated", null, EventSettings(), 999L, actorId)
@@ -152,7 +170,7 @@ class EventServiceTest {
 
     @Test
     fun `activate event changes status to ACTIVE`() {
-        val created = eventService.create("To Activate", null, EventSettings(), actorId)
+        val created = eventService.create("To Activate", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
 
         val result = eventService.activate(event.id, event.version, actorId)
@@ -164,7 +182,7 @@ class EventServiceTest {
 
     @Test
     fun `activate non-draft event returns InvalidStatus`() {
-        val created = eventService.create("To Activate", null, EventSettings(), actorId)
+        val created = eventService.create("To Activate", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
         eventService.activate(event.id, event.version, actorId)
 
@@ -175,7 +193,7 @@ class EventServiceTest {
 
     @Test
     fun `archive active event changes status to ARCHIVED`() {
-        val created = eventService.create("To Archive", null, EventSettings(), actorId)
+        val created = eventService.create("To Archive", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
         eventService.activate(event.id, event.version, actorId)
 
@@ -187,7 +205,7 @@ class EventServiceTest {
 
     @Test
     fun `archive non-active event returns InvalidStatus`() {
-        val created = eventService.create("Draft Only", null, EventSettings(), actorId)
+        val created = eventService.create("Draft Only", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
 
         val result = eventService.archive(event.id, actorId)
@@ -200,5 +218,35 @@ class EventServiceTest {
         val result = eventService.archive(UUID.randomUUID(), actorId)
 
         assertIs<ArchiveEventResult.NotFound>(result)
+    }
+
+    @Test
+    fun `reactivate archived event changes status to ACTIVE`() {
+        val created = eventService.create("To Reactivate", null, EventSettings(), actorId, tenantId)
+        val event = (created as CreateEventResult.Success).event
+        eventService.activate(event.id, event.version, actorId)
+        eventService.archive(event.id, actorId)
+
+        val result = eventService.reactivate(event.id, actorId)
+
+        val success = assertIs<ReactivateEventResult.Success>(result)
+        assertEquals(EventStatus.ACTIVE, success.event.status)
+    }
+
+    @Test
+    fun `reactivate non-archived event returns InvalidStatus`() {
+        val created = eventService.create("Draft Only", null, EventSettings(), actorId, tenantId)
+        val event = (created as CreateEventResult.Success).event
+
+        val result = eventService.reactivate(event.id, actorId)
+
+        assertIs<ReactivateEventResult.InvalidStatus>(result)
+    }
+
+    @Test
+    fun `reactivate unknown event returns NotFound`() {
+        val result = eventService.reactivate(UUID.randomUUID(), actorId)
+
+        assertIs<ReactivateEventResult.NotFound>(result)
     }
 }

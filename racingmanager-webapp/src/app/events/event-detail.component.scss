@@ -1,3 +1,63 @@
 .error { color: var(--color-error); }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
-.actions { display: flex; gap: var(--space-2); }
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.header-top h2 { margin: 0 0 var(--space-1); }
+.header-top p { margin: 0; color: var(--color-text-secondary); }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-3);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.chip-success {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+.chip-muted {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  background: var(--color-bg-raised);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.actions button,
+.actions a {
+  height: var(--control-height-compact);
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-raised);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.actions button:hover,
+.actions a:hover {
+  border-color: var(--color-text-muted);
+}

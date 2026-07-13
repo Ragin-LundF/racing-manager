@@ -8,8 +8,11 @@ import io.github.raginlundf.racingmanager.api.heat.models.HeatResponseModel
 import io.github.raginlundf.racingmanager.api.heat.models.HeatStateChangeEvent
 import io.github.raginlundf.racingmanager.api.heat.models.HeatLaneResponseModel
 import io.github.raginlundf.racingmanager.api.heat.models.MeasurementResponseModel
-import io.github.raginlundf.racingmanager.application.auth.AuthService
-import io.github.raginlundf.racingmanager.application.auth.SessionResult
+import io.github.raginlundf.racingmanager.api.requireScope
+import io.github.raginlundf.racingmanager.api.requireTenantEvent
+import io.github.raginlundf.racingmanager.application.auth.Scopes
+import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
+import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.application.heat.AcceptResult
 import io.github.raginlundf.racingmanager.application.heat.AddMeasurementResult
 import io.github.raginlundf.racingmanager.application.heat.ArmHeatResult
@@ -44,19 +47,23 @@ import kotlinx.serialization.json.Json
 import java.util.UUID
 
 @Serializable
-private data class WsAuthMessage(val type: String? = null, val sessionId: String)
+private data class WsAuthMessage(val type: String? = null, val token: String)
 
-fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
+fun Route.heatRoutes(jwtService: JwtService, heatService: HeatService, eventRepository: EventRepository) {
     get("/api/v1/events/{eventId}/heats") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val heats = heatService.findByEventId(eventId)
         call.respond(heats.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/heats/latest") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val heat = heatService.findLatestByEventId(eventId)
         if (heat == null) {
             call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("NO_HEAT", "No heat found"))
@@ -66,7 +73,10 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     get("/api/v1/events/{eventId}/heats/{id}") {
-        val session = call.authenticateRequest(authService) ?: return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val id = UUID.fromString(call.parameters["id"])
         val heat = heatService.findById(id)
         if (heat == null) {
@@ -77,12 +87,14 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val request = call.receive<CreateHeatRequestModel>()
         val participantIds = request.participantIds.map { UUID.fromString(it) }
 
-        when (val result = heatService.create(eventId, participantIds, session.user.id)) {
+        when (val result = heatService.create(eventId, participantIds, principal.userId)) {
             is io.github.raginlundf.racingmanager.application.heat.CreateHeatResult.Success -> {
                 call.respond(status = HttpStatusCode.Created, message = result.heat.toResponseModel())
             }
@@ -102,9 +114,12 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/arm") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
-        when (val result = heatService.arm(id, session.user.id)) {
+        when (val result = heatService.arm(id, principal.userId)) {
             is ArmHeatResult.Success -> call.respond(result.heat.toResponseModel())
             is ArmHeatResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
             is ArmHeatResult.InvalidStatus -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Invalid heat status: ${result.current}"))
@@ -113,9 +128,12 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/start") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
-        when (val result = heatService.start(id, session.user.id)) {
+        when (val result = heatService.start(id, principal.userId)) {
             is StartHeatResult.Success -> call.respond(result.heat.toResponseModel())
             is StartHeatResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
             is StartHeatResult.InvalidStatus -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Invalid heat status: ${result.current}"))
@@ -123,9 +141,12 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/finish") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
-        when (val result = heatService.finish(id, session.user.id)) {
+        when (val result = heatService.finish(id, principal.userId)) {
             is FinishHeatResult.Success -> call.respond(result.heat.toResponseModel())
             is FinishHeatResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
             is FinishHeatResult.InvalidStatus -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Invalid heat status: ${result.current}"))
@@ -133,9 +154,12 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/cancel") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
-        when (val result = heatService.cancel(id, session.user.id)) {
+        when (val result = heatService.cancel(id, principal.userId)) {
             is CancelHeatResult.Success -> call.respond(result.heat.toResponseModel())
             is CancelHeatResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
             is CancelHeatResult.InvalidStatus -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Invalid heat status: ${result.current}"))
@@ -143,9 +167,12 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/accept") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
-        when (val result = heatService.acceptResult(id, session.user.id)) {
+        when (val result = heatService.acceptResult(id, principal.userId)) {
             is AcceptResult.Success -> call.respond(mapOf("status" to "accepted"))
             is AcceptResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
             is AcceptResult.InvalidStatus -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Invalid heat status: ${result.current}"))
@@ -153,9 +180,12 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/reject") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
-        when (val result = heatService.rejectResult(id, session.user.id)) {
+        when (val result = heatService.rejectResult(id, principal.userId)) {
             is RejectResult.Success -> call.respond(mapOf("status" to "rejected"))
             is RejectResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
             is RejectResult.InvalidStatus -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Invalid heat status: ${result.current}"))
@@ -163,19 +193,25 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
     }
 
     post("/api/v1/events/{eventId}/heats/{id}/repeat") {
-        val session = call.authenticateRequest(authService) ?: return@post
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
-        when (val result = heatService.repeat(id, session.user.id)) {
+        when (val result = heatService.repeat(id, principal.userId)) {
             is RepeatHeatResult.Success -> call.respond(result.heat.toResponseModel())
             is RepeatHeatResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
         }
     }
 
     put("/api/v1/events/{eventId}/heats/{id}/measurements") {
-        val session = call.authenticateRequest(authService) ?: return@put
+        val principal = call.authenticateRequest(jwtService) ?: return@put
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@put
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@put
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<AddMeasurementRequestModel>()
-        when (val result = heatService.addMeasurement(id, request.lane, request.durationNanos, LaneOutcome.valueOf(request.outcome), session.user.id)) {
+        when (val result = heatService.addMeasurement(id, request.lane, request.durationNanos, LaneOutcome.valueOf(request.outcome), principal.userId)) {
             is AddMeasurementResult.Success -> call.respond(result.heat.toResponseModel())
             is AddMeasurementResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("HEAT_NOT_FOUND", "Heat not found"))
             is AddMeasurementResult.InvalidStatus -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Invalid heat status: ${result.current}"))
@@ -187,16 +223,25 @@ fun Route.heatRoutes(authService: AuthService, heatService: HeatService) {
             val json = Json { ignoreUnknownKeys = true }
 
             val authFrame = withTimeoutOrNull(5_000) { incoming.receive() } as? Frame.Text
-            val sessionId = authFrame?.let {
-                runCatching { json.decodeFromString<WsAuthMessage>(it.readText()).sessionId }.getOrNull()
+            val token = authFrame?.let {
+                runCatching { json.decodeFromString<WsAuthMessage>(it.readText()).token }.getOrNull()
             }
-            if (sessionId == null) {
-                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Session required"))
+            if (token == null) {
+                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Access token required"))
                 return@webSocket
             }
-            val session = authService.getSession(UUID.fromString(sessionId))
-            if (session !is SessionResult.Valid) {
-                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Invalid session"))
+            val principal = jwtService.verifyAccessToken(token)
+            if (principal == null) {
+                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Invalid access token"))
+                return@webSocket
+            }
+            if (!principal.hasAnyScope(Scopes.ADMIN, Scopes.USER)) {
+                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Insufficient scope"))
+                return@webSocket
+            }
+            val eventId = UUID.fromString(call.parameters["eventId"])
+            if (eventRepository.findByIdForTenant(eventId, principal.tenantId) == null) {
+                close(io.ktor.websocket.CloseReason(io.ktor.websocket.CloseReason.Codes.VIOLATED_POLICY, "Event not found or not accessible"))
                 return@webSocket
             }
 

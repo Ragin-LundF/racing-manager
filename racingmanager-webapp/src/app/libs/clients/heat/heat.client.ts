@@ -1,13 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL, SESSION_STORAGE_KEY } from '../core/api.config';
+import { API_BASE_URL } from '../core/api.config';
+import { AuthService } from '../../../core/auth.service';
 import { HeatResponse, CreateHeatRequest, AddMeasurementRequest } from './heat.models';
 
 @Injectable({ providedIn: 'root' })
 export class HeatClient {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = inject(API_BASE_URL);
+  private readonly authService = inject(AuthService);
 
   findByEventId(eventId: string): Observable<HeatResponse[]> {
     return this.http.get<HeatResponse[]>(`${this.baseUrl}/api/v1/events/${eventId}/heats`);
@@ -58,17 +60,17 @@ export class HeatClient {
   }
 
   connectLive(eventId: string): WebSocket {
-    const sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
+    const token = this.authService.getAccessToken();
     // Derive the ws origin from the API base, or from the page when same-origin
-    // (dev proxy). The session id is NOT put in the URL (it would leak into
-    // access logs); it is sent as the first message once the socket opens.
+    // (dev proxy). The token is NOT put in the URL (it would leak into access
+    // logs); it is sent as the first message once the socket opens.
     const wsBase = this.baseUrl
       ? this.baseUrl.replace(/^http/, 'ws')
       : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
     const ws = new WebSocket(`${wsBase}/api/v1/events/${eventId}/live`);
     ws.addEventListener('open', () => {
-      if (sessionId) {
-        ws.send(JSON.stringify({ type: 'auth', sessionId }));
+      if (token) {
+        ws.send(JSON.stringify({ type: 'auth', token }));
       }
     });
     return ws;

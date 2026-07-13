@@ -1,6 +1,12 @@
 <div class="audit">
   <div class="header">
     <h2>{{ 'audit.title' | translate }}</h2>
+    <div class="toolbar">
+      @if (entries().length > 0) {
+        <span class="count">{{ 'audit.count' | translate: { count: entries().length } }}</span>
+      }
+      <button (click)="load()">{{ 'audit.refresh' | translate }}</button>
+    </div>
   </div>
 
   @if (error()) {
@@ -22,10 +28,16 @@
       <tbody>
         @for (entry of entries(); track entry.id) {
           <tr>
-            <td>{{ entry.occurredAt | date:'short' }}</td>
-            <td><span class="action-badge">{{ entry.action }}</span></td>
-            <td>{{ entry.summary }}</td>
-            <td>{{ entry.actorId ? (entry.actorId | slice:0:8) + '...' : '-' }}</td>
+            <td class="time">{{ entry.occurredAt | date:'short' }}</td>
+            <td><span class="chip" [class]="actionChipClass(entry.action)">{{ entry.action }}</span></td>
+            <td>{{ entry.summary || '-' }}</td>
+            <td>
+              @if (entry.actorId) {
+                <code>{{ entry.actorId | slice:0:8 }}</code>
+              } @else {
+                <span class="muted">{{ 'audit.system' | translate }}</span>
+              }
+            </td>
           </tr>
         }
       </tbody>
