@@ -146,7 +146,8 @@
       },
       "startNumber": {
         "label": "Start Number",
-        "required": "Start number is required."
+        "required": "Start number is required.",
+        "auto": "Assigned automatically"
       },
       "title": {
         "create": "Add Participant",

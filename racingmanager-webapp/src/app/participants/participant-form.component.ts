@@ -83,7 +83,7 @@ export class ParticipantFormComponent {
       });
     } else {
       this.participantService.create(eventId, {
-        startNumber: this.startNumber!,
+        startNumber: this.startNumber,
         firstName: this.firstName,
         lastName: this.lastName,
         club: this.club || null,

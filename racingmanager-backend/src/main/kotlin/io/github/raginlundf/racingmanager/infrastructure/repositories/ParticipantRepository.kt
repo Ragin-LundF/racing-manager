@@ -166,6 +166,12 @@ class ParticipantRepository {
         ParticipantTable.selectAll().where { ParticipantTable.eventId eq eventId }.count()
     }
 
+    fun maxStartNumberByEventId(eventId: UUID): Int? = transaction {
+        ParticipantTable.selectAll()
+            .where { ParticipantTable.eventId eq eventId }
+            .maxOfOrNull { it[ParticipantTable.startNumber] }
+    }
+
     fun deleteAll() = transaction {
         VehicleTable.deleteAll()
         ParticipantTable.deleteAll()

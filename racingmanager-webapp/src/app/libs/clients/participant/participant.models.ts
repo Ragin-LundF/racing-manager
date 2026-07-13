@@ -19,7 +19,7 @@ export interface ParticipantResponse {
 }
 
 export interface CreateParticipantRequest {
-  startNumber: number;
+  startNumber?: number | null;
   firstName: string;
   lastName: string;
   club?: string | null;

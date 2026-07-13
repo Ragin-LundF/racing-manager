@@ -28,7 +28,7 @@ class ParticipantService(
 
     fun create(
         eventId: UUID,
-        startNumber: Int,
+        startNumber: Int?,
         firstName: String,
         lastName: String,
         club: String?,
@@ -43,9 +43,12 @@ class ParticipantService(
             return CreateParticipantResult.EventNotActive
         }
 
-        val existing = participantRepository.findByEventIdAndStartNumber(eventId, startNumber)
+        val resolvedStartNumber = startNumber
+            ?: ((participantRepository.maxStartNumberByEventId(eventId) ?: 0) + 1)
+
+        val existing = participantRepository.findByEventIdAndStartNumber(eventId, resolvedStartNumber)
         if (existing != null) {
-            return CreateParticipantResult.DuplicateStartNumber(startNumber)
+            return CreateParticipantResult.DuplicateStartNumber(resolvedStartNumber)
         }
 
         val now = clock.now()
@@ -62,7 +65,7 @@ class ParticipantService(
         val participant = ParticipantEntity(
             id = participantId,
             eventId = eventId,
-            startNumber = startNumber,
+            startNumber = resolvedStartNumber,
             firstName = firstName,
             lastName = lastName,
             club = club,
@@ -79,7 +82,7 @@ class ParticipantService(
                 action = "PARTICIPANT_CREATED",
                 targetType = "Participant",
                 targetId = participantId,
-                summary = "Participant #$startNumber $firstName $lastName created",
+                summary = "Participant #$resolvedStartNumber $firstName $lastName created",
                 occurredAt = now,
             ),
         )

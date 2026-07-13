@@ -72,6 +72,26 @@ class ParticipantServiceTest {
     }
 
     @Test
+    fun `create participant without start number assigns next available`() {
+        val first = participantService.create(eventId, null, "John", "Doe", null, null, null, actorId)
+        val firstSuccess = assertIs<CreateParticipantResult.Success>(first)
+        assertEquals(1, firstSuccess.participant.startNumber)
+
+        val second = participantService.create(eventId, null, "Jane", "Smith", null, null, null, actorId)
+        val secondSuccess = assertIs<CreateParticipantResult.Success>(second)
+        assertEquals(2, secondSuccess.participant.startNumber)
+    }
+
+    @Test
+    fun `create participant without start number continues after manually set numbers`() {
+        participantService.create(eventId, 5, "John", "Doe", null, null, null, actorId)
+
+        val result = participantService.create(eventId, null, "Jane", "Smith", null, null, null, actorId)
+        val success = assertIs<CreateParticipantResult.Success>(result)
+        assertEquals(6, success.participant.startNumber)
+    }
+
+    @Test
     fun `create participant with duplicate start number returns error`() {
         participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
         val result = participantService.create(eventId, 1, "Jane", "Smith", null, null, null, actorId)

@@ -146,7 +146,8 @@
       },
       "startNumber": {
         "label": "Startnummer",
-        "required": "Startnummer ist erforderlich."
+        "required": "Startnummer ist erforderlich.",
+        "auto": "Wird automatisch vergeben"
       },
       "title": {
         "create": "Teilnehmer hinzufügen",

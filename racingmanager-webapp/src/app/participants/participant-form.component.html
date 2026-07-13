@@ -8,7 +8,8 @@
   <form #form="ngForm" (ngSubmit)="onSubmit()">
     <label>
       <span>{{ 'participants.form.startNumber.label' | translate }}</span>
-      <input type="number" name="startNumber" [(ngModel)]="startNumber" required min="1" #snField="ngModel" />
+      <input type="number" name="startNumber" [(ngModel)]="startNumber" [required]="isEdit()" min="1" #snField="ngModel"
+             [placeholder]="isEdit() ? '' : ('participants.form.startNumber.auto' | translate)" />
     </label>
     @if (snField.invalid && snField.touched) {
       <small>{{ 'participants.form.startNumber.required' | translate }}</small>
@@ -48,7 +49,7 @@
     }
 
     <div class="actions">
-      <button type="submit" [disabled]="form.invalid">
+      <button type="submit" class="save-btn" [disabled]="form.invalid">
         {{ (isEdit() ? 'participants.form.save.edit' : 'participants.form.save.create') | translate }}
       </button>
       <button type="button" (click)="backToList()">{{ 'participants.form.cancel' | translate }}</button>

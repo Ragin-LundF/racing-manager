@@ -26,7 +26,7 @@ data class VehicleResponseModel(
 
 @Serializable
 data class CreateParticipantRequestModel(
-    val startNumber: Int,
+    val startNumber: Int? = null,
     val firstName: String,
     val lastName: String,
     val club: String? = null,
