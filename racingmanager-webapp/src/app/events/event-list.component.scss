@@ -12,3 +12,38 @@ td.actions button { padding: 0 var(--space-3); height: 30px; border-radius: var(
 td.actions button:hover { background: var(--color-bg-panel); }
 td.actions .btn-delete { border-color: var(--color-danger, #b3261e); color: var(--color-danger, #f2b8b5); }
 td.actions .btn-delete:hover { background: var(--color-danger, #b3261e); color: #fff; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-3);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.badge-muted {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  background: var(--color-bg-raised);
+}
+.badge.status-active {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+.badge.status-draft {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  background: var(--color-bg-raised);
+}
+.badge.status-completed {
+  color: var(--color-focus);
+  border-color: color-mix(in srgb, var(--color-focus) 40%, transparent);
+  background: color-mix(in srgb, var(--color-focus) 14%, transparent);
+}
+.badge.status-archived {
+  color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+}

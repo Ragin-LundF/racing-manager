@@ -13,7 +13,11 @@
     "MANUAL": "Manuell",
     "SIMULATED": "Simuliert",
     "SIX_LANE": "Sechs Spuren",
-    "TWO_LANE": "Zwei Spuren"
+    "TWO_LANE": "Zwei Spuren",
+    "DRAFT": "Entwurf",
+    "ACTIVE": "Aktiv",
+    "COMPLETED": "Abgeschlossen",
+    "ARCHIVED": "Archiviert"
   },
   "events": {
     "detail": {

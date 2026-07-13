@@ -12,7 +12,7 @@
 
       <div class="meta">
         <span class="chip" [class.chip-success]="e.status === 'ACTIVE'" [class.chip-muted]="e.status !== 'ACTIVE'">
-          {{ 'events.detail.statusLabel' | translate }}: {{ e.status }}
+          {{ 'events.detail.statusLabel' | translate }}: {{ 'enum.' + e.status | translate }}
         </span>
         <span class="chip chip-muted">
           {{ 'events.detail.lanesLabel' | translate }}: {{ 'enum.' + e.settings.laneType | translate }}

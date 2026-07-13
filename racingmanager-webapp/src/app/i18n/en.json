@@ -13,7 +13,11 @@
     "MANUAL": "Manual",
     "SIMULATED": "Simulated",
     "SIX_LANE": "Six Lanes",
-    "TWO_LANE": "Two Lanes"
+    "TWO_LANE": "Two Lanes",
+    "DRAFT": "Draft",
+    "ACTIVE": "Active",
+    "COMPLETED": "Completed",
+    "ARCHIVED": "Archived"
   },
   "events": {
     "detail": {

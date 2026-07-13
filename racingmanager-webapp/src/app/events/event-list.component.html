@@ -22,9 +22,9 @@
         @for (event of events(); track event.id) {
           <tr>
             <td>{{ event.name }}</td>
-            <td>{{ event.status }}</td>
-            <td>{{ event.settings.laneType }}</td>
-            <td>{{ event.settings.measurementType }}</td>
+            <td><span class="badge" [class]="'status-' + event.status.toLowerCase()">{{ 'enum.' + event.status | translate }}</span></td>
+            <td><span class="badge badge-muted">{{ 'enum.' + event.settings.laneType | translate }}</span></td>
+            <td><span class="badge badge-muted">{{ 'enum.' + event.settings.measurementType | translate }}</span></td>
             <td>{{ event.createdAt | date:'short' }}</td>
             <td class="actions">
               <button class="btn-view" [routerLink]="event.id">{{ 'events.list.view' | translate }}</button>

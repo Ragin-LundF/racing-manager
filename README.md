@@ -1,6 +1,6 @@
 # Racing Manager
 
-Racing Manager is a race-day operations tool for small racing events (e.g.
+Racing Manager is a race-day operations tool for racing events (e.g.
 Pinewood-Derby-style events with two or more lanes). It covers the whole
 event lifecycle: create an event, register participants, run qualification
 and knockout rounds, control races heat by heat, and publish results — with
