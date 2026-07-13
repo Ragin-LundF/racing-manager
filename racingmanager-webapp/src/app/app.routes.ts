@@ -22,6 +22,7 @@ import { ExportComponent } from './export/export.component';
 import { AuditComponent } from './audit/audit.component';
 import { DiagnosticsComponent } from './diagnostics/diagnostics.component';
 import { TenantSettingsComponent } from './tenant/tenant-settings.component';
+import { RaspberryPiComponent } from './raspberry-pi/raspberry-pi.component';
 
 // Language is a runtime concern (ngx-translate + localStorage), so routes carry
 // no locale prefix.
@@ -32,12 +33,16 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [redirectIfAuthenticatedGuard] },
 
+  // Public integration guide — also reachable from a link on the login screen.
+  { path: 'raspberry-pi', component: RaspberryPiComponent },
+
   {
     path: 'racemanager',
     component: RaceManagerShellComponent,
     canActivate: [authGuard],
     children: [
       { path: '', component: EventListComponent },
+      { path: 'raspberry-pi', component: RaspberryPiComponent },
       { path: 'diagnostics', component: DiagnosticsComponent, canActivate: [adminGuard] },
       { path: 'tenant', component: TenantSettingsComponent, canActivate: [adminGuard] },
       { path: 'new', component: EventFormComponent },

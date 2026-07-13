@@ -1,0 +1,204 @@
+<div class="docs">
+  @if (!authService.isAuthenticated()) {
+    <div class="public-bar">
+      <a class="back-link" [routerLink]="['/login']">{{ 'raspberryPi.backToLogin' | translate }}</a>
+      <app-locale-selector />
+    </div>
+  }
+
+  <h1 class="doc-title">{{ 'raspberryPi.title' | translate }}</h1>
+
+  <!-- Introduction -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.intro.heading' | translate }}</h2>
+    <p>{{ 'raspberryPi.intro.p1' | translate }}</p>
+    <p>{{ 'raspberryPi.intro.p2' | translate }}</p>
+    <p>{{ 'raspberryPi.intro.p3' | translate }}</p>
+  </section>
+
+  <!-- Diagram -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.diagram.heading' | translate }}</h2>
+    <div class="diagram">
+      <svg viewBox="0 0 860 260" role="img" preserveAspectRatio="xMidYMid meet">
+        <!-- Operator UI -->
+        <g class="node">
+          <rect x="10" y="95" width="150" height="70" rx="8" />
+          <text x="85" y="126" class="node-title">{{ 'raspberryPi.diagram.operator' | translate }}</text>
+          <text x="85" y="146" class="node-sub">{{ 'raspberryPi.diagram.operatorSub' | translate }}</text>
+        </g>
+
+        <!-- backend -->
+        <g class="node">
+          <rect x="245" y="85" width="180" height="90" rx="8" />
+          <text x="335" y="118" class="node-title">{{ 'raspberryPi.diagram.backend' | translate }}</text>
+          <text x="335" y="138" class="node-sub">{{ 'raspberryPi.diagram.backendRole' | translate }}</text>
+          <text x="335" y="156" class="node-sub">ws:// client</text>
+        </g>
+
+        <!-- Raspberry Pi -->
+        <g class="node device">
+          <rect x="620" y="35" width="230" height="190" rx="8" />
+          <text x="735" y="64" class="node-title">{{ 'raspberryPi.diagram.device' | translate }}</text>
+          <text x="735" y="84" class="node-sub">{{ 'raspberryPi.diagram.deviceRole' | translate }}</text>
+          <rect x="645" y="104" width="180" height="30" rx="6" class="part" />
+          <text x="735" y="124" class="part-label">{{ 'raspberryPi.diagram.gate' | translate }}</text>
+          <rect x="645" y="142" width="180" height="30" rx="6" class="part" />
+          <text x="735" y="162" class="part-label">{{ 'raspberryPi.diagram.lane1' | translate }}</text>
+          <rect x="645" y="180" width="180" height="30" rx="6" class="part" />
+          <text x="735" y="200" class="part-label">{{ 'raspberryPi.diagram.lane2' | translate }}</text>
+        </g>
+
+        <!-- arrows -->
+        <line x1="160" y1="130" x2="245" y2="130" class="wire" />
+        <text x="202" y="120" class="wire-label">HTTP / WS</text>
+
+        <line x1="425" y1="118" x2="620" y2="118" class="wire" marker-end="url(#arrow)" />
+        <text x="522" y="108" class="wire-label">{{ 'raspberryPi.diagram.commandsArrow' | translate }}</text>
+        <line x1="620" y1="150" x2="425" y2="150" class="wire" marker-end="url(#arrow)" />
+        <text x="522" y="170" class="wire-label">{{ 'raspberryPi.diagram.eventsArrow' | translate }}</text>
+
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" class="arrow-head" />
+          </marker>
+        </defs>
+      </svg>
+      <p class="caption">{{ 'raspberryPi.diagram.caption' | translate }}</p>
+    </div>
+  </section>
+
+  <!-- Connection & envelope -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.connection.heading' | translate }}</h2>
+    <p>{{ 'raspberryPi.connection.p1' | translate }}</p>
+    <p>
+      {{ 'raspberryPi.connection.endpointLabel' | translate }}:
+      <code>ws://raspberrypi.local:8080/race</code>
+    </p>
+    <p>{{ 'raspberryPi.connection.envelopeIntro' | translate }}</p>
+
+    <div class="code-block">
+      <button class="copy-btn" (click)="copy('envelope', envelopeSample)">
+        {{ (copied() === 'envelope' ? 'raspberryPi.example.copied' : 'raspberryPi.example.copy') | translate }}
+      </button>
+      <pre class="json"><code [innerHTML]="envelopeHtml"></code></pre>
+    </div>
+
+    <h3>{{ 'raspberryPi.connection.fieldsHeading' | translate }}</h3>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>{{ 'raspberryPi.connection.colField' | translate }}</th>
+          <th>{{ 'raspberryPi.connection.colMeaning' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>protocolVersion</code></td><td>{{ 'raspberryPi.connection.fProtocolVersion' | translate }}</td></tr>
+        <tr><td><code>messageId</code></td><td>{{ 'raspberryPi.connection.fMessageId' | translate }}</td></tr>
+        <tr><td><code>timestamp</code></td><td>{{ 'raspberryPi.connection.fTimestamp' | translate }}</td></tr>
+        <tr><td><code>raceId</code></td><td>{{ 'raspberryPi.connection.fRaceId' | translate }}</td></tr>
+        <tr><td><code>payload</code></td><td>{{ 'raspberryPi.connection.fPayload' | translate }}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Commands -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.commands.heading' | translate }}</h2>
+    <p>{{ 'raspberryPi.commands.intro' | translate }}</p>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>{{ 'raspberryPi.commands.colType' | translate }}</th>
+          <th>{{ 'raspberryPi.commands.colPayload' | translate }}</th>
+          <th>{{ 'raspberryPi.commands.colDescription' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>hello</code></td><td>—</td><td>{{ 'raspberryPi.commands.hello' | translate }}</td></tr>
+        <tr><td><code>prepareRace</code></td><td><code>lanes, startMode, finishTimeoutMs</code></td><td>{{ 'raspberryPi.commands.prepareRace' | translate }}</td></tr>
+        <tr><td><code>startRace</code></td><td>—</td><td>{{ 'raspberryPi.commands.startRace' | translate }}</td></tr>
+        <tr><td><code>abortRace</code></td><td>—</td><td>{{ 'raspberryPi.commands.abortRace' | translate }}</td></tr>
+        <tr><td><code>reset</code></td><td>—</td><td>{{ 'raspberryPi.commands.reset' | translate }}</td></tr>
+        <tr><td><code>ping</code></td><td>—</td><td>{{ 'raspberryPi.commands.ping' | translate }}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Events -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.events.heading' | translate }}</h2>
+    <p>{{ 'raspberryPi.events.intro' | translate }}</p>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>{{ 'raspberryPi.events.colType' | translate }}</th>
+          <th>{{ 'raspberryPi.events.colPayload' | translate }}</th>
+          <th>{{ 'raspberryPi.events.colDescription' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>helloAck</code></td><td><code>deviceId, firmwareVersion, protocolVersion, capabilities, lanes</code></td><td>{{ 'raspberryPi.events.helloAck' | translate }}</td></tr>
+        <tr><td><code>raceReady</code></td><td><code>lanes, gateState</code></td><td>{{ 'raspberryPi.events.raceReady' | translate }}</td></tr>
+        <tr><td><code>raceStarted</code></td><td><code>startedLanes, controllerMonotonicNs</code></td><td>{{ 'raspberryPi.events.raceStarted' | translate }}</td></tr>
+        <tr><td><code>finishDetected</code></td><td><code>lane, finishSequence, finishMonotonicNs, elapsedNs, sensorState</code></td><td>{{ 'raspberryPi.events.finishDetected' | translate }}</td></tr>
+        <tr><td><code>raceFinished</code></td><td><code>results[], completionReason</code></td><td>{{ 'raspberryPi.events.raceFinished' | translate }}</td></tr>
+        <tr><td><code>error</code></td><td><code>code, message</code></td><td>{{ 'raspberryPi.events.error' | translate }}</td></tr>
+        <tr><td><code>pong</code></td><td>—</td><td>{{ 'raspberryPi.events.pong' | translate }}</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+      <button class="copy-btn" (click)="copy('finish', finishSample)">
+        {{ (copied() === 'finish' ? 'raspberryPi.example.copied' : 'raspberryPi.example.copy') | translate }}
+      </button>
+      <pre class="json"><code [innerHTML]="finishHtml"></code></pre>
+    </div>
+  </section>
+
+  <!-- Rules -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.rules.heading' | translate }}</h2>
+    <ul>
+      <li>{{ 'raspberryPi.rules.r1' | translate }}</li>
+      <li>{{ 'raspberryPi.rules.r2' | translate }}</li>
+      <li>{{ 'raspberryPi.rules.r3' | translate }}</li>
+      <li>{{ 'raspberryPi.rules.r4' | translate }}</li>
+      <li>{{ 'raspberryPi.rules.r5' | translate }}</li>
+    </ul>
+  </section>
+
+  <!-- Error codes -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.errors.heading' | translate }}</h2>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>{{ 'raspberryPi.errors.colCode' | translate }}</th>
+          <th>{{ 'raspberryPi.errors.colMeaning' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>INVALID_STATE</code></td><td>{{ 'raspberryPi.errors.invalidState' | translate }}</td></tr>
+        <tr><td><code>UNKNOWN_RACE</code></td><td>{{ 'raspberryPi.errors.unknownRace' | translate }}</td></tr>
+        <tr><td><code>HARDWARE_FAILURE</code></td><td>{{ 'raspberryPi.errors.hardwareFailure' | translate }}</td></tr>
+        <tr><td><code>DUPLICATE_COMMAND</code></td><td>{{ 'raspberryPi.errors.duplicateCommand' | translate }}</td></tr>
+        <tr><td><code>SENSOR_STUCK</code></td><td>{{ 'raspberryPi.errors.sensorStuck' | translate }}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Python example -->
+  <section class="section">
+    <h2>{{ 'raspberryPi.example.heading' | translate }}</h2>
+    <p>{{ 'raspberryPi.example.intro' | translate }}</p>
+    <p><code>pip install websockets</code> — {{ 'raspberryPi.example.install' | translate }}</p>
+    <div class="code-block">
+      <button class="copy-btn" (click)="copy('py', pythonExample)">
+        {{ (copied() === 'py' ? 'raspberryPi.example.copied' : 'raspberryPi.example.copy') | translate }}
+      </button>
+      <pre class="python"><code [innerHTML]="pythonHtml"></code></pre>
+    </div>
+  </section>
+</div>

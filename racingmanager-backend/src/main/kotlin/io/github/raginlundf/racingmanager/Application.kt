@@ -23,7 +23,7 @@ import io.github.raginlundf.racingmanager.infrastructure.configureDatabase
 import io.github.raginlundf.racingmanager.infrastructure.configureDeploymentMode
 import io.github.raginlundf.racingmanager.infrastructure.configureLogging
 import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
-import io.github.raginlundf.racingmanager.infrastructure.gateway.SimulationMeasurementGateway
+import io.github.raginlundf.racingmanager.infrastructure.gateway.configureMeasurementGateway
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
@@ -94,7 +94,7 @@ fun Application.module() {
     val passwordHasher = PasswordHasher()
     val eventService = EventService(eventRepository, participantRepository, auditRepository)
     val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
-    val measurementGateway = SimulationMeasurementGateway()
+    val measurementGateway = configureMeasurementGateway()
     val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository, measurementGateway)
     val qualificationRepository = QualificationRepository()
     val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)

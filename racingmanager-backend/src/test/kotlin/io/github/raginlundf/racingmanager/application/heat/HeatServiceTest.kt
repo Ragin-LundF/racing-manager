@@ -10,7 +10,7 @@ import io.github.raginlundf.racingmanager.domain.event.EventSettings
 import io.github.raginlundf.racingmanager.domain.heat.HeatStatus
 import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
-import io.github.raginlundf.racingmanager.infrastructure.gateway.SimulationMeasurementGateway
+import io.github.raginlundf.racingmanager.infrastructure.gateway.RaspberryPiMeasurementGateway
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
@@ -49,7 +49,7 @@ class HeatServiceTest {
     private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
     private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
     private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
-    private val measurementGateway = SimulationMeasurementGateway(
+    private val measurementGateway = RaspberryPiMeasurementGateway.simulated(
         rampDelayMs = 2,
         raceMinMs = 2,
         raceMaxMs = 4,

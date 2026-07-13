@@ -1,0 +1,239 @@
+.docs {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--space-4) 0 var(--space-12);
+  color: var(--color-text-primary);
+
+  .public-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+
+    .back-link {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+
+      &:hover {
+        color: var(--color-text-primary);
+      }
+    }
+  }
+
+  .doc-title {
+    margin: 0 0 var(--space-6);
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .section {
+    margin-bottom: var(--space-8);
+
+    h2 {
+      margin: 0 0 var(--space-3);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    h3 {
+      margin: var(--space-4) 0 var(--space-2);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0 0 var(--space-3);
+      color: var(--color-text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: var(--space-6);
+      color: var(--color-text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+
+      li {
+        margin-bottom: var(--space-2);
+      }
+    }
+  }
+
+  // Inline code and code blocks — mirror diagnostics/audit styling.
+  code {
+    background: var(--color-bg-raised);
+    padding: 2px 6px;
+    border-radius: var(--radius-control);
+    font-size: 0.8125rem;
+    color: var(--color-text-primary);
+  }
+
+  .code-block {
+    position: relative;
+    margin: 0 0 var(--space-4);
+
+    pre {
+      margin: 0;
+      background: var(--color-bg-raised);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-panel);
+      padding: var(--space-4);
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+
+      code {
+        background: none;
+        padding: 0;
+        border-radius: 0;
+      }
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      height: var(--control-height-compact);
+      padding: 0 var(--space-3);
+      border-radius: var(--radius-control);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-panel);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+
+      &:hover {
+        border-color: var(--color-text-muted);
+        color: var(--color-text-primary);
+      }
+    }
+  }
+
+  table.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    font-size: 14px;
+
+    th,
+    td {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    thead th {
+      background: var(--color-bg-raised);
+      color: var(--color-text-secondary);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    td:not(:last-child) {
+      white-space: nowrap;
+    }
+
+    td:last-child {
+      color: var(--color-text-secondary);
+    }
+  }
+
+  // Syntax highlighting for the Python example. The tokens are injected via
+  // [innerHTML], so emulated encapsulation does not tag them — scope under
+  // .docs and pierce with ::ng-deep so the rules stay local to this page.
+  ::ng-deep {
+    .tok-comment {
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+    .tok-string {
+      color: var(--color-success);
+    }
+    .tok-keyword,
+    .tok-key {
+      color: var(--color-focus);
+    }
+    .tok-literal {
+      color: var(--color-action);
+    }
+    .tok-builtin {
+      color: var(--color-action);
+    }
+    .tok-number {
+      color: var(--color-warning);
+    }
+  }
+
+  // Software <-> hardware diagram.
+  .diagram {
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    padding: var(--space-4);
+
+    svg {
+      width: 100%;
+      height: auto;
+    }
+
+    .node rect {
+      fill: var(--color-bg-raised);
+      stroke: var(--color-border);
+      stroke-width: 1;
+    }
+
+    .node.device rect {
+      stroke: var(--color-action);
+    }
+
+    .node .part {
+      fill: var(--color-bg-panel);
+      stroke: var(--color-border);
+    }
+
+    .node-title {
+      fill: var(--color-text-primary);
+      font-size: 14px;
+      font-weight: 600;
+      text-anchor: middle;
+    }
+
+    .node-sub,
+    .part-label {
+      fill: var(--color-text-secondary);
+      font-size: 11px;
+      text-anchor: middle;
+    }
+
+    .wire {
+      stroke: var(--color-text-muted);
+      stroke-width: 1.5;
+    }
+
+    .wire-label {
+      fill: var(--color-text-muted);
+      font-size: 11px;
+      text-anchor: middle;
+    }
+
+    .arrow-head {
+      fill: var(--color-text-muted);
+    }
+
+    .caption {
+      margin: var(--space-3) 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+  }
+}

@@ -102,7 +102,8 @@
     "tenantSlug": {
       "label": "Workspace (optional)"
     },
-    "registerLink": "Register a new event organization"
+    "registerLink": "Register a new event organization",
+    "raspberryPiLink": "Raspberry Pi integration guide"
   },
   "register": {
     "title": "Register Event Organization",
@@ -322,6 +323,7 @@
       "participants": "Participants",
       "preliminary": "Preliminary Rounds",
       "races": "Races",
+      "raspberryPi": "Raspberry Pi API",
       "diagnostics": "Diagnostics",
       "tenant": "Tenant"
     },
@@ -371,6 +373,97 @@
       "startError": "Failed to start heat.",
       "title": "Race Control"
     }
+  },
+  "raspberryPi": {
+    "backToLogin": "← Back to login",
+    "commands": {
+      "abortRace": "Abort the current race, close the gate where possible, and ignore any later finishes for it.",
+      "colDescription": "Description",
+      "colPayload": "Payload fields",
+      "colType": "Type",
+      "heading": "Commands (backend → device)",
+      "hello": "Sent right after connecting. The device replies with helloAck (identity, firmware, capabilities, lanes).",
+      "intro": "The backend sends these commands to your controller. Answer prepareRace and startRace with the matching events.",
+      "ping": "Connection and latency check; reply with pong.",
+      "prepareRace": "Close and arm the gate, enable the given lanes, and verify the sensors — without releasing the cars. Reply with raceReady, or error if a sensor is already blocked.",
+      "reset": "Return the device to its initial state. A reset during a race aborts it first.",
+      "startRace": "Release the shared gate once, take the monotonic start timestamp, and reply with raceStarted. Accept it only once per race."
+    },
+    "connection": {
+      "colField": "Field",
+      "colMeaning": "Meaning",
+      "endpointLabel": "Default endpoint",
+      "envelopeIntro": "Every message — in both directions — is a JSON object with the same envelope. The payload object carries a type discriminator plus the fields for that message.",
+      "fieldsHeading": "Envelope fields",
+      "fMessageId": "Unique id of this message; use it to detect and drop duplicates.",
+      "fPayload": "The typed body: a type field plus the fields for that message.",
+      "fProtocolVersion": "Contract version. This document describes version 1.",
+      "fRaceId": "Correlates every message of one race; equals the heat id.",
+      "fTimestamp": "Wall-clock time the message was sent (ISO-8601). Not the authoritative race time.",
+      "heading": "Connection & message envelope",
+      "p1": "The backend opens one persistent WebSocket connection to your device and keeps it open. Commands flow from the backend; events flow back from the device the moment they happen."
+    },
+    "diagram": {
+      "backend": "racing-manager",
+      "backendRole": "backend",
+      "caption": "The backend is the WebSocket client and connects out to your Raspberry Pi, which runs the WebSocket server. Commands flow right, events flow left.",
+      "commandsArrow": "commands →",
+      "device": "Raspberry Pi",
+      "deviceRole": "WebSocket server",
+      "eventsArrow": "← events",
+      "gate": "Shared gate",
+      "heading": "How it connects",
+      "lane1": "Lane 1 sensor",
+      "lane2": "Lane 2 sensor",
+      "operator": "Operator UI",
+      "operatorSub": "browser"
+    },
+    "errors": {
+      "colCode": "Code",
+      "colMeaning": "Meaning",
+      "duplicateCommand": "A command was received again that must not repeat (e.g. a second startRace).",
+      "hardwareFailure": "A gate or sensor could not be operated or read.",
+      "heading": "Error codes",
+      "invalidState": "The command is not valid in the device's current state (e.g. startRace before prepareRace).",
+      "sensorStuck": "A finish sensor is blocked when it should be clear.",
+      "unknownRace": "The raceId is not known to the device."
+    },
+    "events": {
+      "colDescription": "Description",
+      "colPayload": "Payload fields",
+      "colType": "Type",
+      "error": "A problem occurred; carries a machine-readable code (see below) and a message.",
+      "finishDetected": "One lane crossed the finish. Emitted per lane, independently. elapsedNs is the authoritative time since the start.",
+      "heading": "Events (device → backend)",
+      "helloAck": "Answer to hello: device id, firmware and protocol version, capabilities, and available lanes.",
+      "intro": "Your controller sends these events back. Race times come from the device's monotonic clock in nanoseconds.",
+      "pong": "Answer to ping.",
+      "raceFinished": "All active lanes have finished or the timeout elapsed. results lists each lane's status; a lane that never finished appears with status \"timeout\".",
+      "raceReady": "The device is prepared and the gate is closed; the listed lanes are armed.",
+      "raceStarted": "The gate was released. controllerMonotonicNs is the shared reference all lane times are measured against."
+    },
+    "example": {
+      "copied": "Copied!",
+      "copy": "Copy",
+      "heading": "Python controller example",
+      "install": "install the one dependency, then run the script on the Pi.",
+      "intro": "A minimal WebSocket server your Raspberry Pi can run. It answers every command and emits the events; replace the sensor stub with your real GPIO reads."
+    },
+    "intro": {
+      "heading": "Overview",
+      "p1": "This page explains how an external race device — typically a Raspberry Pi driving the shared starting gate and the two finish sensors — talks to the racing-manager backend, so you can build your own controller.",
+      "p2": "The backend handles the user interface, race selection, live display, and persistence. Your device handles the gate, both independent lane sensors, and high-resolution timing, and reports results in real time.",
+      "p3": "Communication is a small JSON protocol over a single WebSocket connection. The backend connects to your device as a client, so your controller runs a WebSocket server."
+    },
+    "rules": {
+      "heading": "Timing & correctness rules",
+      "r1": "Race times must come from a monotonic clock in nanoseconds — never wall-clock time.",
+      "r2": "Measure both lanes independently; never assume they finish in the same order or at the same time.",
+      "r3": "Emit at most one accepted finish per lane and race.",
+      "r4": "Decide the winner from the measured durations and finishSequence, never from the order messages arrive.",
+      "r5": "Make commands idempotent: a repeated startRace must not start a second race — answer with a DUPLICATE_COMMAND error instead."
+    },
+    "title": "Raspberry Pi Integration Guide"
   },
   "setup": {
     "alreadySetUp": "An administrator has already been set up.",

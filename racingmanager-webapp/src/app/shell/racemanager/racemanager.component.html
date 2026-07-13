@@ -50,6 +50,16 @@
 
       <a
         class="nav-item"
+        [routerLink]="['/', 'racemanager', 'raspberry-pi']"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <span class="nav-icon">📡</span>
+        <span>{{ 'racemanager.nav.raspberryPi' | translate }}</span>
+      </a>
+
+      <a
+        class="nav-item"
         [routerLink]="['/', 'racemanager', 'diagnostics']"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"

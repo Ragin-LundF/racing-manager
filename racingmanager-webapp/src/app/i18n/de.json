@@ -102,7 +102,8 @@
     "tenantSlug": {
       "label": "Arbeitsbereich (optional)"
     },
-    "registerLink": "Neue Veranstaltungsorganisation registrieren"
+    "registerLink": "Neue Veranstaltungsorganisation registrieren",
+    "raspberryPiLink": "Raspberry-Pi-Integrationsleitfaden"
   },
   "register": {
     "title": "Veranstaltungsorganisation registrieren",
@@ -322,6 +323,7 @@
       "participants": "Teilnehmer",
       "preliminary": "Vorrunden",
       "races": "Rennen",
+      "raspberryPi": "Raspberry-Pi-API",
       "diagnostics": "Diagnose",
       "tenant": "Mandant"
     },
@@ -371,6 +373,97 @@
       "startError": "Starten des Laufs fehlgeschlagen.",
       "title": "Rennsteuerung"
     }
+  },
+  "raspberryPi": {
+    "backToLogin": "← Zurück zur Anmeldung",
+    "commands": {
+      "abortRace": "Bricht das laufende Rennen ab, schließt das Tor soweit möglich und ignoriert spätere Zieldurchgänge dieses Rennens.",
+      "colDescription": "Beschreibung",
+      "colPayload": "Nutzdaten-Felder",
+      "colType": "Typ",
+      "heading": "Befehle (Backend → Gerät)",
+      "hello": "Wird direkt nach dem Verbinden gesendet. Das Gerät antwortet mit helloAck (Identität, Firmware, Fähigkeiten, Bahnen).",
+      "intro": "Das Backend sendet diese Befehle an deine Steuerung. Beantworte prepareRace und startRace mit den passenden Ereignissen.",
+      "ping": "Verbindungs- und Latenzprüfung; antworte mit pong.",
+      "prepareRace": "Schließt und schärft das Tor, aktiviert die angegebenen Bahnen und prüft die Sensoren — ohne die Autos freizugeben. Antworte mit raceReady oder mit error, falls ein Sensor bereits blockiert ist.",
+      "reset": "Setzt das Gerät in den Ausgangszustand zurück. Ein Reset während eines Rennens bricht dieses zuerst ab.",
+      "startRace": "Gibt das gemeinsame Tor einmal frei, nimmt den monotonen Startzeitpunkt und antwortet mit raceStarted. Nur einmal pro Rennen annehmen."
+    },
+    "connection": {
+      "colField": "Feld",
+      "colMeaning": "Bedeutung",
+      "endpointLabel": "Standard-Endpunkt",
+      "envelopeIntro": "Jede Nachricht — in beide Richtungen — ist ein JSON-Objekt mit derselben Struktur. Das payload-Objekt trägt einen type-Diskriminator plus die Felder der jeweiligen Nachricht.",
+      "fieldsHeading": "Nachrichten-Felder",
+      "fMessageId": "Eindeutige Id dieser Nachricht; damit lassen sich Duplikate erkennen und verwerfen.",
+      "fPayload": "Der typisierte Rumpf: ein type-Feld plus die Felder dieser Nachricht.",
+      "fProtocolVersion": "Vertragsversion. Dieses Dokument beschreibt Version 1.",
+      "fRaceId": "Verknüpft alle Nachrichten eines Rennens; entspricht der Heat-Id.",
+      "fTimestamp": "Wanduhrzeit des Sendens (ISO-8601). Nicht die maßgebliche Rennzeit.",
+      "heading": "Verbindung & Nachrichtenformat",
+      "p1": "Das Backend öffnet eine dauerhafte WebSocket-Verbindung zu deinem Gerät und hält sie offen. Befehle kommen vom Backend; Ereignisse fließen vom Gerät zurück, sobald sie eintreten."
+    },
+    "diagram": {
+      "backend": "racing-manager",
+      "backendRole": "Backend",
+      "caption": "Das Backend ist der WebSocket-Client und verbindet sich nach außen zu deinem Raspberry Pi, der den WebSocket-Server betreibt. Befehle fließen nach rechts, Ereignisse nach links.",
+      "commandsArrow": "Befehle →",
+      "device": "Raspberry Pi",
+      "deviceRole": "WebSocket-Server",
+      "eventsArrow": "← Ereignisse",
+      "gate": "Gemeinsames Gateway",
+      "heading": "So ist es verbunden",
+      "lane1": "Bahn-1-Sensor",
+      "lane2": "Bahn-2-Sensor",
+      "operator": "Bediener-UI",
+      "operatorSub": "Browser"
+    },
+    "errors": {
+      "colCode": "Code",
+      "colMeaning": "Bedeutung",
+      "duplicateCommand": "Ein Befehl wurde erneut empfangen, der sich nicht wiederholen darf (z. B. ein zweites startRace).",
+      "hardwareFailure": "Ein Gateway oder Sensor konnte nicht betätigt oder gelesen werden.",
+      "heading": "Fehlercodes",
+      "invalidState": "Der Befehl ist im aktuellen Gerätezustand ungültig (z. B. startRace vor prepareRace).",
+      "sensorStuck": "Ein Zielsensor ist blockiert, obwohl er frei sein sollte.",
+      "unknownRace": "Die raceId ist dem Gerät nicht bekannt."
+    },
+    "events": {
+      "colDescription": "Beschreibung",
+      "colPayload": "Nutzdaten-Felder",
+      "colType": "Typ",
+      "error": "Ein Problem ist aufgetreten; enthält einen maschinenlesbaren Code (siehe unten) und eine Meldung.",
+      "finishDetected": "Eine Bahn hat das Ziel überquert. Wird pro Bahn und unabhängig gesendet. elapsedNs ist die maßgebliche Zeit seit dem Start.",
+      "heading": "Ereignisse (Gerät → Backend)",
+      "helloAck": "Antwort auf hello: Geräte-Id, Firmware- und Protokollversion, Fähigkeiten und verfügbare Bahnen.",
+      "intro": "Deine Steuerung sendet diese Ereignisse zurück. Rennzeiten stammen aus der monotonen Uhr des Geräts in Nanosekunden.",
+      "pong": "Antwort auf ping.",
+      "raceFinished": "Alle aktiven Bahnen sind im Ziel oder die Zeitüberschreitung ist eingetreten. results listet den Status jeder Bahn; eine Bahn ohne Zieldurchgang erscheint mit Status \"timeout\".",
+      "raceReady": "Das Gerät ist vorbereitet und das Gateway geschlossen; die aufgeführten Bahnen sind scharf.",
+      "raceStarted": "Das Gateway wurde freigegeben. controllerMonotonicNs ist die gemeinsame Referenz, gegen die alle Bahnzeiten gemessen werden."
+    },
+    "example": {
+      "copied": "Kopiert!",
+      "copy": "Kopieren",
+      "heading": "Python-Steuerungsbeispiel",
+      "install": "installiere die eine Abhängigkeit und führe das Skript auf dem Pi aus.",
+      "intro": "Ein minimaler WebSocket-Server, den dein Raspberry Pi ausführen kann. Er beantwortet jeden Befehl und sendet die Ereignisse; ersetze den Sensor-Platzhalter durch deine echten GPIO-Abfragen."
+    },
+    "intro": {
+      "heading": "Überblick",
+      "p1": "Diese Seite erklärt, wie ein externes Renngerät — typischerweise ein Raspberry Pi, der das gemeinsame Starttor und die zwei Zielsensoren steuert — mit dem racing-manager-Backend kommuniziert, damit du deine eigene Steuerung bauen kannst.",
+      "p2": "Das Backend übernimmt Oberfläche, Rennauswahl, Live-Anzeige und Speicherung. Dein Gerät übernimmt das Tor, beide unabhängigen Bahnsensoren und die hochauflösende Zeitmessung und meldet Ergebnisse in Echtzeit.",
+      "p3": "Die Kommunikation ist ein kleines JSON-Protokoll über eine einzige WebSocket-Verbindung. Das Backend verbindet sich als Client zu deinem Gerät, deine Steuerung betreibt also einen WebSocket-Server."
+    },
+    "rules": {
+      "heading": "Zeitmess- & Korrektheitsregeln",
+      "r1": "Rennzeiten müssen aus einer monotonen Uhr in Nanosekunden stammen — niemals aus der Wanduhrzeit.",
+      "r2": "Miss beide Bahnen unabhängig; nimm nie an, dass sie in gleicher Reihenfolge oder zur gleichen Zeit ins Ziel kommen.",
+      "r3": "Sende höchstens einen akzeptierten Zieldurchgang pro Bahn und Rennen.",
+      "r4": "Bestimme den Sieger aus den gemessenen Dauern und finishSequence, niemals aus der Reihenfolge der eintreffenden Nachrichten.",
+      "r5": "Gestalte Befehle idempotent: Ein wiederholtes startRace darf kein zweites Rennen starten — antworte stattdessen mit einem DUPLICATE_COMMAND-Fehler."
+    },
+    "title": "Raspberry-Pi-Integrationsleitfaden"
   },
   "setup": {
     "alreadySetUp": "Ein Administrator wurde bereits eingerichtet.",
