@@ -35,7 +35,7 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
         val principal = call.authenticateRequest(jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
         val tenant = authService.getTenant(principal.tenantId)
-            ?: return@get call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("TENANT_NOT_FOUND", "Tenant not found"))
+            ?: return@get call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"))
         call.respond(
             TenantResponseModel(
                 id = tenant.id.toString(),
@@ -52,7 +52,7 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
         if (!call.requireScope(principal, Scopes.ADMIN)) return@put
         val request = call.receive<UpdateTenantRequestModel>()
         val tenant = authService.updateTenant(principal.tenantId, request.displayName, request.settings)
-            ?: return@put call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("TENANT_NOT_FOUND", "Tenant not found"))
+            ?: return@put call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"))
         call.respond(
             TenantResponseModel(
                 id = tenant.id.toString(),
@@ -85,12 +85,10 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
         val principal = call.authenticateRequest(jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN)) return@post
         val request = call.receive<CreateTenantUserRequestModel>()
-        val role = try {
-            UserRole.valueOf(request.role)
-        } catch (_: IllegalArgumentException) {
+        val role = runCatching { UserRole.valueOf(request.role) }.getOrElse {
             return@post call.respond(
                 status = HttpStatusCode.BadRequest,
-                message = ErrorResponseModel("INVALID_ROLE", "Role must be ADMIN or DIRECTOR"),
+                message = ErrorResponseModel(code = "INVALID_ROLE", message = "Role must be ADMIN or DIRECTOR"),
             )
         }
 
@@ -110,7 +108,7 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
             is CreateTenantUserResult.UsernameTaken -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel("USERNAME_TAKEN", "Username already exists in this tenant"),
+                    message = ErrorResponseModel(code = "USERNAME_TAKEN", message = "Username already exists in this tenant"),
                 )
             }
         }
@@ -122,17 +120,13 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
         val userId = UUID.fromString(call.parameters["userId"])
         val request = call.receive<UpdateTenantUserRequestModel>()
         val role = request.role?.let {
-            try {
-                UserRole.valueOf(it)
-            } catch (_: IllegalArgumentException) {
-                return@put call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_ROLE", "Role must be ADMIN or DIRECTOR"))
+            runCatching { UserRole.valueOf(it) }.getOrElse {
+                return@put call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_ROLE", message = "Role must be ADMIN or DIRECTOR"))
             }
         }
         val status = request.status?.let {
-            try {
-                MembershipStatus.valueOf(it)
-            } catch (_: IllegalArgumentException) {
-                return@put call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_STATUS", "Status must be ACTIVE or DISABLED"))
+            runCatching { MembershipStatus.valueOf(it) }.getOrElse {
+                return@put call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Status must be ACTIVE or DISABLED"))
             }
         }
 
@@ -162,7 +156,7 @@ private suspend fun ApplicationCall.respondTenantUserUpdate(result: UpdateTenant
             )
         }
         is UpdateTenantUserResult.NotFound -> {
-            respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("USER_NOT_FOUND", "User not found in this tenant"))
+            respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "USER_NOT_FOUND", message = "User not found in this tenant"))
         }
     }
 }

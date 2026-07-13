@@ -43,14 +43,17 @@ class HeatService(
         }
     }
 
-    fun findByEventId(eventId: UUID): List<HeatEntity> =
-        heatRepository.findByEventId(eventId)
+    fun findByEventId(eventId: UUID): List<HeatEntity> {
+        return heatRepository.findByEventId(eventId)
+    }
 
-    fun findById(id: UUID): HeatEntity? =
-        heatRepository.findById(id)
+    fun findById(id: UUID): HeatEntity? {
+        return heatRepository.findById(id)
+    }
 
-    fun findLatestByEventId(eventId: UUID): HeatEntity? =
-        heatRepository.findLatestByEventId(eventId)
+    fun findLatestByEventId(eventId: UUID): HeatEntity? {
+        return heatRepository.findLatestByEventId(eventId)
+    }
 
     fun create(eventId: UUID, participantIds: List<UUID>, actorId: UUID): CreateHeatResult {
         val event = eventRepository.findById(eventId)
@@ -386,65 +389,3 @@ class HeatService(
     }
 }
 
-sealed interface HeatServiceEvent {
-    data class HeatCreated(val heat: HeatEntity) : HeatServiceEvent
-    data class HeatStateChanged(val heat: HeatEntity) : HeatServiceEvent
-    data class HeatResultAccepted(val heatId: UUID) : HeatServiceEvent
-    data class HeatResultRejected(val heatId: UUID) : HeatServiceEvent
-}
-
-sealed interface ArmHeatResult {
-    data class Success(val heat: HeatEntity) : ArmHeatResult
-    data object NotFound : ArmHeatResult
-    data class InvalidStatus(val current: HeatStatus) : ArmHeatResult
-    data class GatewayError(val message: String) : ArmHeatResult
-}
-
-sealed interface CreateHeatResult {
-    data class Success(val heat: HeatEntity) : CreateHeatResult
-    data object EventNotFound : CreateHeatResult
-    data object EventNotActive : CreateHeatResult
-    data object ParticipantNotFound : CreateHeatResult
-    data object ParticipantNotActive : CreateHeatResult
-}
-
-sealed interface StartHeatResult {
-    data class Success(val heat: HeatEntity) : StartHeatResult
-    data object NotFound : StartHeatResult
-    data class InvalidStatus(val current: HeatStatus) : StartHeatResult
-}
-
-sealed interface FinishHeatResult {
-    data class Success(val heat: HeatEntity) : FinishHeatResult
-    data object NotFound : FinishHeatResult
-    data class InvalidStatus(val current: HeatStatus) : FinishHeatResult
-}
-
-sealed interface CancelHeatResult {
-    data class Success(val heat: HeatEntity) : CancelHeatResult
-    data object NotFound : CancelHeatResult
-    data class InvalidStatus(val current: HeatStatus) : CancelHeatResult
-}
-
-sealed interface AcceptResult {
-    data object Success : AcceptResult
-    data object NotFound : AcceptResult
-    data class InvalidStatus(val current: HeatStatus) : AcceptResult
-}
-
-sealed interface RejectResult {
-    data object Success : RejectResult
-    data object NotFound : RejectResult
-    data class InvalidStatus(val current: HeatStatus) : RejectResult
-}
-
-sealed interface RepeatHeatResult {
-    data class Success(val heat: HeatEntity) : RepeatHeatResult
-    data object NotFound : RepeatHeatResult
-}
-
-sealed interface AddMeasurementResult {
-    data class Success(val heat: HeatEntity) : AddMeasurementResult
-    data object NotFound : AddMeasurementResult
-    data class InvalidStatus(val current: HeatStatus) : AddMeasurementResult
-}

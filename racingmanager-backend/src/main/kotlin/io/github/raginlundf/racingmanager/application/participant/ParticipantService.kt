@@ -20,11 +20,13 @@ class ParticipantService(
 ) {
     private val clock: Clock = Clock.System
 
-    fun findByEventId(eventId: UUID): List<ParticipantEntity> =
-        participantRepository.findByEventId(eventId)
+    fun findByEventId(eventId: UUID): List<ParticipantEntity> {
+        return participantRepository.findByEventId(eventId)
+    }
 
-    fun findById(id: UUID): ParticipantEntity? =
-        participantRepository.findById(id)
+    fun findById(id: UUID): ParticipantEntity? {
+        return participantRepository.findById(id)
+    }
 
     fun create(
         eventId: UUID,
@@ -306,52 +308,3 @@ class ParticipantService(
     }
 }
 
-data class CsvParticipantRow(
-    val startNumber: Int?,
-    val firstName: String?,
-    val lastName: String?,
-    val club: String?,
-    val vehicleName: String?,
-    val vehicleCategory: String?,
-)
-
-data class ImportRowError(
-    val rowIndex: Int,
-    val message: String,
-)
-
-sealed interface CreateParticipantResult {
-    data class Success(val participant: ParticipantEntity) : CreateParticipantResult
-    data object EventNotFound : CreateParticipantResult
-    data object EventNotActive : CreateParticipantResult
-    data class DuplicateStartNumber(val startNumber: Int) : CreateParticipantResult
-}
-
-sealed interface UpdateParticipantResult {
-    data class Success(val participant: ParticipantEntity) : UpdateParticipantResult
-    data object NotFound : UpdateParticipantResult
-    data class DuplicateStartNumber(val startNumber: Int) : UpdateParticipantResult
-}
-
-sealed interface ParticipantActionResult {
-    data class Success(val participant: ParticipantEntity) : ParticipantActionResult
-    data object NotFound : ParticipantActionResult
-    data object AlreadyInactive : ParticipantActionResult
-    data object AlreadyActive : ParticipantActionResult
-}
-
-sealed interface RandomizeResult {
-    data class Success(val seed: Long) : RandomizeResult
-    data object EventNotFound : RandomizeResult
-    data object EventNotActive : RandomizeResult
-    data class AlreadyRandomized(val seed: EventSeedEntity) : RandomizeResult
-}
-
-sealed interface ImportResult {
-    data class Completed(
-        val created: List<ParticipantEntity>,
-        val errors: List<ImportRowError>,
-    ) : ImportResult
-    data object EventNotFound : ImportResult
-    data object EventNotActive : ImportResult
-}

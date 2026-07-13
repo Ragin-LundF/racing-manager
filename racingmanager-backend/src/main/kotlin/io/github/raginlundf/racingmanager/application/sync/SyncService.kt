@@ -16,28 +16,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import java.util.UUID
 
-sealed interface PairingTokenResult {
-    data class Success(val code: UUID, val expiresIn: Long) : PairingTokenResult
-}
-
-sealed interface PairResult {
-    data class Success(val instance: PairedInstanceEntity) : PairResult
-    data object InvalidOrExpiredCode : PairResult
-}
-
-sealed interface RevokeResult {
-    data object Success : RevokeResult
-    data object NotFound : RevokeResult
-}
-
-sealed interface SyncResultsResult {
-    data class Success(val syncedResultId: UUID) : SyncResultsResult
-    data object InstanceNotFound : SyncResultsResult
-    data object InstanceRevoked : SyncResultsResult
-    data object EventNotFound : SyncResultsResult
-    data object EventNotLocked : SyncResultsResult
-}
-
 /** Hosted-side pairing and results upload-back (design §I.1–§I.5). Both the
     pairing code and the paired-instance registry are the only durable state
     this slice adds beyond what Slice H already introduced — there is
@@ -82,7 +60,9 @@ class SyncService(
         return PairResult.Success(instance)
     }
 
-    fun listInstances(tenantId: UUID): List<PairedInstanceEntity> = pairedInstanceRepository.findAllForTenant(tenantId)
+    fun listInstances(tenantId: UUID): List<PairedInstanceEntity> {
+        return pairedInstanceRepository.findAllForTenant(tenantId)
+    }
 
     fun revoke(tenantId: UUID, instanceId: UUID): RevokeResult {
         val instance = pairedInstanceRepository.findById(instanceId)

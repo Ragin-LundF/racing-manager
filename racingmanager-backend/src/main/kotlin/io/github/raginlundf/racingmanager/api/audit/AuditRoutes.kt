@@ -43,14 +43,16 @@ fun Route.auditRoutes(jwtService: JwtService, auditService: AuditService, eventR
     }
 }
 
-private fun AuditEntryEntity.toResponseModel() = AuditEntryResponseModel(
-    id = id.toString(),
-    actorId = actorId?.toString(),
-    action = action,
-    targetType = targetType,
-    targetId = targetId?.toString(),
-    summary = summary,
-    details = details,
-    correlationId = correlationId,
-    occurredAt = occurredAt.toString(),
-)
+private fun AuditEntryEntity.toResponseModel(): AuditEntryResponseModel {
+    return AuditEntryResponseModel(
+        id = id.toString(),
+        actorId = actorId?.toString(),
+        action = action,
+        targetType = targetType,
+        targetId = targetId?.toString(),
+        summary = summary,
+        details = details,
+        correlationId = correlationId,
+        occurredAt = occurredAt.toString(),
+    )
+}

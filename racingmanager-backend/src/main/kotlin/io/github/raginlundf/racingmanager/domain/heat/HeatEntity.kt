@@ -17,19 +17,3 @@ data class HeatEntity(
     val finishedAt: Instant? = null,
 )
 
-data class HeatLaneAssignment(
-    val lane: Int,
-    val participantId: UUID,
-    val participantStartNumber: Int,
-    val participantFirstName: String,
-    val participantLastName: String,
-)
-
-data class Measurement(
-    val id: UUID,
-    val heatId: UUID,
-    val lane: Int,
-    val durationNanos: Long,
-    val outcome: LaneOutcome,
-    val receivedAt: Instant,
-)

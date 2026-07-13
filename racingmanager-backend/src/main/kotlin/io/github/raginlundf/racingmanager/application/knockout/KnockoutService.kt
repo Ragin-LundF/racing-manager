@@ -34,8 +34,9 @@ class KnockoutService(
 ) {
     private val clock: Clock = Clock.System
 
-    fun findByEventId(eventId: UUID): KnockoutTournamentEntity? =
-        knockoutRepository.findByEventId(eventId)
+    fun findByEventId(eventId: UUID): KnockoutTournamentEntity? {
+        return knockoutRepository.findByEventId(eventId)
+    }
 
     fun getMatches(eventId: UUID): List<KnockoutMatchEntity> {
         val tournament = knockoutRepository.findByEventId(eventId) ?: return emptyList()
@@ -461,12 +462,13 @@ class KnockoutService(
         participants: List<io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity>,
         heats: List<HeatEntity>,
         qualification: io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity,
-    ): List<QualificationRanking> =
-        QualificationRankingCalculator.calculate(
+    ): List<QualificationRanking> {
+        return QualificationRankingCalculator.calculate(
             participants = participants,
             heats = heats,
             qualification = qualification,
         )
+    }
 
     private fun createPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, mode: PairingMode): List<KnockoutMatchEntity> {
         val sorted = participants.sortedBy { it.qualificationRank }

@@ -53,11 +53,17 @@ class EventService(
         return CreateEventResult.Success(event)
     }
 
-    fun findById(id: UUID): EventEntity? = eventRepository.findById(id)
+    fun findById(id: UUID): EventEntity? {
+        return eventRepository.findById(id)
+    }
 
-    fun findAll(): List<EventEntity> = eventRepository.findAll()
+    fun findAll(): List<EventEntity> {
+        return eventRepository.findAll()
+    }
 
-    fun findAllForTenant(tenantId: UUID): List<EventEntity> = eventRepository.findAllForTenant(tenantId)
+    fun findAllForTenant(tenantId: UUID): List<EventEntity> {
+        return eventRepository.findAllForTenant(tenantId)
+    }
 
     fun update(
         id: UUID,
@@ -308,53 +314,3 @@ class EventService(
     }
 }
 
-sealed interface CreateEventResult {
-    data class Success(val event: EventEntity) : CreateEventResult
-}
-
-sealed interface UpdateEventResult {
-    data class Success(val event: EventEntity) : UpdateEventResult
-    data object NotFound : UpdateEventResult
-    data object CannotModifyActiveEvent : UpdateEventResult
-    data class Conflict(val expected: Long, val actual: Long) : UpdateEventResult
-
-    /** Checked out to a local instance for offline execution (design §I.3) —
-        rejected until the local instance syncs its results back. */
-    data object Locked : UpdateEventResult
-}
-
-sealed interface ActivateEventResult {
-    data class Success(val event: EventEntity) : ActivateEventResult
-    data object NotFound : ActivateEventResult
-    data class InvalidStatus(val current: EventStatus) : ActivateEventResult
-    data class Conflict(val expected: Long, val actual: Long) : ActivateEventResult
-}
-
-sealed interface DeleteEventResult {
-    data object Success : DeleteEventResult
-    data object NotFound : DeleteEventResult
-}
-
-sealed interface ArchiveEventResult {
-    data class Success(val event: EventEntity) : ArchiveEventResult
-    data object NotFound : ArchiveEventResult
-    data class InvalidStatus(val current: EventStatus) : ArchiveEventResult
-}
-
-sealed interface ReactivateEventResult {
-    data class Success(val event: EventEntity) : ReactivateEventResult
-    data object NotFound : ReactivateEventResult
-    data class InvalidStatus(val current: EventStatus) : ReactivateEventResult
-}
-
-sealed interface CompleteEventResult {
-    data class Success(val event: EventEntity) : CompleteEventResult
-    data object NotFound : CompleteEventResult
-    data class InvalidStatus(val status: EventStatus) : CompleteEventResult
-}
-
-sealed interface ReopenEventResult {
-    data class Success(val event: EventEntity) : ReopenEventResult
-    data object NotFound : ReopenEventResult
-    data class InvalidStatus(val status: EventStatus) : ReopenEventResult
-}

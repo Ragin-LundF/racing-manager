@@ -21,15 +21,20 @@ import java.util.Base64
     same secret. */
 class HostedJwtKeyProvider(private val keys: List<SigningKey>) : JwtKeyProvider {
 
-    override fun signingKey(): SigningKey =
-        keys.singleOrNull { it.active && it.canSign() }
+    override fun signingKey(): SigningKey {
+        return keys.singleOrNull { it.active && it.canSign() }
             ?: error("Hosted JWT key configuration must declare exactly one active key with signing material")
+    }
 
-    override fun verificationKey(kid: String): SigningKey? = keys.find { it.kid == kid }
+    override fun verificationKey(kid: String): SigningKey? {
+        return keys.find { it.kid == kid }
+    }
 
-    private fun SigningKey.canSign(): Boolean = when (this) {
-        is SigningKey.Rsa -> privateKey != null
-        is SigningKey.Secret -> true
+    private fun SigningKey.canSign(): Boolean {
+        return when (this) {
+            is SigningKey.Rsa -> privateKey != null
+            is SigningKey.Secret -> true
+        }
     }
 
     companion object {

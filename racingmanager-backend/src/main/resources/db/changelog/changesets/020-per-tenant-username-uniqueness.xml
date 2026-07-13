@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- SQLite has no ALTER TABLE ... DROP/ADD CONSTRAINT and Liquibase's
+         addUniqueConstraint/dropUniqueConstraint change types are not supported
+         on sqlite (verified against liquibase-core 5.0.3). Usernames were
+         globally unique (an inline UNIQUE on the users table created in
+         changeset 001); the tenant model requires uniqueness only within a
+         tenant, so we rebuild the table without that constraint and add a
+         composite unique index instead — the standard sqlite workaround for
+         an unsupported ALTER TABLE. Column list/types mirror the table as
+         produced by changesets 001/017 exactly (verified by introspecting
+         `sqlite_master`). -->
+    <changeSet id="per-tenant-username-uniqueness" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists tableName="users" indexName="uq_users_tenant_username"/></not>
+        </preConditions>
+        <sql splitStatements="true" stripComments="true">
+            CREATE TABLE users_new (
+                id TEXT NOT NULL,
+                username VARCHAR(255) NOT NULL,
+                password_hash VARCHAR(512) NOT NULL,
+                display_name VARCHAR(255) NOT NULL,
+                role VARCHAR(50) NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT,
+                tenant_id TEXT,
+                email VARCHAR(255),
+                CONSTRAINT PK_USERS_NEW PRIMARY KEY (id),
+                CONSTRAINT fk_users_new_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+            );
+            INSERT INTO users_new (id, username, password_hash, display_name, role, created_at, updated_at, tenant_id, email)
+                SELECT id, username, password_hash, display_name, role, created_at, updated_at, tenant_id, email FROM users;
+            DROP TABLE users;
+            ALTER TABLE users_new RENAME TO users;
+            CREATE UNIQUE INDEX uq_users_tenant_username ON users(tenant_id, username);
+        </sql>
+        <rollback/>
+    </changeSet>
+</databaseChangeLog>

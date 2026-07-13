@@ -20,114 +20,138 @@ import java.util.UUID
 
 class KnockoutRepository {
 
-    fun findByEventId(eventId: UUID): KnockoutTournamentEntity? = transaction {
-        KnockoutTournamentTable.selectAll()
-            .where { KnockoutTournamentTable.eventId eq eventId }
-            .singleOrNull()
-            ?.let { row -> mapTournamentRow(row = row) }
-    }
-
-    fun findById(id: UUID): KnockoutTournamentEntity? = transaction {
-        KnockoutTournamentTable.selectAll()
-            .where { KnockoutTournamentTable.id eq id }
-            .singleOrNull()
-            ?.let { row -> mapTournamentRow(row = row) }
-    }
-
-    fun insert(tournament: KnockoutTournamentEntity) = transaction {
-        KnockoutTournamentTable.insert {
-            it[id] = tournament.id
-            it[eventId] = tournament.eventId
-            it[status] = tournament.status.name
-            it[pairingMode] = tournament.pairingMode.name
-            it[qualificationId] = tournament.qualificationId
-            it[createdAt] = tournament.createdAt
-            it[updatedAt] = tournament.updatedAt
-            it[finalizedAt] = tournament.finalizedAt
-            it[finalizedBy] = tournament.finalizedBy
+    fun findByEventId(eventId: UUID): KnockoutTournamentEntity? {
+        return transaction {
+            KnockoutTournamentTable.selectAll()
+                .where { KnockoutTournamentTable.eventId eq eventId }
+                .singleOrNull()
+                ?.let { row -> mapTournamentRow(row = row) }
         }
     }
 
-    fun updateStatus(id: UUID, status: KnockoutStatus, updatedAt: kotlin.time.Instant, finalizedAt: kotlin.time.Instant? = null, finalizedBy: UUID? = null) = transaction {
-        KnockoutTournamentTable.update(where = { KnockoutTournamentTable.id eq id }) {
-            it[KnockoutTournamentTable.status] = status.name
-            it[KnockoutTournamentTable.updatedAt] = updatedAt
-            if (finalizedAt != null) it[KnockoutTournamentTable.finalizedAt] = finalizedAt
-            if (finalizedBy != null) it[KnockoutTournamentTable.finalizedBy] = finalizedBy
+    fun findById(id: UUID): KnockoutTournamentEntity? {
+        return transaction {
+            KnockoutTournamentTable.selectAll()
+                .where { KnockoutTournamentTable.id eq id }
+                .singleOrNull()
+                ?.let { row -> mapTournamentRow(row = row) }
         }
     }
 
-    fun findMatchesByTournamentId(tournamentId: UUID): List<KnockoutMatchEntity> = transaction {
-        KnockoutMatchTable.selectAll()
-            .where { KnockoutMatchTable.tournamentId eq tournamentId }
-            .orderBy(KnockoutMatchTable.roundNumber to SortOrder.ASC, KnockoutMatchTable.matchNumber to SortOrder.ASC)
-            .map { row -> mapMatchRow(row = row) }
-    }
-
-    fun findMatchesByRound(tournamentId: UUID, roundNumber: Int): List<KnockoutMatchEntity> = transaction {
-        KnockoutMatchTable.selectAll()
-            .where { KnockoutMatchTable.tournamentId eq tournamentId and (KnockoutMatchTable.roundNumber eq roundNumber) }
-            .orderBy(KnockoutMatchTable.matchNumber to SortOrder.ASC)
-            .map { row -> mapMatchRow(row = row) }
-    }
-
-    fun insertMatch(match: KnockoutMatchEntity) = transaction {
-        KnockoutMatchTable.insert {
-            it[id] = match.id
-            it[tournamentId] = match.tournamentId
-            it[roundNumber] = match.roundNumber
-            it[matchNumber] = match.matchNumber
-            it[participant1Id] = match.participant1Id
-            it[participant2Id] = match.participant2Id
-            it[winnerId] = match.winnerId
-            it[heatId] = match.heatId
-            it[status] = match.status.name
-            it[createdAt] = match.createdAt
+    fun insert(tournament: KnockoutTournamentEntity) {
+        transaction {
+            KnockoutTournamentTable.insert {
+                it[id] = tournament.id
+                it[eventId] = tournament.eventId
+                it[status] = tournament.status.name
+                it[pairingMode] = tournament.pairingMode.name
+                it[qualificationId] = tournament.qualificationId
+                it[createdAt] = tournament.createdAt
+                it[updatedAt] = tournament.updatedAt
+                it[finalizedAt] = tournament.finalizedAt
+                it[finalizedBy] = tournament.finalizedBy
+            }
         }
     }
 
-    fun updateMatchParticipants(id: UUID, participant1Id: UUID?, participant2Id: UUID?) = transaction {
-        KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
-            it[KnockoutMatchTable.participant1Id] = participant1Id
-            it[KnockoutMatchTable.participant2Id] = participant2Id
+    fun updateStatus(id: UUID, status: KnockoutStatus, updatedAt: kotlin.time.Instant, finalizedAt: kotlin.time.Instant? = null, finalizedBy: UUID? = null) {
+        transaction {
+            KnockoutTournamentTable.update(where = { KnockoutTournamentTable.id eq id }) {
+                it[KnockoutTournamentTable.status] = status.name
+                it[KnockoutTournamentTable.updatedAt] = updatedAt
+                if (finalizedAt != null) it[KnockoutTournamentTable.finalizedAt] = finalizedAt
+                if (finalizedBy != null) it[KnockoutTournamentTable.finalizedBy] = finalizedBy
+            }
         }
     }
 
-    fun updateMatchResult(id: UUID, winnerId: UUID, heatId: UUID, status: KnockoutMatchStatus) = transaction {
-        KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
-            it[KnockoutMatchTable.winnerId] = winnerId
-            it[KnockoutMatchTable.heatId] = heatId
-            it[KnockoutMatchTable.status] = status.name
+    fun findMatchesByTournamentId(tournamentId: UUID): List<KnockoutMatchEntity> {
+        return transaction {
+            KnockoutMatchTable.selectAll()
+                .where { KnockoutMatchTable.tournamentId eq tournamentId }
+                .orderBy(KnockoutMatchTable.roundNumber to SortOrder.ASC, KnockoutMatchTable.matchNumber to SortOrder.ASC)
+                .map { row -> mapMatchRow(row = row) }
         }
     }
 
-    fun deleteAll() = transaction {
-        KnockoutMatchTable.deleteAll()
-        KnockoutTournamentTable.deleteAll()
+    fun findMatchesByRound(tournamentId: UUID, roundNumber: Int): List<KnockoutMatchEntity> {
+        return transaction {
+            KnockoutMatchTable.selectAll()
+                .where { KnockoutMatchTable.tournamentId eq tournamentId and (KnockoutMatchTable.roundNumber eq roundNumber) }
+                .orderBy(KnockoutMatchTable.matchNumber to SortOrder.ASC)
+                .map { row -> mapMatchRow(row = row) }
+        }
     }
 
-    private fun mapTournamentRow(row: ResultRow): KnockoutTournamentEntity = KnockoutTournamentEntity(
-        id = row[KnockoutTournamentTable.id],
-        eventId = row[KnockoutTournamentTable.eventId],
-        status = KnockoutStatus.valueOf(row[KnockoutTournamentTable.status]),
-        pairingMode = PairingMode.valueOf(row[KnockoutTournamentTable.pairingMode]),
-        qualificationId = row[KnockoutTournamentTable.qualificationId],
-        createdAt = row[KnockoutTournamentTable.createdAt],
-        updatedAt = row[KnockoutTournamentTable.updatedAt],
-        finalizedAt = row[KnockoutTournamentTable.finalizedAt],
-        finalizedBy = row[KnockoutTournamentTable.finalizedBy],
-    )
+    fun insertMatch(match: KnockoutMatchEntity) {
+        transaction {
+            KnockoutMatchTable.insert {
+                it[id] = match.id
+                it[tournamentId] = match.tournamentId
+                it[roundNumber] = match.roundNumber
+                it[matchNumber] = match.matchNumber
+                it[participant1Id] = match.participant1Id
+                it[participant2Id] = match.participant2Id
+                it[winnerId] = match.winnerId
+                it[heatId] = match.heatId
+                it[status] = match.status.name
+                it[createdAt] = match.createdAt
+            }
+        }
+    }
 
-    private fun mapMatchRow(row: ResultRow): KnockoutMatchEntity = KnockoutMatchEntity(
-        id = row[KnockoutMatchTable.id],
-        tournamentId = row[KnockoutMatchTable.tournamentId],
-        roundNumber = row[KnockoutMatchTable.roundNumber],
-        matchNumber = row[KnockoutMatchTable.matchNumber],
-        participant1Id = row[KnockoutMatchTable.participant1Id],
-        participant2Id = row[KnockoutMatchTable.participant2Id],
-        winnerId = row[KnockoutMatchTable.winnerId],
-        heatId = row[KnockoutMatchTable.heatId],
-        status = KnockoutMatchStatus.valueOf(row[KnockoutMatchTable.status]),
-        createdAt = row[KnockoutMatchTable.createdAt],
-    )
+    fun updateMatchParticipants(id: UUID, participant1Id: UUID?, participant2Id: UUID?) {
+        transaction {
+            KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
+                it[KnockoutMatchTable.participant1Id] = participant1Id
+                it[KnockoutMatchTable.participant2Id] = participant2Id
+            }
+        }
+    }
+
+    fun updateMatchResult(id: UUID, winnerId: UUID, heatId: UUID, status: KnockoutMatchStatus) {
+        transaction {
+            KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
+                it[KnockoutMatchTable.winnerId] = winnerId
+                it[KnockoutMatchTable.heatId] = heatId
+                it[KnockoutMatchTable.status] = status.name
+            }
+        }
+    }
+
+    fun deleteAll() {
+        transaction {
+            KnockoutMatchTable.deleteAll()
+            KnockoutTournamentTable.deleteAll()
+        }
+    }
+
+    private fun mapTournamentRow(row: ResultRow): KnockoutTournamentEntity {
+        return KnockoutTournamentEntity(
+            id = row[KnockoutTournamentTable.id],
+            eventId = row[KnockoutTournamentTable.eventId],
+            status = KnockoutStatus.valueOf(row[KnockoutTournamentTable.status]),
+            pairingMode = PairingMode.valueOf(row[KnockoutTournamentTable.pairingMode]),
+            qualificationId = row[KnockoutTournamentTable.qualificationId],
+            createdAt = row[KnockoutTournamentTable.createdAt],
+            updatedAt = row[KnockoutTournamentTable.updatedAt],
+            finalizedAt = row[KnockoutTournamentTable.finalizedAt],
+            finalizedBy = row[KnockoutTournamentTable.finalizedBy],
+        )
+    }
+
+    private fun mapMatchRow(row: ResultRow): KnockoutMatchEntity {
+        return KnockoutMatchEntity(
+            id = row[KnockoutMatchTable.id],
+            tournamentId = row[KnockoutMatchTable.tournamentId],
+            roundNumber = row[KnockoutMatchTable.roundNumber],
+            matchNumber = row[KnockoutMatchTable.matchNumber],
+            participant1Id = row[KnockoutMatchTable.participant1Id],
+            participant2Id = row[KnockoutMatchTable.participant2Id],
+            winnerId = row[KnockoutMatchTable.winnerId],
+            heatId = row[KnockoutMatchTable.heatId],
+            status = KnockoutMatchStatus.valueOf(row[KnockoutMatchTable.status]),
+            createdAt = row[KnockoutMatchTable.createdAt],
+        )
+    }
 }

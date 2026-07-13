@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="add-tenant-and-email-to-users" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="users" columnName="tenant_id"/></not>
+        </preConditions>
+        <!-- Nullable at the DB level: the startup DefaultTenantMigration backfills
+             existing rows before any other startup code reads them. -->
+        <addColumn tableName="users">
+            <column name="tenant_id" type="UUID">
+                <constraints foreignKeyName="fk_users_tenant" references="tenants(id)"/>
+            </column>
+            <column name="email" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

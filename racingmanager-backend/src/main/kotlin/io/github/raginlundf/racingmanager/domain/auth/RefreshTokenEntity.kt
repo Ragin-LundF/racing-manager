@@ -19,6 +19,7 @@ data class RefreshTokenEntity(
     val expiresAt: Instant,
     val revoked: Boolean = false,
 ) {
-    fun isValid(now: Instant, currentTokenVersion: Int): Boolean =
-        !revoked && now <= expiresAt && tokenVersion == currentTokenVersion
+    fun isValid(now: Instant, currentTokenVersion: Int): Boolean {
+        return !revoked && now <= expiresAt && tokenVersion == currentTokenVersion
+    }
 }

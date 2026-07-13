@@ -17,16 +17,23 @@ class LocalJwtKeyProvider(private val repository: SigningKeyRepository) : JwtKey
 
     /** Ensures an active signing key exists, generating one on first run. Safe
         to call on every startup. */
-    fun ensureKeyExists(): SigningKey.Rsa = repository.findActive() ?: generateAndPersist()
+    fun ensureKeyExists(): SigningKey.Rsa {
+        return repository.findActive() ?: generateAndPersist()
+    }
 
-    override fun signingKey(): SigningKey =
-        repository.findActive() ?: error("No active JWT signing key — call ensureKeyExists() during startup")
+    override fun signingKey(): SigningKey {
+        return repository.findActive() ?: error("No active JWT signing key — call ensureKeyExists() during startup")
+    }
 
-    override fun verificationKey(kid: String): SigningKey? = repository.findByKid(kid)
+    override fun verificationKey(kid: String): SigningKey? {
+        return repository.findByKid(kid)
+    }
 
     /** Generates a new key and makes it the active signing key; the previous
         key remains stored for verification of tokens it already issued. */
-    fun rotate(): SigningKey.Rsa = generateAndPersist()
+    fun rotate(): SigningKey.Rsa {
+        return generateAndPersist()
+    }
 
     private fun generateAndPersist(): SigningKey.Rsa {
         val keyPairGenerator = KeyPairGenerator.getInstance("RSA").apply { initialize(RSA_KEY_SIZE) }

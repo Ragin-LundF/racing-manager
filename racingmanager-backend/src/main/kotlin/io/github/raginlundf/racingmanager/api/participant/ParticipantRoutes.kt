@@ -52,7 +52,7 @@ fun Route.participantRoutes(jwtService: JwtService, participantService: Particip
         val participant = participantService.findById(id)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("PARTICIPANT_NOT_FOUND", "Participant not found"),
+                message = ErrorResponseModel(code = "PARTICIPANT_NOT_FOUND", message = "Participant not found"),
             )
         call.respond(participant.toResponseModel())
     }
@@ -78,13 +78,13 @@ fun Route.participantRoutes(jwtService: JwtService, participantService: Particip
                 call.respond(status = HttpStatusCode.Created, message = result.participant.toResponseModel())
             }
             is CreateParticipantResult.EventNotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
             }
             is CreateParticipantResult.EventNotActive -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("EVENT_NOT_ACTIVE", "Event must be active"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "EVENT_NOT_ACTIVE", message = "Event must be active"))
             }
             is CreateParticipantResult.DuplicateStartNumber -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("DUPLICATE_START_NUMBER", "Start number ${result.startNumber} already exists"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "DUPLICATE_START_NUMBER", message = "Start number ${result.startNumber} already exists"))
             }
         }
     }
@@ -109,10 +109,10 @@ fun Route.participantRoutes(jwtService: JwtService, participantService: Particip
                 call.respond(result.participant.toResponseModel())
             }
             is UpdateParticipantResult.NotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("PARTICIPANT_NOT_FOUND", "Participant not found"))
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "PARTICIPANT_NOT_FOUND", message = "Participant not found"))
             }
             is UpdateParticipantResult.DuplicateStartNumber -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("DUPLICATE_START_NUMBER", "Start number ${result.startNumber} already exists"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "DUPLICATE_START_NUMBER", message = "Start number ${result.startNumber} already exists"))
             }
         }
     }
@@ -126,9 +126,9 @@ fun Route.participantRoutes(jwtService: JwtService, participantService: Particip
 
         when (val result = participantService.deactivate(id, principal.userId)) {
             is ParticipantActionResult.Success -> call.respond(result.participant.toResponseModel())
-            is ParticipantActionResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("PARTICIPANT_NOT_FOUND", "Participant not found"))
-            is ParticipantActionResult.AlreadyInactive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("ALREADY_INACTIVE", "Participant is already inactive"))
-            is ParticipantActionResult.AlreadyActive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("ALREADY_ACTIVE", "Participant is already active"))
+            is ParticipantActionResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "PARTICIPANT_NOT_FOUND", message = "Participant not found"))
+            is ParticipantActionResult.AlreadyInactive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "ALREADY_INACTIVE", message = "Participant is already inactive"))
+            is ParticipantActionResult.AlreadyActive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "ALREADY_ACTIVE", message = "Participant is already active"))
         }
     }
 
@@ -141,9 +141,9 @@ fun Route.participantRoutes(jwtService: JwtService, participantService: Particip
 
         when (val result = participantService.reactivate(id, principal.userId)) {
             is ParticipantActionResult.Success -> call.respond(result.participant.toResponseModel())
-            is ParticipantActionResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("PARTICIPANT_NOT_FOUND", "Participant not found"))
-            is ParticipantActionResult.AlreadyInactive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("ALREADY_INACTIVE", "Participant is already inactive"))
-            is ParticipantActionResult.AlreadyActive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("ALREADY_ACTIVE", "Participant is already active"))
+            is ParticipantActionResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "PARTICIPANT_NOT_FOUND", message = "Participant not found"))
+            is ParticipantActionResult.AlreadyInactive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "ALREADY_INACTIVE", message = "Participant is already inactive"))
+            is ParticipantActionResult.AlreadyActive -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "ALREADY_ACTIVE", message = "Participant is already active"))
         }
     }
 
@@ -159,10 +159,10 @@ fun Route.participantRoutes(jwtService: JwtService, participantService: Particip
                 call.respond(RandomizeResponseModel(seed = result.seed))
             }
             is RandomizeResult.EventNotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
             }
             is RandomizeResult.EventNotActive -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("EVENT_NOT_ACTIVE", "Event must be active"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "EVENT_NOT_ACTIVE", message = "Event must be active"))
             }
             is RandomizeResult.AlreadyRandomized -> {
                 call.respond(status = HttpStatusCode.Conflict, message = RandomizeResponseModel(seed = result.seed.seed, alreadyRandomized = true))
@@ -198,25 +198,27 @@ fun Route.participantRoutes(jwtService: JwtService, participantService: Particip
                 )
             }
             is ImportResult.EventNotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
             }
             is ImportResult.EventNotActive -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("EVENT_NOT_ACTIVE", "Event must be active"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "EVENT_NOT_ACTIVE", message = "Event must be active"))
             }
         }
     }
 }
 
-private fun io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity.toResponseModel() = ParticipantResponseModel(
-    id = id.toString(),
-    eventId = eventId.toString(),
-    startNumber = startNumber,
-    firstName = firstName,
-    lastName = lastName,
-    club = club,
-    status = status.name,
-    sortOrder = sortOrder,
-    vehicle = vehicle?.let { VehicleResponseModel(id = it.id.toString(), name = it.name, category = it.category) },
-    createdAt = createdAt.toString(),
-    updatedAt = updatedAt?.toString(),
-)
+private fun io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity.toResponseModel(): ParticipantResponseModel {
+    return ParticipantResponseModel(
+        id = id.toString(),
+        eventId = eventId.toString(),
+        startNumber = startNumber,
+        firstName = firstName,
+        lastName = lastName,
+        club = club,
+        status = status.name,
+        sortOrder = sortOrder,
+        vehicle = vehicle?.let { VehicleResponseModel(id = it.id.toString(), name = it.name, category = it.category) },
+        createdAt = createdAt.toString(),
+        updatedAt = updatedAt?.toString(),
+    )
+}

@@ -35,32 +35,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 
-sealed interface IssueResult {
-    data class Success(val artifact: LocalPackageArtifact) : IssueResult
-    data object EventNotFound : IssueResult
-}
-
-sealed interface ImportResult {
-    data class Success(
-        val localInstanceId: UUID,
-        val tenantId: UUID,
-        val importedEventIds: List<UUID>,
-        val alreadyImported: Boolean,
-        val originTenantDisplayName: String,
-    ) : ImportResult
-    data object InvalidArtifact : ImportResult
-    data object InvalidSignature : ImportResult
-    data object Expired : ImportResult
-
-    /** Not a hard error — `dryRun=true` never mutates state; the caller
-        distinguishes this from [Success] purely by the request it made. */
-    data class Preview(
-        val importedEventIds: List<UUID>,
-        val originTenantDisplayName: String,
-        val alreadyImported: Boolean,
-    ) : ImportResult
-}
-
 /** Hosted→local bootstrap package: issuance signs a self-contained artifact
     with the current JWT signing key (reusing that RSA keypair rather than
     introducing a second signing mechanism, design §H). Import verifies
@@ -251,13 +225,18 @@ class LocalPackageService(
         )
     }
 
-    private fun ensureLocalInstance(): LocalInstanceEntity =
-        localInstanceRepository.find() ?: LocalInstanceEntity(id = UUID.randomUUID(), createdAt = clock.now()).also { localInstanceRepository.insert(it) }
+    private fun ensureLocalInstance(): LocalInstanceEntity {
+        return localInstanceRepository.find() ?: LocalInstanceEntity(id = UUID.randomUUID(), createdAt = clock.now()).also { localInstanceRepository.insert(it) }
+    }
 
-    private fun decodeBase64(value: String): ByteArray? = runCatching { Base64.getDecoder().decode(value) }.getOrNull()
+    private fun decodeBase64(value: String): ByteArray? {
+        return runCatching { Base64.getDecoder().decode(value) }.getOrNull()
+    }
 
-    private fun decodePublicKey(base64: String): RSAPublicKey? = runCatching {
-        val bytes = Base64.getDecoder().decode(base64)
-        KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(bytes)) as RSAPublicKey
-    }.getOrNull()
+    private fun decodePublicKey(base64: String): RSAPublicKey? {
+        return runCatching {
+            val bytes = Base64.getDecoder().decode(base64)
+            KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(bytes)) as RSAPublicKey
+        }.getOrNull()
+    }
 }

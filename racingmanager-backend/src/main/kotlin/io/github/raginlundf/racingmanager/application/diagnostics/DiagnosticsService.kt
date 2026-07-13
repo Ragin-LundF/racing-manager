@@ -19,48 +19,14 @@ class DiagnosticsService(
     private val participantRepository: ParticipantRepository,
     private val heatRepository: HeatRepository,
 ) {
-    data class UnfinishedHeat(
-        val heat: HeatEntity,
-        val event: EventEntity,
-    )
-
-    data class RecoveryAction(
-        val heatId: UUID,
-        val action: String,
-    )
-
-    data class DiagnosticsBundle(
-        val database: DatabaseStatus,
-        val events: EventSummary,
-        val unfinishedHeats: List<UnfinishedHeat>,
-        val version: String,
-    )
-
-    data class DatabaseStatus(
-        val connected: Boolean,
-        val pingMs: Long,
-    )
-
-    data class EventSummary(
-        val total: Int,
-        val draft: Int,
-        val active: Int,
-        val completed: Int,
-        val archived: Int,
-        val totalParticipants: Int,
-        val totalHeats: Int,
-    )
-
     fun checkDatabase(): DatabaseStatus {
         val start = System.currentTimeMillis()
-        return try {
+        val connected = runCatching {
             dataSource.connection.use { conn ->
                 conn.isValid(2)
             }
-            DatabaseStatus(connected = true, pingMs = System.currentTimeMillis() - start)
-        } catch (e: Exception) {
-            DatabaseStatus(connected = false, pingMs = System.currentTimeMillis() - start)
-        }
+        }.getOrDefault(false)
+        return DatabaseStatus(connected = connected, pingMs = System.currentTimeMillis() - start)
     }
 
     /** Server-startup recovery check (design §J.1) — deliberately global

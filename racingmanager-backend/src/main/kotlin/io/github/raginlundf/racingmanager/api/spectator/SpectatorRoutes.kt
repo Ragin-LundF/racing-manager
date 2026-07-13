@@ -81,7 +81,7 @@ fun Route.spectatorRoutes(
         if (event.status !in SPECTATOR_ELIGIBLE_STATUSES) {
             call.respond(
                 status = HttpStatusCode.Conflict,
-                message = ErrorResponseModel("EVENT_NOT_ELIGIBLE", "Event must be ACTIVE or ARCHIVED for spectator access"),
+                message = ErrorResponseModel(code = "EVENT_NOT_ELIGIBLE", message = "Event must be ACTIVE or ARCHIVED for spectator access"),
             )
             return@post
         }
@@ -115,12 +115,12 @@ fun Route.spectatorRoutes(
         val request = call.receive<SpectatorExchangeRequestModel>()
         val code = runCatching { UUID.fromString(request.code) }.getOrNull()
         if (code == null) {
-            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_CODE", "Malformed exchange code"))
+            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_CODE", message = "Malformed exchange code"))
             return@post
         }
         val entry = exchangeCodeRepository.consume(code, clock.now())
         if (entry == null) {
-            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_CODE", "Exchange code is invalid, expired, or already used"))
+            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_CODE", message = "Exchange code is invalid, expired, or already used"))
             return@post
         }
         val principal = jwtService.verifyAccessToken(entry.token)
@@ -139,11 +139,11 @@ fun Route.spectatorRoutes(
         if (!call.requireScope(principal, Scopes.SPECTATOR)) return@get
         val eventId = principal.eventId
         if (eventId == null) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("FORBIDDEN", "Not a spectator token"))
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "FORBIDDEN", message = "Not a spectator token"))
             return@get
         }
         val snapshot = spectatorService.getSnapshot(eventId)
-            ?: return@get call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+            ?: return@get call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
         call.respond(snapshot.toResponseModel())
     }
 
@@ -180,43 +180,45 @@ fun Route.spectatorRoutes(
     }
 }
 
-internal fun SpectatorSnapshot.toResponseModel() = SpectatorSnapshotResponseModel(
-    event = SpectatorEventModel(
-        id = event.id.toString(),
-        name = event.name,
-        description = event.description,
-        status = event.status.name,
-        laneType = event.settings.laneType.name,
-        measurementType = event.settings.measurementType.name,
-    ),
-    currentHeat = currentHeat?.toResponseModel(),
-    upcomingHeats = upcomingHeats.map { it.toResponseModel() },
-    qualificationRankings = qualificationRankings.map { it.toResponseModel() },
-    qualificationStatus = qualificationStatus,
-    knockout = knockout?.let { k ->
-        SpectatorKnockoutStateModel(
-            status = k.status,
-            pairingMode = k.pairingMode,
-            rounds = k.rounds.map { r: SpectatorKnockoutRound ->
-                SpectatorKnockoutRoundModel(
-                    roundNumber = r.roundNumber,
-                    matches = r.matches.map { m: SpectatorKnockoutMatch ->
-                        SpectatorKnockoutMatchModel(
-                            id = m.id.toString(),
-                            roundNumber = m.roundNumber,
-                            matchNumber = m.matchNumber,
-                            participant1Id = m.participant1Id?.toString(),
-                            participant2Id = m.participant2Id?.toString(),
-                            winnerId = m.winnerId?.toString(),
-                            status = m.status,
-                            isBye = m.isBye,
-                        )
-                    },
-                )
-            },
-        )
-    },
-)
+internal fun SpectatorSnapshot.toResponseModel(): SpectatorSnapshotResponseModel {
+    return SpectatorSnapshotResponseModel(
+        event = SpectatorEventModel(
+            id = event.id.toString(),
+            name = event.name,
+            description = event.description,
+            status = event.status.name,
+            laneType = event.settings.laneType.name,
+            measurementType = event.settings.measurementType.name,
+        ),
+        currentHeat = currentHeat?.toResponseModel(),
+        upcomingHeats = upcomingHeats.map { it.toResponseModel() },
+        qualificationRankings = qualificationRankings.map { it.toResponseModel() },
+        qualificationStatus = qualificationStatus,
+        knockout = knockout?.let { k ->
+            SpectatorKnockoutStateModel(
+                status = k.status,
+                pairingMode = k.pairingMode,
+                rounds = k.rounds.map { r: SpectatorKnockoutRound ->
+                    SpectatorKnockoutRoundModel(
+                        roundNumber = r.roundNumber,
+                        matches = r.matches.map { m: SpectatorKnockoutMatch ->
+                            SpectatorKnockoutMatchModel(
+                                id = m.id.toString(),
+                                roundNumber = m.roundNumber,
+                                matchNumber = m.matchNumber,
+                                participant1Id = m.participant1Id?.toString(),
+                                participant2Id = m.participant2Id?.toString(),
+                                winnerId = m.winnerId?.toString(),
+                                status = m.status,
+                                isBye = m.isBye,
+                            )
+                        },
+                    )
+                },
+            )
+        },
+    )
+}
 
 private fun HeatEntity.toResponseModel(): SpectatorHeatModel {
     val finishedMeasurements = measurements.filter { it.outcome == LaneOutcome.FINISHED || it.outcome == LaneOutcome.DNF }
@@ -241,15 +243,17 @@ private fun HeatEntity.toResponseModel(): SpectatorHeatModel {
     )
 }
 
-private fun QualificationRanking.toResponseModel() = SpectatorRankingEntryModel(
-    participantId = participantId.toString(),
-    startNumber = startNumber,
-    firstName = firstName,
-    lastName = lastName,
-    club = club,
-    bestTimeNanos = bestTimeNanos,
-    totalTimeNanos = totalTimeNanos,
-    completedRuns = completedRuns,
-    dnfCount = dnfCount,
-    rank = rank,
-)
+private fun QualificationRanking.toResponseModel(): SpectatorRankingEntryModel {
+    return SpectatorRankingEntryModel(
+        participantId = participantId.toString(),
+        startNumber = startNumber,
+        firstName = firstName,
+        lastName = lastName,
+        club = club,
+        bestTimeNanos = bestTimeNanos,
+        totalTimeNanos = totalTimeNanos,
+        completedRuns = completedRuns,
+        dnfCount = dnfCount,
+        rank = rank,
+    )
+}

@@ -16,7 +16,15 @@ class AuditService(
         limit: Int = 100,
         offset: Int = 0,
     ): List<AuditEntryEntity> {
-        return auditRepository.query(action, targetType, targetId, actorId, tenantId, limit, offset)
+        return auditRepository.query(
+            action = action,
+            targetType = targetType,
+            targetId = targetId,
+            actorId = actorId,
+            tenantId = tenantId,
+            limit = limit,
+            offset = offset,
+        )
     }
 
     fun findByEventId(eventId: UUID): List<AuditEntryEntity> {

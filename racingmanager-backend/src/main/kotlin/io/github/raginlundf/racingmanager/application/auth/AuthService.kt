@@ -34,7 +34,9 @@ class AuthService(
 ) {
     private val clock: Clock = Clock.System
 
-    fun isFirstRun(): Boolean = userRepository.count() == 0L
+    fun isFirstRun(): Boolean {
+        return userRepository.count() == 0L
+    }
 
     /** Local/offline first-run bootstrap: creates the implicit local tenant
         (idempotent — safe even if it already exists) together with its first
@@ -250,7 +252,9 @@ class AuthService(
         return CreateTenantUserResult.Success(user)
     }
 
-    fun getTenant(tenantId: UUID): TenantEntity? = tenantRepository.findById(tenantId)
+    fun getTenant(tenantId: UUID): TenantEntity? {
+        return tenantRepository.findById(tenantId)
+    }
 
     fun updateTenant(tenantId: UUID, displayName: String, settings: String?): TenantEntity? {
         val tenant = tenantRepository.findById(tenantId) ?: return null
@@ -339,7 +343,9 @@ class AuthService(
         )
     }
 
-    fun currentUser(userId: UUID): UserEntity? = userRepository.findById(userId)
+    fun currentUser(userId: UUID): UserEntity? {
+        return userRepository.findById(userId)
+    }
 
     fun changePassword(
         userId: UUID,
@@ -374,7 +380,9 @@ class AuthService(
     /** Every existing supervisor lives in the reserved platform tenant by
         construction (see [PLATFORM_TENANT_ID]), so "no supervisor yet" is
         simply "the platform tenant has no members". */
-    fun isFirstSupervisorRun(): Boolean = userRepository.findByTenantId(PLATFORM_TENANT_ID).isEmpty()
+    fun isFirstSupervisorRun(): Boolean {
+        return userRepository.findByTenantId(PLATFORM_TENANT_ID).isEmpty()
+    }
 
     /** One-time hosted-platform bootstrap, mirroring [setupAdmin]'s shape:
         only succeeds once, creating the reserved platform tenant (idempotent)
@@ -414,7 +422,9 @@ class AuthService(
 
     /** Tenant metadata only (design §3: a supervisor must not gain ordinary
         access to tenant race data) — every tenant, not just the caller's own. */
-    fun listAllTenants(): List<TenantEntity> = tenantRepository.findAll().filter { it.id != PLATFORM_TENANT_ID }
+    fun listAllTenants(): List<TenantEntity> {
+        return tenantRepository.findAll().filter { it.id != PLATFORM_TENANT_ID }
+    }
 
     fun deactivateTenant(tenantId: UUID, supervisorId: UUID): TenantEntity? {
         val tenant = tenantRepository.findById(tenantId) ?: return null
@@ -459,23 +469,25 @@ class AuthService(
         return DeleteTenantResult.Success(updated)
     }
 
-    private fun ensureLocalTenant(): TenantEntity =
-        tenantRepository.findById(LOCAL_TENANT_ID) ?: TenantEntity(
+    private fun ensureLocalTenant(): TenantEntity {
+        return tenantRepository.findById(LOCAL_TENANT_ID) ?: TenantEntity(
             id = LOCAL_TENANT_ID,
             slug = LOCAL_TENANT_SLUG,
             displayName = "Local",
             status = TenantStatus.ACTIVE,
             createdAt = clock.now(),
         ).also { tenantRepository.insert(it) }
+    }
 
-    private fun ensurePlatformTenant(): TenantEntity =
-        tenantRepository.findById(PLATFORM_TENANT_ID) ?: TenantEntity(
+    private fun ensurePlatformTenant(): TenantEntity {
+        return tenantRepository.findById(PLATFORM_TENANT_ID) ?: TenantEntity(
             id = PLATFORM_TENANT_ID,
             slug = PLATFORM_TENANT_SLUG,
             displayName = "Platform",
             status = TenantStatus.ACTIVE,
             createdAt = clock.now(),
         ).also { tenantRepository.insert(it) }
+    }
 
     /** Issues an access token plus a fresh persisted refresh token for [user].
         Shared by [login] and [register] so both hand back the exact same
@@ -513,61 +525,3 @@ class AuthService(
     }
 }
 
-sealed interface SetupResult {
-    data class Success(val user: UserEntity) : SetupResult
-    data object AlreadySetup : SetupResult
-}
-
-sealed interface LoginResult {
-    data class Success(
-        val accessToken: String,
-        val refreshToken: String,
-        val expiresInSeconds: Long,
-        val tenantId: UUID,
-        val scopes: Set<String>,
-        val user: UserEntity,
-    ) : LoginResult
-    data object InvalidCredentials : LoginResult
-    data object TenantDisabled : LoginResult
-}
-
-sealed interface RefreshResult {
-    data class Success(val accessToken: String, val expiresInSeconds: Long) : RefreshResult
-    data object Invalid : RefreshResult
-}
-
-sealed interface ChangePasswordResult {
-    data object Success : ChangePasswordResult
-    data object UserNotFound : ChangePasswordResult
-    data object InvalidCurrentPassword : ChangePasswordResult
-}
-
-sealed interface RegisterResult {
-    data class Success(
-        val tenant: TenantEntity,
-        val user: UserEntity,
-        val accessToken: String,
-        val refreshToken: String,
-        val expiresInSeconds: Long,
-        val scopes: Set<String>,
-    ) : RegisterResult
-    data object SlugTaken : RegisterResult
-}
-
-sealed interface CreateTenantUserResult {
-    data class Success(val user: UserEntity) : CreateTenantUserResult
-    data object UsernameTaken : CreateTenantUserResult
-}
-
-data class TenantMember(val user: UserEntity, val membership: MembershipEntity)
-
-sealed interface UpdateTenantUserResult {
-    data class Success(val user: UserEntity, val membership: MembershipEntity) : UpdateTenantUserResult
-    data object NotFound : UpdateTenantUserResult
-}
-
-sealed interface DeleteTenantResult {
-    data class Success(val tenant: TenantEntity) : DeleteTenantResult
-    data object NotFound : DeleteTenantResult
-    data object ConfirmationMismatch : DeleteTenantResult
-}

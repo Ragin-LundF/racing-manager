@@ -28,7 +28,7 @@ import java.util.UUID
 fun Route.bootstrapRoutes(jwtService: JwtService, localPackageService: LocalPackageService, deploymentMode: DeploymentMode) {
     post("/api/v1/tenant/local-packages") {
         if (deploymentMode != DeploymentMode.HOSTED) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("NOT_HOSTED", "Local packages can only be issued in hosted mode"))
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "NOT_HOSTED", message = "Local packages can only be issued in hosted mode"))
             return@post
         }
         val principal = call.authenticateRequest(jwtService) ?: return@post
@@ -38,13 +38,13 @@ fun Route.bootstrapRoutes(jwtService: JwtService, localPackageService: LocalPack
         val eventIds = request.eventIds.map { UUID.fromString(it) }
         when (val result = localPackageService.issue(principal.tenantId, eventIds)) {
             is IssueResult.Success -> call.respond(status = HttpStatusCode.Created, message = result.artifact)
-            is IssueResult.EventNotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "One or more events were not found in this tenant"))
+            is IssueResult.EventNotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "One or more events were not found in this tenant"))
         }
     }
 
     post("/api/v1/tenant/local-packages/import") {
         if (deploymentMode != DeploymentMode.LOCAL) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("NOT_LOCAL", "Local packages can only be imported in local mode"))
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "NOT_LOCAL", message = "Local packages can only be imported in local mode"))
             return@post
         }
         val principal = call.authenticateRequest(jwtService) ?: return@post
@@ -73,9 +73,9 @@ fun Route.bootstrapRoutes(jwtService: JwtService, localPackageService: LocalPack
                     originTenantDisplayName = result.originTenantDisplayName,
                 ),
             )
-            is ImportResult.InvalidArtifact -> call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_ARTIFACT", "The package artifact is malformed"))
-            is ImportResult.InvalidSignature -> call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_SIGNATURE", "The package artifact failed integrity verification"))
-            is ImportResult.Expired -> call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("PACKAGE_EXPIRED", "This package has expired"))
+            is ImportResult.InvalidArtifact -> call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_ARTIFACT", message = "The package artifact is malformed"))
+            is ImportResult.InvalidSignature -> call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_SIGNATURE", message = "The package artifact failed integrity verification"))
+            is ImportResult.Expired -> call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "PACKAGE_EXPIRED", message = "This package has expired"))
         }
     }
 }

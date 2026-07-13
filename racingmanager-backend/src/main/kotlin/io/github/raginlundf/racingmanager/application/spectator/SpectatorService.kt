@@ -101,45 +101,17 @@ class SpectatorService(
         )
     }
 
-    private fun KnockoutMatchEntity.toSpectatorMatch() = SpectatorKnockoutMatch(
-        id = id,
-        roundNumber = roundNumber,
-        matchNumber = matchNumber,
-        participant1Id = participant1Id,
-        participant2Id = participant2Id,
-        winnerId = winnerId,
-        status = status.name,
-        isBye = participant2Id == null,
-    )
+    private fun KnockoutMatchEntity.toSpectatorMatch(): SpectatorKnockoutMatch {
+        return SpectatorKnockoutMatch(
+            id = id,
+            roundNumber = roundNumber,
+            matchNumber = matchNumber,
+            participant1Id = participant1Id,
+            participant2Id = participant2Id,
+            winnerId = winnerId,
+            status = status.name,
+            isBye = participant2Id == null,
+        )
+    }
 }
 
-data class SpectatorSnapshot(
-    val event: EventEntity,
-    val currentHeat: HeatEntity?,
-    val upcomingHeats: List<HeatEntity>,
-    val qualificationRankings: List<QualificationRanking>,
-    val qualificationStatus: String?,
-    val knockout: SpectatorKnockoutState?,
-)
-
-data class SpectatorKnockoutState(
-    val status: String,
-    val pairingMode: String,
-    val rounds: List<SpectatorKnockoutRound>,
-)
-
-data class SpectatorKnockoutRound(
-    val roundNumber: Int,
-    val matches: List<SpectatorKnockoutMatch>,
-)
-
-data class SpectatorKnockoutMatch(
-    val id: UUID,
-    val roundNumber: Int,
-    val matchNumber: Int,
-    val participant1Id: UUID?,
-    val participant2Id: UUID?,
-    val winnerId: UUID?,
-    val status: String,
-    val isBye: Boolean,
-)

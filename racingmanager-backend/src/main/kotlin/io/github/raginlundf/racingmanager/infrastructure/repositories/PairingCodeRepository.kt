@@ -12,28 +12,32 @@ import kotlin.time.Instant
 
 class PairingCodeRepository {
 
-    fun insert(code: PairingCodeEntity) = transaction {
-        PairingCodeTable.insert {
-            it[id] = code.id
-            it[tenantId] = code.tenantId
-            it[expiresAt] = code.expiresAt
-            it[consumed] = code.consumed
+    fun insert(code: PairingCodeEntity) {
+        transaction {
+            PairingCodeTable.insert {
+                it[id] = code.id
+                it[tenantId] = code.tenantId
+                it[expiresAt] = code.expiresAt
+                it[consumed] = code.consumed
+            }
         }
     }
 
     /** Atomically consumes the code if it exists, is unexpired and unused. */
-    fun consume(id: UUID, now: Instant): PairingCodeEntity? = transaction {
-        val row = PairingCodeTable.selectAll().where { PairingCodeTable.id eq id }.singleOrNull()
-            ?: return@transaction null
-        if (row[PairingCodeTable.consumed] || now > row[PairingCodeTable.expiresAt]) {
-            return@transaction null
+    fun consume(id: UUID, now: Instant): PairingCodeEntity? {
+        return transaction {
+            val row = PairingCodeTable.selectAll().where { PairingCodeTable.id eq id }.singleOrNull()
+                ?: return@transaction null
+            if (row[PairingCodeTable.consumed] || now > row[PairingCodeTable.expiresAt]) {
+                return@transaction null
+            }
+            PairingCodeTable.update(where = { PairingCodeTable.id eq id }) { it[consumed] = true }
+            PairingCodeEntity(
+                id = row[PairingCodeTable.id],
+                tenantId = row[PairingCodeTable.tenantId],
+                expiresAt = row[PairingCodeTable.expiresAt],
+                consumed = true,
+            )
         }
-        PairingCodeTable.update(where = { PairingCodeTable.id eq id }) { it[consumed] = true }
-        PairingCodeEntity(
-            id = row[PairingCodeTable.id],
-            tenantId = row[PairingCodeTable.tenantId],
-            expiresAt = row[PairingCodeTable.expiresAt],
-            consumed = true,
-        )
     }
 }

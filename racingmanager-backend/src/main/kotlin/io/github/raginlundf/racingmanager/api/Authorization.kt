@@ -21,7 +21,7 @@ suspend fun ApplicationCall.requireScope(principal: RequestPrincipal, vararg sco
     if (principal.hasAnyScope(*scopes)) return true
     respond(
         status = HttpStatusCode.Forbidden,
-        message = ErrorResponseModel("FORBIDDEN", "Insufficient scope for this operation"),
+        message = ErrorResponseModel(code = "FORBIDDEN", message = "Insufficient scope for this operation"),
     )
     return false
 }
@@ -40,13 +40,13 @@ suspend fun ApplicationCall.requireTenantEvent(
 ): EventEntity? {
     val event = eventRepository.findById(eventId)
     if (event == null) {
-        respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+        respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
         return null
     }
     if (event.tenantId != principal.tenantId) {
         respond(
             status = HttpStatusCode.Forbidden,
-            message = ErrorResponseModel("FORBIDDEN", "Event not found or not accessible"),
+            message = ErrorResponseModel(code = "FORBIDDEN", message = "Event not found or not accessible"),
         )
         return null
     }

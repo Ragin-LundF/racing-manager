@@ -24,43 +24,6 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.Qualificat
 import kotlin.time.Clock
 import java.util.UUID
 
-data class EventResultSnapshot(
-    val event: EventEntity,
-    val qualificationRankings: List<QualificationRanking>,
-    val knockoutResults: List<KnockoutResultEntry>,
-    val allHeats: List<HeatEntity>,
-    val isSimulated: Boolean,
-)
-
-data class CsvExport(
-    val csv: String,
-    val filename: String,
-)
-
-data class HtmlExport(
-    val html: String,
-    val filename: String,
-)
-
-data class JsonExport(
-    val schemaVersion: Int,
-    val exportedAt: String,
-    val snapshot: EventResultSnapshot,
-)
-
-data class BackupExport(
-    val schemaVersion: Int,
-    val exportedAt: String,
-    val snapshot: EventResultSnapshot,
-)
-
-sealed interface RestoreResult {
-    data class Success(val event: EventEntity) : RestoreResult
-    data object NotFound : RestoreResult
-    data class InvalidStatus(val status: EventStatus) : RestoreResult
-    data object SnapshotMismatch : RestoreResult
-}
-
 class ResultsService(
     private val eventRepository: EventRepository,
     private val participantRepository: ParticipantRepository,
@@ -180,12 +143,13 @@ class ResultsService(
         participants: List<ParticipantEntity>,
         heats: List<HeatEntity>,
         qualification: QualificationEntity,
-    ): List<QualificationRanking> =
-        QualificationRankingCalculator.calculate(
+    ): List<QualificationRanking> {
+        return QualificationRankingCalculator.calculate(
             participants = participants,
             heats = heats,
             qualification = qualification,
         )
+    }
 
     private fun calculateKnockoutResults(
         tournament: KnockoutTournamentEntity,

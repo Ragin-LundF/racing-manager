@@ -28,8 +28,9 @@ class QualificationService(
 ) {
     private val clock: Clock = Clock.System
 
-    fun findByEventId(eventId: UUID): QualificationEntity? =
-        qualificationRepository.findByEventId(eventId)
+    fun findByEventId(eventId: UUID): QualificationEntity? {
+        return qualificationRepository.findByEventId(eventId)
+    }
 
     fun getRankings(eventId: UUID): List<QualificationRanking> {
         val qualification = qualificationRepository.findByEventId(eventId) ?: return emptyList()
@@ -308,50 +309,12 @@ class QualificationService(
         participants: List<ParticipantEntity>,
         heats: List<HeatEntity>,
         qualification: QualificationEntity,
-    ): List<QualificationRanking> =
-        QualificationRankingCalculator.calculate(
+    ): List<QualificationRanking> {
+        return QualificationRankingCalculator.calculate(
             participants = participants,
             heats = heats,
             qualification = qualification,
         )
+    }
 }
 
-data class QualificationProgress(
-    val status: QualificationStatus,
-    val totalHeats: Int,
-    val completedHeats: Int,
-    val inProgressHeats: Int,
-    val plannedHeats: Int,
-    val cancelledHeats: Int,
-    val totalParticipants: Int,
-    val participantsWithResults: Int,
-)
-
-sealed interface SetupQualificationResult {
-    data class Success(val qualification: QualificationEntity) : SetupQualificationResult
-    data object EventNotFound : SetupQualificationResult
-    data object EventNotActive : SetupQualificationResult
-    data class AlreadyExists(val qualification: QualificationEntity) : SetupQualificationResult
-    data object NotEnoughParticipants : SetupQualificationResult
-}
-
-sealed interface GenerateScheduleResult {
-    data class Success(val qualification: QualificationEntity) : GenerateScheduleResult
-    data object QualificationNotFound : GenerateScheduleResult
-    data class InvalidStatus(val current: QualificationStatus) : GenerateScheduleResult
-    data object NotEnoughParticipants : GenerateScheduleResult
-    data object HeatsAlreadyExist : GenerateScheduleResult
-}
-
-sealed interface FinalizeResult {
-    data object Success : FinalizeResult
-    data object QualificationNotFound : FinalizeResult
-    data class InvalidStatus(val current: QualificationStatus) : FinalizeResult
-    data class IncompleteHeats(val count: Int) : FinalizeResult
-}
-
-sealed interface ReopenResult {
-    data object Success : ReopenResult
-    data object QualificationNotFound : ReopenResult
-    data class InvalidStatus(val current: QualificationStatus) : ReopenResult
-}

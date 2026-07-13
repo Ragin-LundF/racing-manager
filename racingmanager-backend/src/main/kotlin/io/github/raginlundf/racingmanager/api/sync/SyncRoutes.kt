@@ -36,7 +36,7 @@ import java.util.UUID
 fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymentMode: DeploymentMode) {
     post("/api/v1/tenant/local-instances/pairing-token") {
         if (deploymentMode != DeploymentMode.HOSTED) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("NOT_HOSTED", "Pairing is only available in hosted mode"))
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "NOT_HOSTED", message = "Pairing is only available in hosted mode"))
             return@post
         }
         val principal = call.authenticateRequest(jwtService) ?: return@post
@@ -55,7 +55,7 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
         val pairingCode = runCatching { UUID.fromString(request.pairingCode) }.getOrNull()
         val localInstanceId = runCatching { UUID.fromString(request.localInstanceId) }.getOrNull()
         if (pairingCode == null || localInstanceId == null) {
-            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_REQUEST", "Malformed pairing code or instance id"))
+            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_REQUEST", message = "Malformed pairing code or instance id"))
             return@post
         }
 
@@ -66,14 +66,14 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
             )
             is PairResult.InvalidOrExpiredCode -> call.respond(
                 status = HttpStatusCode.BadRequest,
-                message = ErrorResponseModel("INVALID_CODE", "Pairing code is invalid, expired, or already used"),
+                message = ErrorResponseModel(code = "INVALID_CODE", message = "Pairing code is invalid, expired, or already used"),
             )
         }
     }
 
     get("/api/v1/tenant/local-instances") {
         if (deploymentMode != DeploymentMode.HOSTED) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("NOT_HOSTED", "Local instances are only visible in hosted mode"))
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "NOT_HOSTED", message = "Local instances are only visible in hosted mode"))
             return@get
         }
         val principal = call.authenticateRequest(jwtService) ?: return@get
@@ -83,7 +83,7 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
 
     post("/api/v1/tenant/local-instances/{id}/revoke") {
         if (deploymentMode != DeploymentMode.HOSTED) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("NOT_HOSTED", "Local instances are only managed in hosted mode"))
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "NOT_HOSTED", message = "Local instances are only managed in hosted mode"))
             return@post
         }
         val principal = call.authenticateRequest(jwtService) ?: return@post
@@ -92,13 +92,13 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
 
         when (syncService.revoke(principal.tenantId, instanceId)) {
             is RevokeResult.Success -> call.respond(status = HttpStatusCode.NoContent, message = Unit)
-            is RevokeResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("INSTANCE_NOT_FOUND", "Local instance not found"))
+            is RevokeResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "INSTANCE_NOT_FOUND", message = "Local instance not found"))
         }
     }
 
     post("/api/v1/tenant/local-instances/{id}/sync-results") {
         if (deploymentMode != DeploymentMode.HOSTED) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("NOT_HOSTED", "Results are synced back in hosted mode"))
+            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "NOT_HOSTED", message = "Results are synced back in hosted mode"))
             return@post
         }
         val principal = call.authenticateRequest(jwtService) ?: return@post
@@ -107,7 +107,7 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
         val request = call.receive<SyncResultsRequestModel>()
         val eventId = runCatching { UUID.fromString(request.eventId) }.getOrNull()
         if (eventId == null) {
-            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel("INVALID_REQUEST", "Malformed eventId"))
+            call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_REQUEST", message = "Malformed eventId"))
             return@post
         }
         val resultsJson = Json.encodeToString(JsonElement.serializer(), request.results)
@@ -117,17 +117,19 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
                 status = HttpStatusCode.Created,
                 message = SyncResultsResponseModel(syncedResultId = result.syncedResultId.toString(), eventId = eventId.toString(), status = "SYNCED"),
             )
-            is SyncResultsResult.InstanceNotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("INSTANCE_NOT_FOUND", "Local instance not found"))
-            is SyncResultsResult.InstanceRevoked -> call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel("INSTANCE_REVOKED", "This local instance has been revoked"))
-            is SyncResultsResult.EventNotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
-            is SyncResultsResult.EventNotLocked -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("EVENT_NOT_LOCKED", "Event was never checked out for local execution"))
+            is SyncResultsResult.InstanceNotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "INSTANCE_NOT_FOUND", message = "Local instance not found"))
+            is SyncResultsResult.InstanceRevoked -> call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "INSTANCE_REVOKED", message = "This local instance has been revoked"))
+            is SyncResultsResult.EventNotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
+            is SyncResultsResult.EventNotLocked -> call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "EVENT_NOT_LOCKED", message = "Event was never checked out for local execution"))
         }
     }
 }
 
-private fun PairedInstanceEntity.toResponseModel() = PairedInstanceResponseModel(
-    id = id.toString(),
-    status = status.name,
-    pairedAt = pairedAt.toString(),
-    lastSyncAt = lastSyncAt?.toString(),
-)
+private fun PairedInstanceEntity.toResponseModel(): PairedInstanceResponseModel {
+    return PairedInstanceResponseModel(
+        id = id.toString(),
+        status = status.name,
+        pairedAt = pairedAt.toString(),
+        lastSyncAt = lastSyncAt?.toString(),
+    )
+}

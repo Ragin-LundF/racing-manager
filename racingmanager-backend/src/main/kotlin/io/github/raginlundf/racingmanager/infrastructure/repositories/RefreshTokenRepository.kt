@@ -14,48 +14,58 @@ import java.util.UUID
 
 class RefreshTokenRepository {
 
-    fun findById(id: UUID): RefreshTokenEntity? = transaction {
-        RefreshTokenTable.selectAll().where { RefreshTokenTable.id eq id }
-            .singleOrNull()
-            ?.let { row ->
-                RefreshTokenEntity(
-                    id = row[RefreshTokenTable.id],
-                    userId = row[RefreshTokenTable.userId],
-                    tenantId = row[RefreshTokenTable.tenantId],
-                    tokenVersion = row[RefreshTokenTable.tokenVersion],
-                    createdAt = row[RefreshTokenTable.createdAt],
-                    expiresAt = row[RefreshTokenTable.expiresAt],
-                    revoked = row[RefreshTokenTable.revoked],
-                )
-            }
-    }
-
-    fun insert(token: RefreshTokenEntity) = transaction {
-        RefreshTokenTable.insert {
-            it[id] = token.id
-            it[userId] = token.userId
-            it[tenantId] = token.tenantId
-            it[tokenVersion] = token.tokenVersion
-            it[createdAt] = token.createdAt
-            it[expiresAt] = token.expiresAt
-            it[revoked] = token.revoked
+    fun findById(id: UUID): RefreshTokenEntity? {
+        return transaction {
+            RefreshTokenTable.selectAll().where { RefreshTokenTable.id eq id }
+                .singleOrNull()
+                ?.let { row ->
+                    RefreshTokenEntity(
+                        id = row[RefreshTokenTable.id],
+                        userId = row[RefreshTokenTable.userId],
+                        tenantId = row[RefreshTokenTable.tenantId],
+                        tokenVersion = row[RefreshTokenTable.tokenVersion],
+                        createdAt = row[RefreshTokenTable.createdAt],
+                        expiresAt = row[RefreshTokenTable.expiresAt],
+                        revoked = row[RefreshTokenTable.revoked],
+                    )
+                }
         }
     }
 
-    fun revoke(id: UUID) = transaction {
-        RefreshTokenTable.update({ RefreshTokenTable.id eq id }) {
-            it[revoked] = true
+    fun insert(token: RefreshTokenEntity) {
+        transaction {
+            RefreshTokenTable.insert {
+                it[id] = token.id
+                it[userId] = token.userId
+                it[tenantId] = token.tenantId
+                it[tokenVersion] = token.tokenVersion
+                it[createdAt] = token.createdAt
+                it[expiresAt] = token.expiresAt
+                it[revoked] = token.revoked
+            }
+        }
+    }
+
+    fun revoke(id: UUID) {
+        transaction {
+            RefreshTokenTable.update({ RefreshTokenTable.id eq id }) {
+                it[revoked] = true
+            }
         }
     }
 
     /** Used for "logout everywhere" and after a password change. */
-    fun revokeAllForUser(userId: UUID) = transaction {
-        RefreshTokenTable.update({ RefreshTokenTable.userId eq userId }) {
-            it[revoked] = true
+    fun revokeAllForUser(userId: UUID) {
+        transaction {
+            RefreshTokenTable.update({ RefreshTokenTable.userId eq userId }) {
+                it[revoked] = true
+            }
         }
     }
 
-    fun deleteExpired(now: Instant) = transaction {
-        RefreshTokenTable.deleteWhere { RefreshTokenTable.expiresAt less now }
+    fun deleteExpired(now: Instant) {
+        transaction {
+            RefreshTokenTable.deleteWhere { RefreshTokenTable.expiresAt less now }
+        }
     }
 }

@@ -40,8 +40,8 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
         val request = call.receive<CreateEventRequestModel>()
 
         val settings = EventSettings(
-            laneType = try { LaneType.valueOf(request.laneType) } catch (_: IllegalArgumentException) { LaneType.TWO_LANE },
-            measurementType = try { MeasurementType.valueOf(request.measurementType) } catch (_: IllegalArgumentException) { MeasurementType.SIMULATED },
+            laneType = runCatching { LaneType.valueOf(request.laneType) }.getOrDefault(LaneType.TWO_LANE),
+            measurementType = runCatching { MeasurementType.valueOf(request.measurementType) }.getOrDefault(MeasurementType.SIMULATED),
             maxParticipants = request.maxParticipants,
         )
 
@@ -82,8 +82,8 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
         val request = call.receive<UpdateEventRequestModel>()
 
         val settings = EventSettings(
-            laneType = try { LaneType.valueOf(request.laneType) } catch (_: IllegalArgumentException) { LaneType.TWO_LANE },
-            measurementType = try { MeasurementType.valueOf(request.measurementType) } catch (_: IllegalArgumentException) { MeasurementType.SIMULATED },
+            laneType = runCatching { LaneType.valueOf(request.laneType) }.getOrDefault(LaneType.TWO_LANE),
+            measurementType = runCatching { MeasurementType.valueOf(request.measurementType) }.getOrDefault(MeasurementType.SIMULATED),
             maxParticipants = request.maxParticipants,
         )
 
@@ -94,13 +94,13 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             is UpdateEventResult.NotFound -> {
                 call.respond(
                     status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                    message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
                 )
             }
             is UpdateEventResult.CannotModifyActiveEvent -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel("CANNOT_MODIFY_ACTIVE_EVENT", "Cannot modify an event that is not in DRAFT status"),
+                    message = ErrorResponseModel(code = "CANNOT_MODIFY_ACTIVE_EVENT", message = "Cannot modify an event that is not in DRAFT status"),
                 )
             }
             is UpdateEventResult.Conflict -> {
@@ -117,7 +117,7 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             is UpdateEventResult.Locked -> {
                 call.respond(
                     status = HttpStatusCode.Locked,
-                    message = ErrorResponseModel("EVENT_LOCKED_FOR_SYNC", "Event is checked out to a local instance and locked until results are synced back"),
+                    message = ErrorResponseModel(code = "EVENT_LOCKED_FOR_SYNC", message = "Event is checked out to a local instance and locked until results are synced back"),
                 )
             }
         }
@@ -133,7 +133,7 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             is DeleteEventResult.Success -> call.respond(status = HttpStatusCode.NoContent, message = Unit)
             is DeleteEventResult.NotFound -> call.respond(
                 status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
             )
         }
     }
@@ -151,13 +151,13 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             is ActivateEventResult.NotFound -> {
                 call.respond(
                     status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                    message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
                 )
             }
             is ActivateEventResult.InvalidStatus -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel("INVALID_STATUS", "Event must be in DRAFT status to activate"),
+                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be in DRAFT status to activate"),
                 )
             }
             is ActivateEventResult.Conflict -> {
@@ -187,13 +187,13 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             is ArchiveEventResult.NotFound -> {
                 call.respond(
                     status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                    message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
                 )
             }
             is ArchiveEventResult.InvalidStatus -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel("INVALID_STATUS", "Event must be in ACTIVE status to archive"),
+                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be in ACTIVE status to archive"),
                 )
             }
         }
@@ -212,32 +212,34 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             is ReactivateEventResult.NotFound -> {
                 call.respond(
                     status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                    message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
                 )
             }
             is ReactivateEventResult.InvalidStatus -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel("INVALID_STATUS", "Event must be in ARCHIVED status to reactivate"),
+                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be in ARCHIVED status to reactivate"),
                 )
             }
         }
     }
 }
 
-private fun io.github.raginlundf.racingmanager.domain.event.EventEntity.toResponseModel() = EventResponseModel(
-    id = id.toString(),
-    name = name,
-    description = description,
-    status = status.name,
-    settings = EventSettingsResponseModel(
-        laneType = settings.laneType.name,
-        measurementType = settings.measurementType.name,
-        maxParticipants = settings.maxParticipants,
-    ),
-    version = version,
-    createdBy = createdBy.toString(),
-    createdAt = createdAt.toString(),
-    updatedAt = updatedAt?.toString(),
-    activatedAt = activatedAt?.toString(),
-)
+private fun io.github.raginlundf.racingmanager.domain.event.EventEntity.toResponseModel(): EventResponseModel {
+    return EventResponseModel(
+        id = id.toString(),
+        name = name,
+        description = description,
+        status = status.name,
+        settings = EventSettingsResponseModel(
+            laneType = settings.laneType.name,
+            measurementType = settings.measurementType.name,
+            maxParticipants = settings.maxParticipants,
+        ),
+        version = version,
+        createdBy = createdBy.toString(),
+        createdAt = createdAt.toString(),
+        updatedAt = updatedAt?.toString(),
+        activatedAt = activatedAt?.toString(),
+    )
+}

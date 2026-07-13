@@ -61,11 +61,8 @@ class JwtService(
         issuer?.let { verification.withIssuer(it) }
         audience?.let { verification.withAudience(it) }
 
-        val decoded = try {
-            verification.build().verify(token)
-        } catch (_: JWTVerificationException) {
-            return null
-        }
+        val decoded = runCatching { verification.build().verify(token) }
+            .getOrNull() ?: return null
 
         val tenantId = decoded.getClaim(CLAIM_TENANT_ID).asString() ?: return null
         val scopeClaim = decoded.getClaim(CLAIM_SCOPE).asString() ?: return null
@@ -81,16 +78,20 @@ class JwtService(
         )
     }
 
-    private fun signingAlgorithm(key: SigningKey): Algorithm = when (key) {
-        is SigningKey.Rsa -> {
-            val privateKey = requireNotNull(key.privateKey) { "Signing key '${key.kid}' has no private key material" }
-            Algorithm.RSA256(key.publicKey, privateKey)
+    private fun signingAlgorithm(key: SigningKey): Algorithm {
+        return when (key) {
+            is SigningKey.Rsa -> {
+                val privateKey = requireNotNull(key.privateKey) { "Signing key '${key.kid}' has no private key material" }
+                Algorithm.RSA256(key.publicKey, privateKey)
+            }
+            is SigningKey.Secret -> Algorithm.HMAC256(key.secret)
         }
-        is SigningKey.Secret -> Algorithm.HMAC256(key.secret)
     }
 
-    private fun verificationAlgorithm(key: SigningKey): Algorithm = when (key) {
-        is SigningKey.Rsa -> Algorithm.RSA256(key.publicKey, null)
-        is SigningKey.Secret -> Algorithm.HMAC256(key.secret)
+    private fun verificationAlgorithm(key: SigningKey): Algorithm {
+        return when (key) {
+            is SigningKey.Rsa -> Algorithm.RSA256(key.publicKey, null)
+            is SigningKey.Secret -> Algorithm.HMAC256(key.secret)
+        }
     }
 }

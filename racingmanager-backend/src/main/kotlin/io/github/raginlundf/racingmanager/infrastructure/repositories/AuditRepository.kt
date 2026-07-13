@@ -45,46 +45,48 @@ class AuditRepository {
         tenantId: UUID? = null,
         limit: Int = 100,
         offset: Int = 0,
-    ): List<AuditEntryEntity> = transaction {
-        val conditions = mutableListOf<Op<Boolean>>()
-        if (action != null) conditions.add(AuditEntryTable.action eq action)
-        if (targetType != null) conditions.add(AuditEntryTable.targetType eq targetType)
-        if (targetId != null) conditions.add(AuditEntryTable.targetId eq targetId)
-        if (actorId != null) conditions.add(AuditEntryTable.actorId eq actorId)
+    ): List<AuditEntryEntity> {
+        return transaction {
+            val conditions = mutableListOf<Op<Boolean>>()
+            if (action != null) conditions.add(AuditEntryTable.action eq action)
+            if (targetType != null) conditions.add(AuditEntryTable.targetType eq targetType)
+            if (targetId != null) conditions.add(AuditEntryTable.targetId eq targetId)
+            if (actorId != null) conditions.add(AuditEntryTable.actorId eq actorId)
 
-        val query = if (tenantId != null) {
-            conditions.add(UserTable.tenantId eq tenantId)
-            AuditEntryTable.join(
-                otherTable = UserTable,
-                joinType = JoinType.INNER,
-                onColumn = AuditEntryTable.actorId,
-                otherColumn = UserTable.id
-            )
-                .select(AuditEntryTable.columns)
-        } else {
-            AuditEntryTable.selectAll()
-        }
-
-        query
-            .let { q ->
-                if (conditions.isEmpty()) q
-                else q.where { conditions.reduce { a, b -> a and b } }
-            }
-            .orderBy(AuditEntryTable.occurredAt to SortOrder.DESC)
-            .limit(count = limit)
-            .offset(start = offset.toLong())
-            .map { row ->
-                AuditEntryEntity(
-                    id = row[AuditEntryTable.id],
-                    actorId = row[AuditEntryTable.actorId],
-                    action = row[AuditEntryTable.action],
-                    targetType = row[AuditEntryTable.targetType],
-                    targetId = row[AuditEntryTable.targetId],
-                    summary = row[AuditEntryTable.summary],
-                    details = row[AuditEntryTable.details],
-                    correlationId = row[AuditEntryTable.correlationId],
-                    occurredAt = row[AuditEntryTable.occurredAt],
+            val query = if (tenantId != null) {
+                conditions.add(UserTable.tenantId eq tenantId)
+                AuditEntryTable.join(
+                    otherTable = UserTable,
+                    joinType = JoinType.INNER,
+                    onColumn = AuditEntryTable.actorId,
+                    otherColumn = UserTable.id
                 )
+                    .select(AuditEntryTable.columns)
+            } else {
+                AuditEntryTable.selectAll()
             }
+
+            query
+                .let { q ->
+                    if (conditions.isEmpty()) q
+                    else q.where { conditions.reduce { a, b -> a and b } }
+                }
+                .orderBy(AuditEntryTable.occurredAt to SortOrder.DESC)
+                .limit(count = limit)
+                .offset(start = offset.toLong())
+                .map { row ->
+                    AuditEntryEntity(
+                        id = row[AuditEntryTable.id],
+                        actorId = row[AuditEntryTable.actorId],
+                        action = row[AuditEntryTable.action],
+                        targetType = row[AuditEntryTable.targetType],
+                        targetId = row[AuditEntryTable.targetId],
+                        summary = row[AuditEntryTable.summary],
+                        details = row[AuditEntryTable.details],
+                        correlationId = row[AuditEntryTable.correlationId],
+                        occurredAt = row[AuditEntryTable.occurredAt],
+                    )
+                }
+        }
     }
 }

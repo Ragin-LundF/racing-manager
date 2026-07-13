@@ -36,7 +36,9 @@ class SimulationMeasurementGateway(
     private val _events = MutableSharedFlow<MeasurementGatewayEvent>(extraBufferCapacity = 64)
     private val activeHeats = mutableSetOf<UUID>()
 
-    override fun events() = _events.asSharedFlow()
+    override fun events(): kotlinx.coroutines.flow.Flow<MeasurementGatewayEvent> {
+        return _events.asSharedFlow()
+    }
 
     override suspend fun arm(heat: HeatEntity): GatewayArmResult {
         activeHeats.add(element = heat.id)
@@ -82,7 +84,7 @@ class SimulationMeasurementGateway(
             laneJobs.awaitAll()
 
             if (heat.id !in activeHeats) return@launch
-            _events.emit(value = MeasurementGatewayEvent.HeatFinished(heat.id))
+            _events.emit(value = MeasurementGatewayEvent.HeatFinished(heatId = heat.id))
             activeHeats.remove(element = heat.id)
         }
     }

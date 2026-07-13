@@ -20,41 +20,25 @@ import java.util.UUID
 
 class EventRepository {
 
-    fun findById(id: UUID): EventEntity? = transaction {
-        EventTable.selectAll().where { EventTable.id eq id }
-            .singleOrNull()
-            ?.toEventEntity()
-    }
-
-    fun findAll(): List<EventEntity> = transaction {
-        EventTable.selectAll().map { it.toEventEntity() }
-    }
-
-    fun insert(event: EventEntity) = transaction {
-        EventTable.insert {
-            it[id] = event.id
-            it[tenantId] = event.tenantId
-            it[name] = event.name
-            it[description] = event.description
-            it[status] = event.status.name
-            it[laneType] = event.settings.laneType.name
-            it[measurementType] = event.settings.measurementType.name
-            it[maxParticipants] = event.settings.maxParticipants
-            it[version] = event.version
-            it[createdBy] = event.createdBy
-            it[createdAt] = event.createdAt
-            it[updatedAt] = event.updatedAt
-            it[activatedAt] = event.activatedAt
-            it[originTenantId] = event.originTenantId
-            it[originPackageId] = event.originPackageId
-            it[lockedForSync] = event.lockedForSync
-            it[syncStatus] = event.syncStatus?.name
+    fun findById(id: UUID): EventEntity? {
+        return transaction {
+            EventTable.selectAll().where { EventTable.id eq id }
+                .singleOrNull()
+                ?.toEventEntity()
         }
     }
 
-    fun update(event: EventEntity): Boolean = transaction {
-        val count =
-            EventTable.update(where = { EventTable.id eq event.id and (EventTable.version eq event.version - 1) }) {
+    fun findAll(): List<EventEntity> {
+        return transaction {
+            EventTable.selectAll().map { it.toEventEntity() }
+        }
+    }
+
+    fun insert(event: EventEntity) {
+        transaction {
+            EventTable.insert {
+                it[id] = event.id
+                it[tenantId] = event.tenantId
                 it[name] = event.name
                 it[description] = event.description
                 it[status] = event.status.name
@@ -62,55 +46,89 @@ class EventRepository {
                 it[measurementType] = event.settings.measurementType.name
                 it[maxParticipants] = event.settings.maxParticipants
                 it[version] = event.version
+                it[createdBy] = event.createdBy
+                it[createdAt] = event.createdAt
                 it[updatedAt] = event.updatedAt
                 it[activatedAt] = event.activatedAt
+                it[originTenantId] = event.originTenantId
+                it[originPackageId] = event.originPackageId
                 it[lockedForSync] = event.lockedForSync
                 it[syncStatus] = event.syncStatus?.name
             }
-        count > 0
+        }
     }
 
-    fun delete(id: UUID): Boolean = transaction {
-        EventTable.deleteWhere { EventTable.id eq id } > 0
+    fun update(event: EventEntity): Boolean {
+        return transaction {
+            val count =
+                EventTable.update(where = { EventTable.id eq event.id and (EventTable.version eq event.version - 1) }) {
+                    it[name] = event.name
+                    it[description] = event.description
+                    it[status] = event.status.name
+                    it[laneType] = event.settings.laneType.name
+                    it[measurementType] = event.settings.measurementType.name
+                    it[maxParticipants] = event.settings.maxParticipants
+                    it[version] = event.version
+                    it[updatedAt] = event.updatedAt
+                    it[activatedAt] = event.activatedAt
+                    it[lockedForSync] = event.lockedForSync
+                    it[syncStatus] = event.syncStatus?.name
+                }
+            count > 0
+        }
+    }
+
+    fun delete(id: UUID): Boolean {
+        return transaction {
+            EventTable.deleteWhere { EventTable.id eq id } > 0
+        }
     }
 
     /** Defense-in-depth tenant filter: returns the event only if it belongs to
     [tenantId], so a route-level check that is missed or bypassed cannot
     leak another tenant's event through this query alone. */
-    fun findByIdForTenant(id: UUID, tenantId: UUID): EventEntity? = transaction {
-        EventTable.selectAll().where { (EventTable.id eq id) and (EventTable.tenantId eq tenantId) }
-            .singleOrNull()
-            ?.toEventEntity()
+    fun findByIdForTenant(id: UUID, tenantId: UUID): EventEntity? {
+        return transaction {
+            EventTable.selectAll().where { (EventTable.id eq id) and (EventTable.tenantId eq tenantId) }
+                .singleOrNull()
+                ?.toEventEntity()
+        }
     }
 
-    fun findAllForTenant(tenantId: UUID): List<EventEntity> = transaction {
-        EventTable.selectAll().where { EventTable.tenantId eq tenantId }
-            .map { it.toEventEntity() }
+    fun findAllForTenant(tenantId: UUID): List<EventEntity> {
+        return transaction {
+            EventTable.selectAll().where { EventTable.tenantId eq tenantId }
+                .map { it.toEventEntity() }
+        }
     }
 
-    fun deleteAll() = transaction {
-        EventTable.deleteAll()
+    fun deleteAll() {
+        transaction {
+            EventTable.deleteAll()
+        }
     }
 
-    private fun ResultRow.toEventEntity() = EventEntity(
-        id = this[EventTable.id],
-        tenantId = this[EventTable.tenantId],
-        name = this[EventTable.name],
-        description = this[EventTable.description],
-        status = EventStatus.valueOf(this[EventTable.status]),
-        settings = EventSettings(
-            laneType = LaneType.valueOf(this[EventTable.laneType]),
-            measurementType = MeasurementType.valueOf(this[EventTable.measurementType]),
-            maxParticipants = this[EventTable.maxParticipants],
-        ),
-        version = this[EventTable.version],
-        createdBy = this[EventTable.createdBy],
-        createdAt = this[EventTable.createdAt],
-        updatedAt = this[EventTable.updatedAt],
-        activatedAt = this[EventTable.activatedAt],
-        originTenantId = this[EventTable.originTenantId],
-        originPackageId = this[EventTable.originPackageId],
-        lockedForSync = this[EventTable.lockedForSync],
-        syncStatus = this[EventTable.syncStatus]?.let { SyncStatus.valueOf(it) },
-    )
+    private fun ResultRow.toEventEntity(): EventEntity {
+        return EventEntity(
+            id = this[EventTable.id],
+            tenantId = this[EventTable.tenantId],
+            name = this[EventTable.name],
+            description = this[EventTable.description],
+            status = EventStatus.valueOf(this[EventTable.status]),
+            settings = EventSettings(
+                laneType = LaneType.valueOf(this[EventTable.laneType]),
+                measurementType = MeasurementType.valueOf(this[EventTable.measurementType]),
+                maxParticipants = this[EventTable.maxParticipants],
+            ),
+            version = this[EventTable.version],
+            createdBy = this[EventTable.createdBy],
+            createdAt = this[EventTable.createdAt],
+            updatedAt = this[EventTable.updatedAt],
+            activatedAt = this[EventTable.activatedAt],
+            originTenantId = this[EventTable.originTenantId],
+            originPackageId = this[EventTable.originPackageId],
+            lockedForSync = this[EventTable.lockedForSync],
+            syncStatus = this[EventTable.syncStatus]?.let { SyncStatus.valueOf(it) },
+        )
+    }
 }

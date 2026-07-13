@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="add-tenant-to-events" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="events" columnName="tenant_id"/></not>
+        </preConditions>
+        <!-- Nullable at the DB level: the startup DefaultTenantMigration backfills
+             existing rows before any other startup code reads them. -->
+        <addColumn tableName="events">
+            <column name="tenant_id" type="UUID">
+                <constraints foreignKeyName="fk_events_tenant" references="tenants(id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

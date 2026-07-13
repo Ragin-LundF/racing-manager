@@ -20,7 +20,9 @@ sealed interface SigningKey {
         val privateKey: RSAPrivateKey?,
         override val active: Boolean,
     ) : SigningKey {
-        override fun toString(): String = "SigningKey.Rsa(kid=$kid, algorithm=$algorithm, active=$active)"
+        override fun toString(): String {
+            return "SigningKey.Rsa(kid=$kid, algorithm=$algorithm, active=$active)"
+        }
     }
 
     /** A symmetric HS256 shared secret — simpler to operate than an RSA key
@@ -33,6 +35,8 @@ sealed interface SigningKey {
         val secret: String,
         override val active: Boolean,
     ) : SigningKey {
-        override fun toString(): String = "SigningKey.Secret(kid=$kid, algorithm=$algorithm, active=$active)"
+        override fun toString(): String {
+            return "SigningKey.Secret(kid=$kid, algorithm=$algorithm, active=$active)"
+        }
     }
 }

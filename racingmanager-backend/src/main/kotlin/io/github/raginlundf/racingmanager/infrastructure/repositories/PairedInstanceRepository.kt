@@ -13,37 +13,49 @@ import java.util.UUID
 
 class PairedInstanceRepository {
 
-    fun findById(id: UUID): PairedInstanceEntity? = transaction {
-        PairedInstanceTable.selectAll().where { PairedInstanceTable.id eq id }.singleOrNull()?.toEntity()
-    }
-
-    fun findAllForTenant(tenantId: UUID): List<PairedInstanceEntity> = transaction {
-        PairedInstanceTable.selectAll().where { PairedInstanceTable.tenantId eq tenantId }.map { it.toEntity() }
-    }
-
-    fun insert(instance: PairedInstanceEntity) = transaction {
-        PairedInstanceTable.insert {
-            it[id] = instance.id
-            it[tenantId] = instance.tenantId
-            it[status] = instance.status.name
-            it[pairedAt] = instance.pairedAt
-            it[lastSyncAt] = instance.lastSyncAt
+    fun findById(id: UUID): PairedInstanceEntity? {
+        return transaction {
+            PairedInstanceTable.selectAll().where { PairedInstanceTable.id eq id }.singleOrNull()?.toEntity()
         }
     }
 
-    fun updateStatus(id: UUID, status: PairedInstanceStatus) = transaction {
-        PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.status] = status.name }
+    fun findAllForTenant(tenantId: UUID): List<PairedInstanceEntity> {
+        return transaction {
+            PairedInstanceTable.selectAll().where { PairedInstanceTable.tenantId eq tenantId }.map { it.toEntity() }
+        }
     }
 
-    fun updateLastSyncAt(id: UUID, lastSyncAt: Instant) = transaction {
-        PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.lastSyncAt] = lastSyncAt }
+    fun insert(instance: PairedInstanceEntity) {
+        transaction {
+            PairedInstanceTable.insert {
+                it[id] = instance.id
+                it[tenantId] = instance.tenantId
+                it[status] = instance.status.name
+                it[pairedAt] = instance.pairedAt
+                it[lastSyncAt] = instance.lastSyncAt
+            }
+        }
     }
 
-    private fun org.jetbrains.exposed.v1.core.ResultRow.toEntity() = PairedInstanceEntity(
-        id = this[PairedInstanceTable.id],
-        tenantId = this[PairedInstanceTable.tenantId],
-        status = PairedInstanceStatus.valueOf(this[PairedInstanceTable.status]),
-        pairedAt = this[PairedInstanceTable.pairedAt],
-        lastSyncAt = this[PairedInstanceTable.lastSyncAt],
-    )
+    fun updateStatus(id: UUID, status: PairedInstanceStatus) {
+        transaction {
+            PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.status] = status.name }
+        }
+    }
+
+    fun updateLastSyncAt(id: UUID, lastSyncAt: Instant) {
+        transaction {
+            PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.lastSyncAt] = lastSyncAt }
+        }
+    }
+
+    private fun org.jetbrains.exposed.v1.core.ResultRow.toEntity(): PairedInstanceEntity {
+        return PairedInstanceEntity(
+            id = this[PairedInstanceTable.id],
+            tenantId = this[PairedInstanceTable.tenantId],
+            status = PairedInstanceStatus.valueOf(this[PairedInstanceTable.status]),
+            pairedAt = this[PairedInstanceTable.pairedAt],
+            lastSyncAt = this[PairedInstanceTable.lastSyncAt],
+        )
+    }
 }

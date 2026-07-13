@@ -92,9 +92,7 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtSe
         val params = call.receiveParameters()
         val heatId = params["heatId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing heatId")
         val action = params["action"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing action")
-        val parsedId = try {
-            java.util.UUID.fromString(heatId)
-        } catch (e: IllegalArgumentException) {
+        val parsedId = runCatching { java.util.UUID.fromString(heatId) }.getOrElse {
             return@post call.respond(HttpStatusCode.BadRequest, "Invalid heatId")
         }
         val result = diagnosticsService.recoverHeat(parsedId, action, principal.tenantId)

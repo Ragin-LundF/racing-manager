@@ -21,89 +21,107 @@ import java.util.UUID
 
 class HeatRepository {
 
-    fun findById(id: UUID): HeatEntity? = transaction {
-        HeatTable.selectAll().where { HeatTable.id eq id }
-            .singleOrNull()
-            ?.let { row -> mapRow(row = row) }
-    }
-
-    fun findByEventId(eventId: UUID): List<HeatEntity> = transaction {
-        HeatTable.selectAll()
-            .where { HeatTable.eventId eq eventId }
-            .orderBy(HeatTable.round to SortOrder.ASC, HeatTable.heatNumber to SortOrder.ASC)
-            .map { row -> mapRow(row = row) }
-    }
-
-    fun findEventIdByHeatId(heatId: UUID): UUID? = transaction {
-        HeatTable.selectAll().where { HeatTable.id eq heatId }
-            .singleOrNull()
-            ?.let { row -> row[HeatTable.eventId] }
-    }
-
-    fun findAll(): List<HeatEntity> = transaction {
-        HeatTable.selectAll()
-            .orderBy(HeatTable.createdAt to SortOrder.DESC)
-            .map { row -> mapRow(row = row) }
-    }
-
-    fun findLatestByEventId(eventId: UUID): HeatEntity? = transaction {
-        HeatTable.selectAll()
-            .where { HeatTable.eventId eq eventId }
-            .orderBy(HeatTable.createdAt to SortOrder.DESC)
-            .limit(count = 1)
-            .singleOrNull()
-            ?.let { row -> mapRow(row = row) }
-    }
-
-    fun insert(heat: HeatEntity) = transaction {
-        HeatTable.insert {
-            it[id] = heat.id
-            it[eventId] = heat.eventId
-            it[round] = heat.round
-            it[heatNumber] = heat.heatNumber
-            it[status] = heat.status.name
-            it[createdAt] = heat.createdAt
-            it[armedAt] = heat.armedAt
-            it[startedAt] = heat.startedAt
-            it[finishedAt] = heat.finishedAt
+    fun findById(id: UUID): HeatEntity? {
+        return transaction {
+            HeatTable.selectAll().where { HeatTable.id eq id }
+                .singleOrNull()
+                ?.let { row -> mapRow(row = row) }
         }
-        heat.lanes.forEach { assignment ->
-            HeatLaneTable.insert {
-                it[id] = UUID.randomUUID()
-                it[heatId] = heat.id
-                it[HeatLaneTable.lane] = assignment.lane
-                it[participantId] = assignment.participantId
-                it[participantStartNumber] = assignment.participantStartNumber
-                it[participantFirstName] = assignment.participantFirstName
-                it[participantLastName] = assignment.participantLastName
+    }
+
+    fun findByEventId(eventId: UUID): List<HeatEntity> {
+        return transaction {
+            HeatTable.selectAll()
+                .where { HeatTable.eventId eq eventId }
+                .orderBy(HeatTable.round to SortOrder.ASC, HeatTable.heatNumber to SortOrder.ASC)
+                .map { row -> mapRow(row = row) }
+        }
+    }
+
+    fun findEventIdByHeatId(heatId: UUID): UUID? {
+        return transaction {
+            HeatTable.selectAll().where { HeatTable.id eq heatId }
+                .singleOrNull()
+                ?.let { row -> row[HeatTable.eventId] }
+        }
+    }
+
+    fun findAll(): List<HeatEntity> {
+        return transaction {
+            HeatTable.selectAll()
+                .orderBy(HeatTable.createdAt to SortOrder.DESC)
+                .map { row -> mapRow(row = row) }
+        }
+    }
+
+    fun findLatestByEventId(eventId: UUID): HeatEntity? {
+        return transaction {
+            HeatTable.selectAll()
+                .where { HeatTable.eventId eq eventId }
+                .orderBy(HeatTable.createdAt to SortOrder.DESC)
+                .limit(count = 1)
+                .singleOrNull()
+                ?.let { row -> mapRow(row = row) }
+        }
+    }
+
+    fun insert(heat: HeatEntity) {
+        transaction {
+            HeatTable.insert {
+                it[id] = heat.id
+                it[eventId] = heat.eventId
+                it[round] = heat.round
+                it[heatNumber] = heat.heatNumber
+                it[status] = heat.status.name
+                it[createdAt] = heat.createdAt
+                it[armedAt] = heat.armedAt
+                it[startedAt] = heat.startedAt
+                it[finishedAt] = heat.finishedAt
+            }
+            heat.lanes.forEach { assignment ->
+                HeatLaneTable.insert {
+                    it[id] = UUID.randomUUID()
+                    it[heatId] = heat.id
+                    it[HeatLaneTable.lane] = assignment.lane
+                    it[participantId] = assignment.participantId
+                    it[participantStartNumber] = assignment.participantStartNumber
+                    it[participantFirstName] = assignment.participantFirstName
+                    it[participantLastName] = assignment.participantLastName
+                }
             }
         }
     }
 
-    fun updateStatus(id: UUID, status: HeatStatus, armedAt: Instant? = null, startedAt: Instant? = null, finishedAt: Instant? = null) = transaction {
-        HeatTable.update(where = { HeatTable.id eq id }) {
-            it[HeatTable.status] = status.name
-            if (armedAt != null) it[HeatTable.armedAt] = armedAt
-            if (startedAt != null) it[HeatTable.startedAt] = startedAt
-            if (finishedAt != null) it[HeatTable.finishedAt] = finishedAt
+    fun updateStatus(id: UUID, status: HeatStatus, armedAt: Instant? = null, startedAt: Instant? = null, finishedAt: Instant? = null) {
+        transaction {
+            HeatTable.update(where = { HeatTable.id eq id }) {
+                it[HeatTable.status] = status.name
+                if (armedAt != null) it[HeatTable.armedAt] = armedAt
+                if (startedAt != null) it[HeatTable.startedAt] = startedAt
+                if (finishedAt != null) it[HeatTable.finishedAt] = finishedAt
+            }
         }
     }
 
-    fun insertMeasurement(measurement: Measurement) = transaction {
-        MeasurementTable.insert {
-            it[id] = measurement.id
-            it[heatId] = measurement.heatId
-            it[lane] = measurement.lane
-            it[durationNanos] = measurement.durationNanos
-            it[outcome] = measurement.outcome.name
-            it[receivedAt] = measurement.receivedAt
+    fun insertMeasurement(measurement: Measurement) {
+        transaction {
+            MeasurementTable.insert {
+                it[id] = measurement.id
+                it[heatId] = measurement.heatId
+                it[lane] = measurement.lane
+                it[durationNanos] = measurement.durationNanos
+                it[outcome] = measurement.outcome.name
+                it[receivedAt] = measurement.receivedAt
+            }
         }
     }
 
-    fun deleteAll() = transaction {
-        MeasurementTable.deleteAll()
-        HeatLaneTable.deleteAll()
-        HeatTable.deleteAll()
+    fun deleteAll() {
+        transaction {
+            MeasurementTable.deleteAll()
+            HeatLaneTable.deleteAll()
+            HeatTable.deleteAll()
+        }
     }
 
     private fun mapRow(row: ResultRow): HeatEntity {

@@ -33,7 +33,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
         if (deploymentMode != DeploymentMode.HOSTED) {
             call.respond(
                 status = HttpStatusCode.Forbidden,
-                message = ErrorResponseModel("NOT_HOSTED", "Tenant registration is only available in hosted mode"),
+                message = ErrorResponseModel(code = "NOT_HOSTED", message = "Tenant registration is only available in hosted mode"),
             )
             return@post
         }
@@ -59,7 +59,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
             is RegisterResult.SlugTaken -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel("TENANT_SLUG_TAKEN", "A tenant with this slug already exists"),
+                    message = ErrorResponseModel(code = "TENANT_SLUG_TAKEN", message = "A tenant with this slug already exists"),
                 )
             }
         }
@@ -73,7 +73,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
         if (deploymentMode != DeploymentMode.LOCAL) {
             call.respond(
                 status = HttpStatusCode.Forbidden,
-                message = ErrorResponseModel("NOT_LOCAL_MODE", "Admin setup is only available in local mode"),
+                message = ErrorResponseModel(code = "NOT_LOCAL_MODE", message = "Admin setup is only available in local mode"),
             )
             return@post
         }
@@ -150,7 +150,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
             is RefreshResult.Invalid -> {
                 call.respond(
                     status = HttpStatusCode.Unauthorized,
-                    message = ErrorResponseModel("INVALID_REFRESH_TOKEN", "Refresh token is invalid, expired, or revoked"),
+                    message = ErrorResponseModel(code = "INVALID_REFRESH_TOKEN", message = "Refresh token is invalid, expired, or revoked"),
                 )
             }
         }
@@ -161,7 +161,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
         val user = authService.currentUser(principal.userId)
             ?: return@get call.respond(
                 status = HttpStatusCode.Unauthorized,
-                message = ErrorResponseModel("USER_NOT_FOUND", "User no longer exists"),
+                message = ErrorResponseModel(code = "USER_NOT_FOUND", message = "User no longer exists"),
             )
         call.respond(
             SessionResponseModel(

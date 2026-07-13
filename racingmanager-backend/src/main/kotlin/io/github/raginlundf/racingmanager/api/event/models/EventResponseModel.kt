@@ -15,10 +15,3 @@ data class EventResponseModel(
     val updatedAt: String? = null,
     val activatedAt: String? = null,
 )
-
-@Serializable
-data class EventSettingsResponseModel(
-    val laneType: String,
-    val measurementType: String,
-    val maxParticipants: Int? = null,
-)

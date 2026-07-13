@@ -7,9 +7,11 @@ class PasswordHasher {
     private val hasher = BCrypt.withDefaults()
     private val verifier = BCrypt.verifyer()
 
-    fun hash(password: String): String =
-        hasher.hashToString(12, password.toCharArray())
+    fun hash(password: String): String {
+        return hasher.hashToString(12, password.toCharArray())
+    }
 
-    fun verify(password: String, hash: String): Boolean =
-        verifier.verify(password.toCharArray(), hash).verified
+    fun verify(password: String, hash: String): Boolean {
+        return verifier.verify(password.toCharArray(), hash).verified
+    }
 }

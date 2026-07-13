@@ -23,8 +23,10 @@ object Scopes {
     const val SPECTATOR = "rm:spectator"
 }
 
-fun scopeForRole(role: UserRole): String = when (role) {
-    UserRole.ADMIN -> Scopes.ADMIN
-    UserRole.DIRECTOR -> Scopes.USER
-    UserRole.SUPERVISOR -> Scopes.SUPERVISOR
+fun scopeForRole(role: UserRole): String {
+    return when (role) {
+        UserRole.ADMIN -> Scopes.ADMIN
+        UserRole.DIRECTOR -> Scopes.USER
+        UserRole.SUPERVISOR -> Scopes.SUPERVISOR
+    }
 }

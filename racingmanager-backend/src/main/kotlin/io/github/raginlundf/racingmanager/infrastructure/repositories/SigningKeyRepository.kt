@@ -23,32 +23,38 @@ import kotlin.time.Clock
     so tokens issued before a rotation keep validating until they expire. */
 class SigningKeyRepository {
 
-    fun findActive(): SigningKey.Rsa? = transaction {
-        SigningKeyTable.selectAll().where { SigningKeyTable.active eq true }
-            .singleOrNull()
-            ?.toSigningKey()
+    fun findActive(): SigningKey.Rsa? {
+        return transaction {
+            SigningKeyTable.selectAll().where { SigningKeyTable.active eq true }
+                .singleOrNull()
+                ?.toSigningKey()
+        }
     }
 
-    fun findByKid(kid: String): SigningKey.Rsa? = transaction {
-        SigningKeyTable.selectAll().where { SigningKeyTable.kid eq kid }
-            .singleOrNull()
-            ?.toSigningKey()
+    fun findByKid(kid: String): SigningKey.Rsa? {
+        return transaction {
+            SigningKeyTable.selectAll().where { SigningKeyTable.kid eq kid }
+                .singleOrNull()
+                ?.toSigningKey()
+        }
     }
 
     /** Inserts [key] as the new active signing key, deactivating any previously
         active key (which remains available for verification). */
-    fun insertAsActive(key: SigningKey.Rsa) = transaction {
-        SigningKeyTable.update({ SigningKeyTable.active eq true }) {
-            it[active] = false
-        }
-        SigningKeyTable.insert {
-            it[id] = UUID.randomUUID()
-            it[kid] = key.kid
-            it[algorithm] = key.algorithm
-            it[publicKey] = Base64.getEncoder().encodeToString(key.publicKey.encoded)
-            it[privateKey] = key.privateKey?.let { pk -> Base64.getEncoder().encodeToString(pk.encoded) }
-            it[active] = true
-            it[createdAt] = Clock.System.now()
+    fun insertAsActive(key: SigningKey.Rsa) {
+        transaction {
+            SigningKeyTable.update({ SigningKeyTable.active eq true }) {
+                it[active] = false
+            }
+            SigningKeyTable.insert {
+                it[id] = UUID.randomUUID()
+                it[kid] = key.kid
+                it[algorithm] = key.algorithm
+                it[publicKey] = Base64.getEncoder().encodeToString(key.publicKey.encoded)
+                it[privateKey] = key.privateKey?.let { pk -> Base64.getEncoder().encodeToString(pk.encoded) }
+                it[active] = true
+                it[createdAt] = Clock.System.now()
+            }
         }
     }
 

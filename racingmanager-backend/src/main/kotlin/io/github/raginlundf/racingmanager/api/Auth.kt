@@ -18,7 +18,7 @@ suspend fun ApplicationCall.authenticateRequest(jwtService: JwtService): Request
     if (header == null || !header.startsWith(BEARER_PREFIX)) {
         respond(
             status = HttpStatusCode.Unauthorized,
-            message = ErrorResponseModel("MISSING_TOKEN", "A Bearer access token is required"),
+            message = ErrorResponseModel(code = "MISSING_TOKEN", message = "A Bearer access token is required"),
         )
         return null
     }
@@ -27,7 +27,7 @@ suspend fun ApplicationCall.authenticateRequest(jwtService: JwtService): Request
     if (principal == null) {
         respond(
             status = HttpStatusCode.Unauthorized,
-            message = ErrorResponseModel("INVALID_TOKEN", "Access token is invalid or expired"),
+            message = ErrorResponseModel(code = "INVALID_TOKEN", message = "Access token is invalid or expired"),
         )
         return null
     }

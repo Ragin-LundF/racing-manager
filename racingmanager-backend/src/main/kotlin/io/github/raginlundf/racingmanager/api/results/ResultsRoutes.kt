@@ -52,7 +52,7 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
         val snapshot = resultsService.getSnapshot(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
             )
         call.respond(snapshot.toResponseModel())
     }
@@ -65,13 +65,13 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
 
         when (val result = eventService.completeEvent(eventId, principal.userId)) {
             is CompleteEventResult.Success -> {
-                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Event completed"))
+                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel(code = "OK", message = "Event completed"))
             }
             is CompleteEventResult.NotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
             }
             is CompleteEventResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Event must be ACTIVE"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be ACTIVE"))
             }
         }
     }
@@ -84,13 +84,13 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
 
         when (val result = eventService.reopenEvent(eventId, principal.userId)) {
             is ReopenEventResult.Success -> {
-                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel("OK", "Event reopened"))
+                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel(code = "OK", message = "Event reopened"))
             }
             is ReopenEventResult.NotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
             }
             is ReopenEventResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Event must be COMPLETED"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be COMPLETED"))
             }
         }
     }
@@ -103,7 +103,7 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
         val result = resultsService.exportCsv(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
             )
         call.response.header(HttpHeaders.ContentDisposition, "attachment; filename=\"${result.filename}\"")
         call.respondText(result.csv, ContentType.Text.Plain)
@@ -118,7 +118,7 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
         val result = resultsService.exportHtml(eventId, locale)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
             )
         call.respondText(result.html, ContentType.Text.Html)
     }
@@ -131,7 +131,7 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
         val result = resultsService.exportJson(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
             )
         call.respond(result.toResponseModel())
     }
@@ -144,7 +144,7 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
         val result = resultsService.exportBackup(eventId)
             ?: return@get call.respond(
                 status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"),
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
             )
         call.respond(result.toResponseModel())
     }
@@ -161,99 +161,117 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
                 call.respond(status = HttpStatusCode.OK, message = result.toResponseModel())
             }
             is RestoreResult.NotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel("EVENT_NOT_FOUND", "Event not found"))
+                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
             }
             is RestoreResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("INVALID_STATUS", "Event must be ACTIVE"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be ACTIVE"))
             }
             is RestoreResult.SnapshotMismatch -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel("SNAPSHOT_MISMATCH", "Backup does not match this event"))
+                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "SNAPSHOT_MISMATCH", message = "Backup does not match this event"))
             }
         }
     }
 }
 
-private fun EventResultSnapshot.toResponseModel() = EventResultSnapshotResponseModel(
-    event = EventResultSummaryModel(
-        id = event.id.toString(),
-        name = event.name,
-        description = event.description,
-        status = event.status.name,
-        laneType = event.settings.laneType.name,
+private fun EventResultSnapshot.toResponseModel(): EventResultSnapshotResponseModel {
+    return EventResultSnapshotResponseModel(
+        event = EventResultSummaryModel(
+            id = event.id.toString(),
+            name = event.name,
+            description = event.description,
+            status = event.status.name,
+            laneType = event.settings.laneType.name,
+            measurementType = event.settings.measurementType.name,
+            createdAt = event.createdAt.toString(),
+            activatedAt = event.activatedAt?.toString(),
+        ),
+        qualificationRankings = qualificationRankings.map { it.toResponseModel() },
+        knockoutResults = knockoutResults.map { it.toResponseModel() },
+        allHeats = allHeats.map { it.toResponseModel() },
         measurementType = event.settings.measurementType.name,
-        createdAt = event.createdAt.toString(),
-        activatedAt = event.activatedAt?.toString(),
-    ),
-    qualificationRankings = qualificationRankings.map { it.toResponseModel() },
-    knockoutResults = knockoutResults.map { it.toResponseModel() },
-    allHeats = allHeats.map { it.toResponseModel() },
-    measurementType = event.settings.measurementType.name,
-    isSimulated = isSimulated,
-)
+        isSimulated = isSimulated,
+    )
+}
 
-private fun QualificationRanking.toResponseModel() = QualificationResultEntryModel(
-    participantId = participantId.toString(),
-    startNumber = startNumber,
-    firstName = firstName,
-    lastName = lastName,
-    club = club,
-    bestTimeNanos = bestTimeNanos,
-    totalTimeNanos = totalTimeNanos,
-    completedRuns = completedRuns,
-    dnfCount = dnfCount,
-    rank = rank,
-)
+private fun QualificationRanking.toResponseModel(): QualificationResultEntryModel {
+    return QualificationResultEntryModel(
+        participantId = participantId.toString(),
+        startNumber = startNumber,
+        firstName = firstName,
+        lastName = lastName,
+        club = club,
+        bestTimeNanos = bestTimeNanos,
+        totalTimeNanos = totalTimeNanos,
+        completedRuns = completedRuns,
+        dnfCount = dnfCount,
+        rank = rank,
+    )
+}
 
-private fun KnockoutResultEntry.toResponseModel() = KnockoutResultEntryModel(
-    rank = rank,
-    participantId = participantId.toString(),
-    firstName = firstName,
-    lastName = lastName,
-    startNumber = startNumber,
-    club = club,
-)
+private fun KnockoutResultEntry.toResponseModel(): KnockoutResultEntryModel {
+    return KnockoutResultEntryModel(
+        rank = rank,
+        participantId = participantId.toString(),
+        firstName = firstName,
+        lastName = lastName,
+        startNumber = startNumber,
+        club = club,
+    )
+}
 
-private fun HeatEntity.toResponseModel() = HeatResultEntryModel(
-    id = id.toString(),
-    round = round,
-    heatNumber = heatNumber,
-    status = status.name,
-    lanes = lanes.map { it.toResponseModel() },
-    measurements = measurements.map { it.toResponseModel() },
-    startedAt = startedAt?.toString(),
-    finishedAt = finishedAt?.toString(),
-)
+private fun HeatEntity.toResponseModel(): HeatResultEntryModel {
+    return HeatResultEntryModel(
+        id = id.toString(),
+        round = round,
+        heatNumber = heatNumber,
+        status = status.name,
+        lanes = lanes.map { it.toResponseModel() },
+        measurements = measurements.map { it.toResponseModel() },
+        startedAt = startedAt?.toString(),
+        finishedAt = finishedAt?.toString(),
+    )
+}
 
-private fun HeatLaneAssignment.toResponseModel() = HeatResultLaneModel(
-    lane = lane,
-    participantId = participantId.toString(),
-    participantStartNumber = participantStartNumber,
-    participantFirstName = participantFirstName,
-    participantLastName = participantLastName,
-)
+private fun HeatLaneAssignment.toResponseModel(): HeatResultLaneModel {
+    return HeatResultLaneModel(
+        lane = lane,
+        participantId = participantId.toString(),
+        participantStartNumber = participantStartNumber,
+        participantFirstName = participantFirstName,
+        participantLastName = participantLastName,
+    )
+}
 
-private fun Measurement.toResponseModel() = HeatResultMeasurementModel(
-    id = id.toString(),
-    lane = lane,
-    durationNanos = durationNanos,
-    outcome = outcome.name,
-    receivedAt = receivedAt.toString(),
-)
+private fun Measurement.toResponseModel(): HeatResultMeasurementModel {
+    return HeatResultMeasurementModel(
+        id = id.toString(),
+        lane = lane,
+        durationNanos = durationNanos,
+        outcome = outcome.name,
+        receivedAt = receivedAt.toString(),
+    )
+}
 
-private fun io.github.raginlundf.racingmanager.application.results.JsonExport.toResponseModel() = JsonExportResponseModel(
-    schemaVersion = schemaVersion,
-    exportedAt = exportedAt,
-    event = snapshot.toResponseModel(),
-)
+private fun io.github.raginlundf.racingmanager.application.results.JsonExport.toResponseModel(): JsonExportResponseModel {
+    return JsonExportResponseModel(
+        schemaVersion = schemaVersion,
+        exportedAt = exportedAt,
+        event = snapshot.toResponseModel(),
+    )
+}
 
-private fun io.github.raginlundf.racingmanager.application.results.BackupExport.toResponseModel() = BackupResponseModel(
-    schemaVersion = schemaVersion,
-    exportedAt = exportedAt,
-    event = snapshot.toResponseModel(),
-)
+private fun io.github.raginlundf.racingmanager.application.results.BackupExport.toResponseModel(): BackupResponseModel {
+    return BackupResponseModel(
+        schemaVersion = schemaVersion,
+        exportedAt = exportedAt,
+        event = snapshot.toResponseModel(),
+    )
+}
 
-private fun RestoreResult.Success.toResponseModel() = RestoreResponseModel(
-    eventId = event.id.toString(),
-    name = event.name,
-    status = event.status.name,
-)
+private fun RestoreResult.Success.toResponseModel(): RestoreResponseModel {
+    return RestoreResponseModel(
+        eventId = event.id.toString(),
+        name = event.name,
+        status = event.status.name,
+    )
+}
