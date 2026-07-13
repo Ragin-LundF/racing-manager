@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { EventResponse } from '../libs/clients/event/event.models';
+import { SelectedEventService } from '../core/selected-event.service';
 import { SpectatorClient } from '../libs/clients/spectator/spectator.client';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -15,6 +16,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 export class EventDetailComponent {
   private readonly eventService = inject(EventClient);
   private readonly spectatorClient = inject(SpectatorClient);
+  private readonly selectedEvent = inject(SelectedEventService);
   private readonly translate = inject(TranslateService);
   protected readonly route = inject(ActivatedRoute);
 
@@ -37,7 +39,12 @@ export class EventDetailComponent {
     const event = this.event();
     if (!event) return;
     this.eventService.activate(event.id).subscribe({
-      next: (updated) => this.event.set(updated),
+      next: (updated) => {
+        this.event.set(updated);
+        // Refresh the shell's cached event list so the top selector reflects
+        // the new status (e.g. DRAFT → ACTIVE) instead of a stale label.
+        this.selectedEvent.notifyEventsChanged();
+      },
       error: () => this.error.set('Failed to activate event.'),
     });
   }
@@ -49,7 +56,12 @@ export class EventDetailComponent {
     if (!confirm(this.translate.instant('events.detail.archiveConfirm', { name: event.name }))) return;
 
     this.eventService.archive(event.id).subscribe({
-      next: (updated) => this.event.set(updated),
+      next: (updated) => {
+        this.event.set(updated);
+        // Refresh the shell's cached event list so the top selector reflects
+        // the new status (e.g. DRAFT → ACTIVE) instead of a stale label.
+        this.selectedEvent.notifyEventsChanged();
+      },
       error: () => this.error.set('Failed to archive event.'),
     });
   }
@@ -61,7 +73,12 @@ export class EventDetailComponent {
     if (!confirm(this.translate.instant('events.detail.reactivateConfirm', { name: event.name }))) return;
 
     this.eventService.reactivate(event.id).subscribe({
-      next: (updated) => this.event.set(updated),
+      next: (updated) => {
+        this.event.set(updated);
+        // Refresh the shell's cached event list so the top selector reflects
+        // the new status (e.g. DRAFT → ACTIVE) instead of a stale label.
+        this.selectedEvent.notifyEventsChanged();
+      },
       error: () => this.error.set('Failed to reactivate event.'),
     });
   }
