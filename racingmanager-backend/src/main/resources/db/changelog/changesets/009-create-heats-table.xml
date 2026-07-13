@@ -10,10 +10,10 @@
             <not><tableExists tableName="heats"/></not>
         </preConditions>
         <createTable tableName="heats">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="event_id" type="UUID">
+            <column name="event_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_heats_event" references="events(id)"/>
             </column>
             <column name="round" type="INT">

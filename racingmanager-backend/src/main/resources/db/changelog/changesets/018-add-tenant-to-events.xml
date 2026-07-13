@@ -12,7 +12,7 @@
         <!-- Nullable at the DB level: the startup DefaultTenantMigration backfills
              existing rows before any other startup code reads them. -->
         <addColumn tableName="events">
-            <column name="tenant_id" type="UUID">
+            <column name="tenant_id" type="BINARY(16)">
                 <constraints foreignKeyName="fk_events_tenant" references="tenants(id)"/>
             </column>
         </addColumn>

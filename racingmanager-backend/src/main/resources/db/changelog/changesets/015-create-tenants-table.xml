@@ -10,7 +10,7 @@
             <not><tableExists tableName="tenants"/></not>
         </preConditions>
         <createTable tableName="tenants">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="slug" type="VARCHAR(100)">

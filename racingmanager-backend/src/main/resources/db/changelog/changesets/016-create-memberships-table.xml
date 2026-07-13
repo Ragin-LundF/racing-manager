@@ -10,13 +10,13 @@
             <not><tableExists tableName="memberships"/></not>
         </preConditions>
         <createTable tableName="memberships">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="user_id" type="UUID">
+            <column name="user_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_memberships_user" references="users(id)"/>
             </column>
-            <column name="tenant_id" type="UUID">
+            <column name="tenant_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_memberships_tenant" references="tenants(id)"/>
             </column>
             <column name="status" type="VARCHAR(50)">

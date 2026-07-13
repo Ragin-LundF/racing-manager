@@ -10,10 +10,10 @@
             <not><tableExists tableName="qualifications"/></not>
         </preConditions>
         <createTable tableName="qualifications">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="event_id" type="UUID">
+            <column name="event_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_qualifications_event" references="events(id)"/>
             </column>
             <column name="status" type="VARCHAR(50)">
@@ -30,7 +30,7 @@
             </column>
             <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"/>
             <column name="finalized_at" type="TIMESTAMP WITH TIME ZONE"/>
-            <column name="finalized_by" type="UUID"/>
+            <column name="finalized_by" type="BINARY(16)"/>
         </createTable>
     </changeSet>
 </databaseChangeLog>

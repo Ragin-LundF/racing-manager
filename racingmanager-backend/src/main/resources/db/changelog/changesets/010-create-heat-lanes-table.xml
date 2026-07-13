@@ -10,16 +10,16 @@
             <not><tableExists tableName="heat_lanes"/></not>
         </preConditions>
         <createTable tableName="heat_lanes">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="heat_id" type="UUID">
+            <column name="heat_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_heat_lanes_heat" references="heats(id)"/>
             </column>
             <column name="lane" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="participant_id" type="UUID">
+            <column name="participant_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_heat_lanes_participant" references="participants(id)"/>
             </column>
             <column name="participant_start_number" type="INT">

@@ -10,10 +10,10 @@
             <not><tableExists tableName="measurements"/></not>
         </preConditions>
         <createTable tableName="measurements">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="heat_id" type="UUID">
+            <column name="heat_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_measurements_heat" references="heats(id)"/>
             </column>
             <column name="lane" type="INT">

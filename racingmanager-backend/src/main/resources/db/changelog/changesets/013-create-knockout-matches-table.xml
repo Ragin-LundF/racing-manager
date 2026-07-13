@@ -10,10 +10,10 @@
             <not><tableExists tableName="knockout_matches"/></not>
         </preConditions>
         <createTable tableName="knockout_matches">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="tournament_id" type="UUID">
+            <column name="tournament_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_knockout_matches_tournament" references="knockout_tournaments(id)"/>
             </column>
             <column name="round_number" type="INT">
@@ -22,10 +22,10 @@
             <column name="match_number" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="participant1_id" type="UUID"/>
-            <column name="participant2_id" type="UUID"/>
-            <column name="winner_id" type="UUID"/>
-            <column name="heat_id" type="UUID"/>
+            <column name="participant1_id" type="BINARY(16)"/>
+            <column name="participant2_id" type="BINARY(16)"/>
+            <column name="winner_id" type="BINARY(16)"/>
+            <column name="heat_id" type="BINARY(16)"/>
             <column name="status" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>

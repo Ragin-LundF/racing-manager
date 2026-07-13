@@ -10,13 +10,13 @@
             <not><tableExists tableName="spectator_exchange_codes"/></not>
         </preConditions>
         <createTable tableName="spectator_exchange_codes">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="tenant_id" type="UUID">
+            <column name="tenant_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_spectator_exchange_codes_tenant" references="tenants(id)"/>
             </column>
-            <column name="event_id" type="UUID">
+            <column name="event_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_spectator_exchange_codes_event" references="events(id)"/>
             </column>
             <column name="token" type="TEXT">

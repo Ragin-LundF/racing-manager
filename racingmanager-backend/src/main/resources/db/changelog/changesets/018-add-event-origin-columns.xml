@@ -10,8 +10,8 @@
             <not><columnExists tableName="events" columnName="origin_tenant_id"/></not>
         </preConditions>
         <addColumn tableName="events">
-            <column name="origin_tenant_id" type="UUID"/>
-            <column name="origin_package_id" type="UUID"/>
+            <column name="origin_tenant_id" type="BINARY(16)"/>
+            <column name="origin_package_id" type="BINARY(16)"/>
         </addColumn>
     </changeSet>
 </databaseChangeLog>

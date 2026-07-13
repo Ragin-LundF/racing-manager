@@ -10,7 +10,7 @@
             <not><tableExists tableName="signing_keys"/></not>
         </preConditions>
         <createTable tableName="signing_keys">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="kid" type="VARCHAR(64)">

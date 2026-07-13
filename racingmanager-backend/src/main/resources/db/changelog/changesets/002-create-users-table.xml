@@ -10,10 +10,10 @@
             <not><tableExists tableName="users"/></not>
         </preConditions>
         <createTable tableName="users">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="tenant_id" type="UUID">
+            <column name="tenant_id" type="BINARY(16)">
                 <constraints nullable="false" foreignKeyName="fk_users_tenant" references="tenants(id)"/>
             </column>
             <column name="username" type="VARCHAR(255)">

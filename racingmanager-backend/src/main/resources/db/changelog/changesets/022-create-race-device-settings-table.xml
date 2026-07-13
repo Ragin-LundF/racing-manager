@@ -10,7 +10,7 @@
             <not><tableExists tableName="race_device_settings"/></not>
         </preConditions>
         <createTable tableName="race_device_settings">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="mode" type="VARCHAR(32)">

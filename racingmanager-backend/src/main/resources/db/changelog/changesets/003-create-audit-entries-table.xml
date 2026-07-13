@@ -10,15 +10,15 @@
             <not><tableExists tableName="audit_entries"/></not>
         </preConditions>
         <createTable tableName="audit_entries">
-            <column name="id" type="UUID">
+            <column name="id" type="BINARY(16)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="actor_id" type="UUID"/>
+            <column name="actor_id" type="BINARY(16)"/>
             <column name="action" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="target_type" type="VARCHAR(100)"/>
-            <column name="target_id" type="UUID"/>
+            <column name="target_id" type="BINARY(16)"/>
             <column name="summary" type="TEXT"/>
             <column name="details" type="TEXT"/>
             <column name="correlation_id" type="VARCHAR(255)"/>
