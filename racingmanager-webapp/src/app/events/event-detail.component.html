@@ -24,7 +24,7 @@
 
       <div class="actions">
         @if (e.status === 'DRAFT') {
-          <button (click)="onActivate()">{{ 'events.detail.activate' | translate }}</button>
+          <button class="success" (click)="onActivate()">{{ 'events.detail.activate' | translate }}</button>
           <a [routerLink]="['edit']">{{ 'events.detail.edit' | translate }}</a>
         }
         @if (e.status === 'ACTIVE' || e.status === 'COMPLETED') {

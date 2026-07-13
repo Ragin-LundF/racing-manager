@@ -61,3 +61,15 @@
 .actions a:hover {
   border-color: var(--color-text-muted);
 }
+
+/* Activate is the primary affirmative action for an inactive (DRAFT) event. */
+.actions button.success {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #08130b;
+  font-weight: 600;
+}
+.actions button.success:hover {
+  border-color: var(--color-success);
+  filter: brightness(1.08);
+}
