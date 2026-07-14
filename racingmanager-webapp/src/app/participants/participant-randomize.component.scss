@@ -1,4 +1,12 @@
+.participant-randomize { max-width: 560px; background: var(--color-bg-panel); border: 1px solid var(--color-border); border-radius: var(--radius-panel); padding: var(--space-6); }
+.participant-randomize h2 { margin: 0 0 var(--space-4); font-size: 18px; font-weight: 600; }
+.participant-randomize > p:not(.error):not(.success) { color: var(--color-text-secondary); }
+
 .error { color: var(--color-error); }
 .success { color: var(--color-success); }
 .actions { margin-top: var(--space-4); display: flex; gap: var(--space-2); }
 .warning { background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-panel)); border: 1px solid var(--color-warning); border-radius: var(--radius-panel); padding: var(--space-4); margin-bottom: var(--space-4); }
+.warning p { color: var(--color-text-secondary); margin: var(--space-2) 0 0; }
+
+button.primary { background: var(--color-action); border-color: var(--color-action); color: #08130b; font-weight: 600; }
+button.primary:hover:not(:disabled) { filter: brightness(1.08); }

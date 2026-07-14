@@ -177,6 +177,13 @@ export class QualificationComponent {
     return 'planned';
   }
 
+  protected heatStatusChipClass(status: string): string {
+    if (status === 'FINISHED') return 'chip-success';
+    if (status === 'ARMED' || status === 'STARTED') return 'chip-warning';
+    if (status === 'CANCELLED' || status === 'TIMEOUT' || status === 'TECHNICAL_ERROR') return 'chip-error';
+    return 'chip-muted';
+  }
+
   protected getLaneNames(heat: HeatScheduleResponse): string {
     return heat.lanes.map(l => `#${l.participantStartNumber} ${l.participantFirstName} ${l.participantLastName}`).join(' vs ');
   }

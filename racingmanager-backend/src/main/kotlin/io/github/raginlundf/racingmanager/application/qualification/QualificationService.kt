@@ -154,21 +154,17 @@ class QualificationService(
         rng: java.util.Random,
         now: kotlin.time.Instant,
     ): Int {
+        val pairings = buildQualificationPairings(participants, numberOfRuns, rng)
         var heatNumber = 1
-        for (run in 1..numberOfRuns) {
-            val shuffled = participants.shuffled(rng)
-            val pairs = shuffled.chunked(2)
-
-            for (pair in pairs) {
-                val heat = buildQualificationHeat(
-                    eventId = eventId,
-                    pair = pair,
-                    heatNumber = heatNumber,
-                    now = now,
-                )
-                heatRepository.insert(heat)
-                heatNumber++
-            }
+        for (pairing in pairings) {
+            val heat = buildQualificationHeat(
+                eventId = eventId,
+                pair = pairing,
+                heatNumber = heatNumber,
+                now = now,
+            )
+            heatRepository.insert(heat)
+            heatNumber++
         }
         return heatNumber - 1
     }
@@ -345,6 +341,74 @@ class QualificationService(
             participants = participants,
             heats = heats,
         )
+    }
+}
+
+/**
+ * Builds the heat line-up for [numberOfRuns] qualification runs while minimising the number
+ * of "solo" heats (a racer running alone). Uses the round-robin circle method so each racer
+ * appears exactly [numberOfRuns] times; racers who sit out a run (the bye, when the field is
+ * odd) are paired against each other in extra heats instead of running solo. At most one solo
+ * heat remains, and only when both the field size and [numberOfRuns] are odd.
+ */
+private fun buildQualificationPairings(
+    participants: List<ParticipantEntity>,
+    numberOfRuns: Int,
+    rng: java.util.Random,
+): List<List<ParticipantEntity>> {
+    val ordered = participants.shuffled(rng)
+    // Even the field with a null "bye" sentinel so the circle method pairs everyone up.
+    val slots: List<ParticipantEntity?> = if (ordered.size % 2 == 0) ordered else ordered + null
+    val size = slots.size
+
+    val pairings = mutableListOf<List<ParticipantEntity>>()
+    val byes = mutableListOf<ParticipantEntity>()
+
+    var rotation = slots
+    repeat(numberOfRuns) {
+        for (i in 0 until size / 2) {
+            val first = rotation[i]
+            val second = rotation[size - 1 - i]
+            when {
+                first != null && second != null -> pairings.add(listOf(first, second))
+                first != null -> byes.add(first)
+                second != null -> byes.add(second)
+            }
+        }
+        rotation = rotateForNextRound(rotation)
+    }
+
+    addByePairings(pairings, byes)
+    return pairings
+}
+
+// Standard circle-method rotation: keep the first slot fixed and rotate the rest by one.
+private fun rotateForNextRound(rotation: List<ParticipantEntity?>): List<ParticipantEntity?> {
+    if (rotation.size <= 2) return rotation
+    val tail = rotation.subList(1, rotation.size)
+    return listOf(rotation.first(), tail.last()) + tail.dropLast(1)
+}
+
+// Pair racers who sat out (byes) against each other so they get a timed run rather than
+// running solo. A single leftover bye (odd number of byes) becomes the one unavoidable solo.
+private fun addByePairings(
+    pairings: MutableList<List<ParticipantEntity>>,
+    byes: List<ParticipantEntity>,
+) {
+    var i = 0
+    while (i < byes.size) {
+        val first = byes[i]
+        val second = byes.getOrNull(i + 1)
+        when {
+            second == null -> pairings.add(listOf(first))
+            second.id == first.id -> {
+                // Same racer byed twice (numberOfRuns > field size): keep as separate solos.
+                pairings.add(listOf(first))
+                pairings.add(listOf(second))
+            }
+            else -> pairings.add(listOf(first, second))
+        }
+        i += 2
     }
 }
 

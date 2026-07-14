@@ -9,6 +9,7 @@
 .chip-success { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 40%, transparent); background: color-mix(in srgb, var(--color-success) 14%, transparent); }
 .chip-warning { color: var(--color-warning); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); background: color-mix(in srgb, var(--color-warning) 14%, transparent); }
 .chip-muted { color: var(--color-text-secondary); border-color: var(--color-border); background: var(--color-bg-raised); }
+.chip-error { color: var(--color-error); border-color: color-mix(in srgb, var(--color-error) 40%, transparent); background: color-mix(in srgb, var(--color-error) 14%, transparent); }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 0 var(--space-3); height: 40px; text-align: left; border-bottom: 1px solid var(--color-border); }
 th { font-weight: 600; font-size: 13px; color: var(--color-text-secondary); background: var(--color-bg-raised); }

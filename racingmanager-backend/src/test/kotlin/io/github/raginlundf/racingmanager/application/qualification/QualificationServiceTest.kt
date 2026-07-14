@@ -219,6 +219,41 @@ class QualificationServiceTest {
     }
 
     @Test
+    fun `generateSchedule pairs the byes for odd field with even runs so there are no solo heats`() {
+        addParticipant(startNumber = 3, firstName = "Carol")
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
+
+        val heats = heatRepository.findByEventId(eventId = eventId)
+
+        // 3 participants * 2 runs = 6 lane slots = 3 two-lane heats, zero solo heats.
+        assertEquals(expected = 3, actual = heats.size)
+        assertEquals(expected = 0, actual = heats.count { it.lanes.size == 1 })
+        assertTrue(actual = heats.all { it.lanes.size == 2 })
+        // Every participant races exactly numberOfRuns (2) times.
+        val appearances = heats.flatMap { it.lanes }.groupingBy { it.participantId }.eachCount()
+        assertEquals(expected = 3, actual = appearances.size)
+        assertTrue(actual = appearances.values.all { it == 2 })
+    }
+
+    @Test
+    fun `generateSchedule leaves exactly one solo heat for odd field with odd runs`() {
+        addParticipant(startNumber = 3, firstName = "Carol")
+        qualificationService.setup(eventId = eventId, numberOfRuns = 1, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
+
+        val heats = heatRepository.findByEventId(eventId = eventId)
+
+        // 3 participants * 1 run = 3 lane slots = one two-lane heat + one unavoidable solo.
+        assertEquals(expected = 2, actual = heats.size)
+        assertEquals(expected = 1, actual = heats.count { it.lanes.size == 1 })
+        // Every participant races exactly once.
+        val appearances = heats.flatMap { it.lanes }.groupingBy { it.participantId }.eachCount()
+        assertEquals(expected = 3, actual = appearances.size)
+        assertTrue(actual = appearances.values.all { it == 1 })
+    }
+
+    @Test
     fun `getRankings returns empty list when no qualification`() {
         val rankings = qualificationService.getRankings(eventId = eventId)
 
@@ -319,5 +354,19 @@ class QualificationServiceTest {
         val q = qualificationService.findByEventId(eventId = eventId)
         assertNotNull(actual = q)
         assertEquals(expected = eventId, actual = q.eventId)
+    }
+
+    private fun addParticipant(startNumber: Int, firstName: String): UUID {
+        val created = participantService.create(
+            eventId = eventId,
+            startNumber = startNumber,
+            firstName = firstName,
+            lastName = "Racer",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        return (created as CreateParticipantResult.Success).participant.id
     }
 }

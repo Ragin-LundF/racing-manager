@@ -79,7 +79,7 @@
                 <span class="lane-info"> — {{ getLaneNames(heat) }}</span>
               </div>
               <div class="heat-actions">
-                <span>{{ heat.status }}</span>
+                <span class="chip" [class]="heatStatusChipClass(heat.status)">{{ heat.status }}</span>
                 @if (heat.status === 'PLANNED') {
                   <button class="primary" [routerLink]="['../race-control']">{{ 'qualification.goToRaceControl' | translate }}</button>
                 }
