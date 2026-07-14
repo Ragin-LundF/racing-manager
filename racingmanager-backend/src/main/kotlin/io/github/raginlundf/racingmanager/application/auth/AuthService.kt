@@ -49,7 +49,7 @@ class AuthService(
     ): SetupResult {
         if (!isFirstRun()) return SetupResult.AlreadySetup
 
-        val tenant = ensureLocalTenant()
+        val tenant = ensureReservedTenant(LOCAL_TENANT_ID, LOCAL_TENANT_SLUG, "Local")
         val now = clock.now()
         val passwordHash = passwordHasher.hash(password)
         val user = UserEntity(
@@ -184,7 +184,13 @@ class AuthService(
         )
         userRepository.insert(user)
         membershipRepository.insert(
-            MembershipEntity(id = UUID.randomUUID(), userId = user.id, tenantId = tenant.id, role = UserRole.ADMIN, createdAt = now),
+            MembershipEntity(
+                id = UUID.randomUUID(),
+                userId = user.id,
+                tenantId = tenant.id,
+                role = UserRole.ADMIN,
+                createdAt = now,
+            ),
         )
         auditRepository.insert(
             AuditEntryEntity(
@@ -236,7 +242,13 @@ class AuthService(
         )
         userRepository.insert(user)
         membershipRepository.insert(
-            MembershipEntity(id = UUID.randomUUID(), userId = user.id, tenantId = tenantId, role = role, createdAt = now),
+            MembershipEntity(
+                id = UUID.randomUUID(),
+                userId = user.id,
+                tenantId = tenantId,
+                role = role,
+                createdAt = now,
+            ),
         )
         auditRepository.insert(
             AuditEntryEntity(
@@ -308,7 +320,10 @@ class AuthService(
                 occurredAt = now,
             ),
         )
-        return UpdateTenantUserResult.Success(user.copy(role = newRole), membership.copy(role = newRole, status = newStatus, updatedAt = now))
+        return UpdateTenantUserResult.Success(
+            user.copy(role = newRole),
+            membership.copy(role = newRole, status = newStatus, updatedAt = now),
+        )
     }
 
     /** Issues a new access token from a still-valid refresh token. The refresh
@@ -391,7 +406,7 @@ class AuthService(
     fun setupSupervisor(username: String, password: String, displayName: String): SetupResult {
         if (!isFirstSupervisorRun()) return SetupResult.AlreadySetup
 
-        val tenant = ensurePlatformTenant()
+        val tenant = ensureReservedTenant(PLATFORM_TENANT_ID, PLATFORM_TENANT_SLUG, "Platform")
         val now = clock.now()
         val user = UserEntity(
             id = UUID.randomUUID(),
@@ -404,7 +419,13 @@ class AuthService(
         )
         userRepository.insert(user)
         membershipRepository.insert(
-            MembershipEntity(id = UUID.randomUUID(), userId = user.id, tenantId = tenant.id, role = UserRole.SUPERVISOR, createdAt = now),
+            MembershipEntity(
+                id = UUID.randomUUID(),
+                userId = user.id,
+                tenantId = tenant.id,
+                role = UserRole.SUPERVISOR,
+                createdAt = now,
+            ),
         )
         auditRepository.insert(
             AuditEntryEntity(
@@ -469,21 +490,15 @@ class AuthService(
         return DeleteTenantResult.Success(updated)
     }
 
-    private fun ensureLocalTenant(): TenantEntity {
-        return tenantRepository.findById(LOCAL_TENANT_ID) ?: TenantEntity(
-            id = LOCAL_TENANT_ID,
-            slug = LOCAL_TENANT_SLUG,
-            displayName = "Local",
-            status = TenantStatus.ACTIVE,
-            createdAt = clock.now(),
-        ).also { tenantRepository.insert(it) }
-    }
-
-    private fun ensurePlatformTenant(): TenantEntity {
-        return tenantRepository.findById(PLATFORM_TENANT_ID) ?: TenantEntity(
-            id = PLATFORM_TENANT_ID,
-            slug = PLATFORM_TENANT_SLUG,
-            displayName = "Platform",
+    /** Idempotently returns the reserved tenant with the given fixed identity,
+        creating it on first use. Shared by [setupAdmin] (local tenant) and
+        [setupSupervisor] (platform tenant) — both reserved tenants use the
+        same fixed-id/find-or-create shape. */
+    private fun ensureReservedTenant(id: UUID, slug: String, displayName: String): TenantEntity {
+        return tenantRepository.findById(id) ?: TenantEntity(
+            id = id,
+            slug = slug,
+            displayName = displayName,
             status = TenantStatus.ACTIVE,
             createdAt = clock.now(),
         ).also { tenantRepository.insert(it) }

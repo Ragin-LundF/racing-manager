@@ -39,7 +39,7 @@ class QualificationService(
         val heats = heatRepository.findByEventId(eventId)
             .filter { it.round == 1 }
 
-        return calculateRankings(participants, heats, qualification)
+        return calculateRankings(participants, heats)
     }
 
     fun setup(eventId: UUID, numberOfRuns: Int, actorId: UUID): SetupQualificationResult {
@@ -114,53 +114,13 @@ class QualificationService(
 
         val now = clock.now()
         val rng = java.util.Random(qualification.seed)
-        var heatNumber = 1
-
-        for (run in 1..qualification.numberOfRuns) {
-            val shuffled = participants.shuffled(rng)
-            val pairs = shuffled.chunked(2)
-
-            for (pair in pairs) {
-                val lane1 = pair[0]
-                val lane2 = if (pair.size > 1) pair[1] else null
-
-                val lanes = mutableListOf(
-                    HeatLaneAssignment(
-                        lane = 1,
-                        participantId = lane1.id,
-                        participantStartNumber = lane1.startNumber,
-                        participantFirstName = lane1.firstName,
-                        participantLastName = lane1.lastName,
-                    ),
-                )
-
-                if (lane2 != null) {
-                    lanes.add(
-                        HeatLaneAssignment(
-                            lane = 2,
-                            participantId = lane2.id,
-                            participantStartNumber = lane2.startNumber,
-                            participantFirstName = lane2.firstName,
-                            participantLastName = lane2.lastName,
-                        ),
-                    )
-                }
-
-                val heat = HeatEntity(
-                    id = UUID.randomUUID(),
-                    eventId = eventId,
-                    round = 1,
-                    heatNumber = heatNumber,
-                    status = HeatStatus.PLANNED,
-                    lanes = lanes,
-                    measurements = emptyList(),
-                    createdAt = now,
-                )
-
-                heatRepository.insert(heat)
-                heatNumber++
-            }
-        }
+        val heatsCreated = scheduleQualificationHeats(
+            eventId = eventId,
+            participants = participants,
+            numberOfRuns = qualification.numberOfRuns,
+            rng = rng,
+            now = now,
+        )
 
         val updated = qualification.copy(
             status = QualificationStatus.SCHEDULED,
@@ -179,12 +139,81 @@ class QualificationService(
                 action = "QUALIFICATION_SCHEDULED",
                 targetType = "Qualification",
                 targetId = qualification.id,
-                summary = "Qualification schedule generated: ${heatNumber - 1} heats, ${qualification.numberOfRuns} runs",
+                summary = "Qualification schedule generated: $heatsCreated heats, ${qualification.numberOfRuns} runs",
                 occurredAt = clock.now(),
             ),
         )
 
         return GenerateScheduleResult.Success(updated)
+    }
+
+    private fun scheduleQualificationHeats(
+        eventId: UUID,
+        participants: List<ParticipantEntity>,
+        numberOfRuns: Int,
+        rng: java.util.Random,
+        now: kotlin.time.Instant,
+    ): Int {
+        var heatNumber = 1
+        for (run in 1..numberOfRuns) {
+            val shuffled = participants.shuffled(rng)
+            val pairs = shuffled.chunked(2)
+
+            for (pair in pairs) {
+                val heat = buildQualificationHeat(
+                    eventId = eventId,
+                    pair = pair,
+                    heatNumber = heatNumber,
+                    now = now,
+                )
+                heatRepository.insert(heat)
+                heatNumber++
+            }
+        }
+        return heatNumber - 1
+    }
+
+    private fun buildQualificationHeat(
+        eventId: UUID,
+        pair: List<ParticipantEntity>,
+        heatNumber: Int,
+        now: kotlin.time.Instant,
+    ): HeatEntity {
+        val lane1 = pair[0]
+        val lane2 = if (pair.size > 1) pair[1] else null
+
+        val lanes = mutableListOf(
+            HeatLaneAssignment(
+                lane = 1,
+                participantId = lane1.id,
+                participantStartNumber = lane1.startNumber,
+                participantFirstName = lane1.firstName,
+                participantLastName = lane1.lastName,
+            ),
+        )
+
+        if (lane2 != null) {
+            lanes.add(
+                HeatLaneAssignment(
+                    lane = 2,
+                    participantId = lane2.id,
+                    participantStartNumber = lane2.startNumber,
+                    participantFirstName = lane2.firstName,
+                    participantLastName = lane2.lastName,
+                ),
+            )
+        }
+
+        return HeatEntity(
+            id = UUID.randomUUID(),
+            eventId = eventId,
+            round = 1,
+            heatNumber = heatNumber,
+            status = HeatStatus.PLANNED,
+            lanes = lanes,
+            measurements = emptyList(),
+            createdAt = now,
+        )
     }
 
     fun getSchedule(eventId: UUID): List<HeatEntity> {
@@ -201,7 +230,9 @@ class QualificationService(
         val completedHeats = heats.count { it.status == HeatStatus.FINISHED || it.status == HeatStatus.TIMEOUT }
         val inProgressHeats = heats.count { it.status == HeatStatus.ARMED || it.status == HeatStatus.STARTED }
         val plannedHeats = heats.count { it.status == HeatStatus.PLANNED }
-        val cancelledHeats = heats.count { it.status == HeatStatus.CANCELLED || it.status == HeatStatus.TECHNICAL_ERROR }
+        val cancelledHeats = heats.count {
+            it.status == HeatStatus.CANCELLED || it.status == HeatStatus.TECHNICAL_ERROR
+        }
 
         val participants = participantRepository.findByEventId(eventId)
             .filter { it.status == ParticipantStatus.ACTIVE }
@@ -231,8 +262,9 @@ class QualificationService(
         val qualification = qualificationRepository.findByEventId(eventId)
             ?: return FinalizeResult.QualificationNotFound
 
-        if (qualification.status != QualificationStatus.SCHEDULED && qualification.status != QualificationStatus.IN_PROGRESS) {
-            return FinalizeResult.InvalidStatus(qualification.status)
+        val status = qualification.status
+        if (status != QualificationStatus.SCHEDULED && status != QualificationStatus.IN_PROGRESS) {
+            return FinalizeResult.InvalidStatus(status)
         }
 
         val heats = heatRepository.findByEventId(eventId)
@@ -308,12 +340,10 @@ class QualificationService(
     private fun calculateRankings(
         participants: List<ParticipantEntity>,
         heats: List<HeatEntity>,
-        qualification: QualificationEntity,
     ): List<QualificationRanking> {
         return QualificationRankingCalculator.calculate(
             participants = participants,
             heats = heats,
-            qualification = qualification,
         )
     }
 }

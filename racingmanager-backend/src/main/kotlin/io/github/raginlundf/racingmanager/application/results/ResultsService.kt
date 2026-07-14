@@ -7,10 +7,8 @@ import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchEntity
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchStatus
 import io.github.raginlundf.racingmanager.application.knockout.KnockoutResultEntry
-import io.github.raginlundf.racingmanager.domain.knockout.KnockoutTournamentEntity
 import io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity
 import io.github.raginlundf.racingmanager.domain.participant.ParticipantStatus
-import io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
 import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.domain.event.EventEntity
@@ -41,14 +39,18 @@ class ResultsService(
         val heats = heatRepository.findByEventId(eventId)
         val qualification = qualificationRepository.findByEventId(eventId)
         val tournament = knockoutRepository.findByEventId(eventId)
-        val matches = if (tournament != null) knockoutRepository.findMatchesByTournamentId(tournament.id) else emptyList()
+        val matches = if (tournament != null) {
+            knockoutRepository.findMatchesByTournamentId(tournament.id)
+        } else {
+            emptyList()
+        }
 
         val qualificationRankings = if (qualification != null) {
-            calculateRankings(participants, heats.filter { it.round == 1 }, qualification)
+            calculateRankings(participants, heats.filter { it.round == 1 })
         } else emptyList()
 
         val knockoutResults = if (tournament != null) {
-            calculateKnockoutResults(tournament, matches, qualificationRankings)
+            calculateKnockoutResults(matches, qualificationRankings)
         } else emptyList()
 
         return EventResultSnapshot(
@@ -65,7 +67,18 @@ class ResultsService(
         val sb = StringBuilder()
         sb.appendLine("Rank,StartNumber,FirstName,LastName,Club,BestTimeNanos,TotalTimeNanos,CompletedRuns,DNFCount")
         for (entry in snapshot.qualificationRankings) {
-            sb.appendLine("${entry.rank},${entry.startNumber},${entry.firstName},${entry.lastName},${entry.club ?: ""},${entry.bestTimeNanos ?: ""},${entry.totalTimeNanos ?: ""},${entry.completedRuns},${entry.dnfCount}")
+            val row = listOf(
+                entry.rank,
+                entry.startNumber,
+                entry.firstName,
+                entry.lastName,
+                entry.club ?: "",
+                entry.bestTimeNanos ?: "",
+                entry.totalTimeNanos ?: "",
+                entry.completedRuns,
+                entry.dnfCount,
+            ).joinToString(",")
+            sb.appendLine(row)
         }
         return CsvExport(
             csv = sb.toString(),
@@ -76,7 +89,16 @@ class ResultsService(
     fun exportHtml(eventId: UUID, locale: String): HtmlExport? {
         val snapshot = getSnapshot(eventId) ?: return null
         val rows = snapshot.qualificationRankings.joinToString("") { entry ->
-            "<tr><td>${entry.rank}</td><td>${entry.startNumber}</td><td>${entry.firstName}</td><td>${entry.lastName}</td><td>${entry.club ?: ""}</td><td>${entry.bestTimeNanos ?: ""}</td><td>${entry.totalTimeNanos ?: ""}</td></tr>"
+            val cells = listOf(
+                entry.rank,
+                entry.startNumber,
+                entry.firstName,
+                entry.lastName,
+                entry.club ?: "",
+                entry.bestTimeNanos ?: "",
+                entry.totalTimeNanos ?: "",
+            ).joinToString("</td><td>")
+            "<tr><td>$cells</td></tr>"
         }
         val html = """
             <!DOCTYPE html>
@@ -142,17 +164,14 @@ class ResultsService(
     private fun calculateRankings(
         participants: List<ParticipantEntity>,
         heats: List<HeatEntity>,
-        qualification: QualificationEntity,
     ): List<QualificationRanking> {
         return QualificationRankingCalculator.calculate(
             participants = participants,
             heats = heats,
-            qualification = qualification,
         )
     }
 
     private fun calculateKnockoutResults(
-        tournament: KnockoutTournamentEntity,
         matches: List<KnockoutMatchEntity>,
         qualificationRankings: List<QualificationRanking>,
     ): List<KnockoutResultEntry> {

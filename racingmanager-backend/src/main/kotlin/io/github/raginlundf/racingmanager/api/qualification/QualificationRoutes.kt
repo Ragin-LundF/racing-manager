@@ -2,6 +2,9 @@ package io.github.raginlundf.racingmanager.api.qualification
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
 import io.github.raginlundf.racingmanager.api.authenticateRequest
+import io.github.raginlundf.racingmanager.api.qualification.models.HeatLaneScheduleResponseModel
+import io.github.raginlundf.racingmanager.api.qualification.models.HeatScheduleResponseModel
+import io.github.raginlundf.racingmanager.api.qualification.models.MeasurementScheduleResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationProgressResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationRankingResponseModel
 import io.github.raginlundf.racingmanager.api.qualification.models.QualificationResponseModel
@@ -13,6 +16,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepos
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.application.qualification.FinalizeResult
 import io.github.raginlundf.racingmanager.application.qualification.GenerateScheduleResult
+import io.github.raginlundf.racingmanager.application.qualification.QualificationProgress
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
 import io.github.raginlundf.racingmanager.application.qualification.ReopenResult
 import io.github.raginlundf.racingmanager.application.qualification.SetupQualificationResult
@@ -30,7 +34,23 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import java.util.UUID
 
-fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: QualificationService, eventRepository: EventRepository) {
+fun Route.qualificationRoutes(
+    jwtService: JwtService,
+    qualificationService: QualificationService,
+    eventRepository: EventRepository,
+) {
+    qualificationSetupRoutes(jwtService, qualificationService, eventRepository)
+    qualificationScheduleRoutes(jwtService, qualificationService, eventRepository)
+    qualificationReadRoutes(jwtService, qualificationService, eventRepository)
+    qualificationFinalizeRoutes(jwtService, qualificationService, eventRepository)
+    qualificationReopenRoutes(jwtService, qualificationService, eventRepository)
+}
+
+private fun Route.qualificationSetupRoutes(
+    jwtService: JwtService,
+    qualificationService: QualificationService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/qualification/setup") {
         val principal = call.authenticateRequest(jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -43,33 +63,44 @@ fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: Qual
                 call.respond(status = HttpStatusCode.Created, message = result.qualification.toResponseModel())
             }
             is SetupQualificationResult.EventNotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
+                call.respond(
+                    status = HttpStatusCode.NotFound,
+                    message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
+                )
             }
             is SetupQualificationResult.EventNotActive -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "EVENT_NOT_ACTIVE", message = "Event must be ACTIVE"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(code = "EVENT_NOT_ACTIVE", message = "Event must be ACTIVE"),
+                )
             }
             is SetupQualificationResult.AlreadyExists -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "QUALIFICATION_ALREADY_EXISTS", message = "Qualification already exists"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(
+                        code = "QUALIFICATION_ALREADY_EXISTS",
+                        message = "Qualification already exists",
+                    ),
+                )
             }
             is SetupQualificationResult.NotEnoughParticipants -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "NOT_ENOUGH_PARTICIPANTS", message = "At least 2 active participants required"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(
+                        code = "NOT_ENOUGH_PARTICIPANTS",
+                        message = "At least 2 active participants required",
+                    ),
+                )
             }
         }
     }
+}
 
-    get("/api/v1/events/{eventId}/qualification") {
-        val principal = call.authenticateRequest(jwtService) ?: return@get
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
-        val qualification = qualificationService.findByEventId(eventId)
-            ?: return@get call.respond(
-                status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"),
-            )
-        call.respond(qualification.toResponseModel())
-    }
-
+private fun Route.qualificationScheduleRoutes(
+    jwtService: JwtService,
+    qualificationService: QualificationService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/qualification/schedule") {
         val principal = call.authenticateRequest(jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -81,16 +112,31 @@ fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: Qual
                 call.respond(result.qualification.toResponseModel())
             }
             is GenerateScheduleResult.QualificationNotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"))
+                call.respond(
+                    status = HttpStatusCode.NotFound,
+                    message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"),
+                )
             }
             is GenerateScheduleResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Qualification must be PENDING"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Qualification must be PENDING"),
+                )
             }
             is GenerateScheduleResult.NotEnoughParticipants -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "NOT_ENOUGH_PARTICIPANTS", message = "At least 2 active participants required"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(
+                        code = "NOT_ENOUGH_PARTICIPANTS",
+                        message = "At least 2 active participants required",
+                    ),
+                )
             }
             is GenerateScheduleResult.HeatsAlreadyExist -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "HEATS_ALREADY_EXIST", message = "Schedule already generated"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(code = "HEATS_ALREADY_EXIST", message = "Schedule already generated"),
+                )
             }
         }
     }
@@ -102,6 +148,25 @@ fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: Qual
         call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
         val schedule = qualificationService.getSchedule(eventId)
         call.respond(schedule.map { it.toHeatResponseModel() })
+    }
+}
+
+private fun Route.qualificationReadRoutes(
+    jwtService: JwtService,
+    qualificationService: QualificationService,
+    eventRepository: EventRepository,
+) {
+    get("/api/v1/events/{eventId}/qualification") {
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
+        val qualification = qualificationService.findByEventId(eventId)
+            ?: return@get call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"),
+            )
+        call.respond(qualification.toResponseModel())
     }
 
     get("/api/v1/events/{eventId}/qualification/rankings") {
@@ -121,7 +186,13 @@ fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: Qual
         val progress = qualificationService.getProgress(eventId)
         call.respond(progress.toResponseModel())
     }
+}
 
+private fun Route.qualificationFinalizeRoutes(
+    jwtService: JwtService,
+    qualificationService: QualificationService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/qualification/finalize") {
         val principal = call.authenticateRequest(jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -130,20 +201,44 @@ fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: Qual
 
         when (val result = qualificationService.finalize(eventId, principal.userId)) {
             is FinalizeResult.Success -> {
-                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel(code = "OK", message = "Qualification finalized"))
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    message = ErrorResponseModel(code = "OK", message = "Qualification finalized"),
+                )
             }
             is FinalizeResult.QualificationNotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"))
+                call.respond(
+                    status = HttpStatusCode.NotFound,
+                    message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"),
+                )
             }
             is FinalizeResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Qualification must be SCHEDULED or IN_PROGRESS"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(
+                        code = "INVALID_STATUS",
+                        message = "Qualification must be SCHEDULED or IN_PROGRESS",
+                    ),
+                )
             }
             is FinalizeResult.IncompleteHeats -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INCOMPLETE_HEATS", message = "${result.count} heat(s) still incomplete"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(
+                        code = "INCOMPLETE_HEATS",
+                        message = "${result.count} heat(s) still incomplete",
+                    ),
+                )
             }
         }
     }
+}
 
+private fun Route.qualificationReopenRoutes(
+    jwtService: JwtService,
+    qualificationService: QualificationService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/qualification/reopen") {
         val principal = call.authenticateRequest(jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -152,13 +247,22 @@ fun Route.qualificationRoutes(jwtService: JwtService, qualificationService: Qual
 
         when (val result = qualificationService.reopen(eventId, principal.userId)) {
             is ReopenResult.Success -> {
-                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel(code = "OK", message = "Qualification reopened"))
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    message = ErrorResponseModel(code = "OK", message = "Qualification reopened"),
+                )
             }
             is ReopenResult.QualificationNotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"))
+                call.respond(
+                    status = HttpStatusCode.NotFound,
+                    message = ErrorResponseModel(code = "QUALIFICATION_NOT_FOUND", message = "Qualification not found"),
+                )
             }
             is ReopenResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Qualification must be FINALIZED"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Qualification must be FINALIZED"),
+                )
             }
         }
     }
@@ -193,7 +297,7 @@ private fun QualificationRanking.toResponseModel(): QualificationRankingResponse
     )
 }
 
-private fun io.github.raginlundf.racingmanager.application.qualification.QualificationProgress.toResponseModel(): QualificationProgressResponseModel {
+private fun QualificationProgress.toResponseModel(): QualificationProgressResponseModel {
     return QualificationProgressResponseModel(
         status = status.name,
         totalHeats = totalHeats,
@@ -206,8 +310,8 @@ private fun io.github.raginlundf.racingmanager.application.qualification.Qualifi
     )
 }
 
-private fun HeatEntity.toHeatResponseModel(): io.github.raginlundf.racingmanager.api.qualification.models.HeatScheduleResponseModel {
-    return io.github.raginlundf.racingmanager.api.qualification.models.HeatScheduleResponseModel(
+private fun HeatEntity.toHeatResponseModel(): HeatScheduleResponseModel {
+    return HeatScheduleResponseModel(
         id = id.toString(),
         eventId = eventId.toString(),
         round = round,
@@ -222,8 +326,8 @@ private fun HeatEntity.toHeatResponseModel(): io.github.raginlundf.racingmanager
     )
 }
 
-private fun HeatLaneAssignment.toResponseModel(): io.github.raginlundf.racingmanager.api.qualification.models.HeatLaneScheduleResponseModel {
-    return io.github.raginlundf.racingmanager.api.qualification.models.HeatLaneScheduleResponseModel(
+private fun HeatLaneAssignment.toResponseModel(): HeatLaneScheduleResponseModel {
+    return HeatLaneScheduleResponseModel(
         lane = lane,
         participantId = participantId.toString(),
         participantStartNumber = participantStartNumber,
@@ -232,8 +336,8 @@ private fun HeatLaneAssignment.toResponseModel(): io.github.raginlundf.racingman
     )
 }
 
-private fun Measurement.toResponseModel(): io.github.raginlundf.racingmanager.api.qualification.models.MeasurementScheduleResponseModel {
-    return io.github.raginlundf.racingmanager.api.qualification.models.MeasurementScheduleResponseModel(
+private fun Measurement.toResponseModel(): MeasurementScheduleResponseModel {
+    return MeasurementScheduleResponseModel(
         id = id.toString(),
         heatId = heatId.toString(),
         lane = lane,

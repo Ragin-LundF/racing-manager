@@ -246,48 +246,14 @@ class ParticipantService(
         val now = clock.now()
 
         rows.forEachIndexed { index, row ->
-            if (row.startNumber == null) {
-                errors.add(ImportRowError(index, "Start number is required"))
-                return@forEachIndexed
-            }
-            if (row.firstName.isNullOrBlank()) {
-                errors.add(ImportRowError(index, "First name is required"))
-                return@forEachIndexed
-            }
-            if (row.lastName.isNullOrBlank()) {
-                errors.add(ImportRowError(index, "Last name is required"))
-                return@forEachIndexed
-            }
-
-            val existing = participantRepository.findByEventIdAndStartNumber(eventId, row.startNumber)
-            if (existing != null) {
-                errors.add(ImportRowError(index, "Duplicate start number ${row.startNumber}"))
-                return@forEachIndexed
-            }
-
-            val participantId = UUID.randomUUID()
-            val vehicle = if (row.vehicleName != null) {
-                VehicleEntity(
-                    id = UUID.randomUUID(),
-                    participantId = participantId,
-                    name = row.vehicleName,
-                    category = row.vehicleCategory,
-                )
-            } else null
-
-            val participant = ParticipantEntity(
-                id = participantId,
+            importCsvRow(
                 eventId = eventId,
-                startNumber = row.startNumber,
-                firstName = row.firstName,
-                lastName = row.lastName,
-                club = row.club,
-                status = ParticipantStatus.ACTIVE,
-                vehicle = vehicle,
-                createdAt = now,
+                index = index,
+                row = row,
+                now = now,
+                errors = errors,
+                created = created,
             )
-            participantRepository.insert(participant)
-            created.add(participant)
         }
 
         if (created.isNotEmpty()) {
@@ -305,6 +271,58 @@ class ParticipantService(
         }
 
         return ImportResult.Completed(created, errors)
+    }
+
+    private fun importCsvRow(
+        eventId: UUID,
+        index: Int,
+        row: CsvParticipantRow,
+        now: kotlin.time.Instant,
+        errors: MutableList<ImportRowError>,
+        created: MutableList<ParticipantEntity>,
+    ) {
+        if (row.startNumber == null) {
+            errors.add(ImportRowError(index, "Start number is required"))
+            return
+        }
+        if (row.firstName.isNullOrBlank()) {
+            errors.add(ImportRowError(index, "First name is required"))
+            return
+        }
+        if (row.lastName.isNullOrBlank()) {
+            errors.add(ImportRowError(index, "Last name is required"))
+            return
+        }
+
+        val existing = participantRepository.findByEventIdAndStartNumber(eventId, row.startNumber)
+        if (existing != null) {
+            errors.add(ImportRowError(index, "Duplicate start number ${row.startNumber}"))
+            return
+        }
+
+        val participantId = UUID.randomUUID()
+        val vehicle = if (row.vehicleName != null) {
+            VehicleEntity(
+                id = UUID.randomUUID(),
+                participantId = participantId,
+                name = row.vehicleName,
+                category = row.vehicleCategory,
+            )
+        } else null
+
+        val participant = ParticipantEntity(
+            id = participantId,
+            eventId = eventId,
+            startNumber = row.startNumber,
+            firstName = row.firstName,
+            lastName = row.lastName,
+            club = row.club,
+            status = ParticipantStatus.ACTIVE,
+            vehicle = vehicle,
+            createdAt = now,
+        )
+        participantRepository.insert(participant)
+        created.add(participant)
     }
 }
 

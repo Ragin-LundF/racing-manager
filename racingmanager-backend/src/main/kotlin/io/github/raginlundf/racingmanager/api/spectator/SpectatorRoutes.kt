@@ -35,6 +35,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
@@ -71,6 +72,23 @@ fun Route.spectatorRoutes(
 ) {
     val clock = Clock.System
 
+    spectatorTokenRoute(
+        jwtService = jwtService,
+        eventRepository = eventRepository,
+        exchangeCodeRepository = exchangeCodeRepository,
+        clock = clock,
+    )
+    spectatorExchangeRoute(jwtService = jwtService, exchangeCodeRepository = exchangeCodeRepository, clock = clock)
+    spectatorSnapshotRoute(jwtService = jwtService, spectatorService = spectatorService)
+    spectatorLiveRoute(jwtService = jwtService, webSocketService = webSocketService)
+}
+
+private fun Route.spectatorTokenRoute(
+    jwtService: JwtService,
+    eventRepository: EventRepository,
+    exchangeCodeRepository: SpectatorExchangeCodeRepository,
+    clock: Clock,
+) {
     post("/api/v1/events/{eventId}/spectator-token") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -118,7 +136,13 @@ fun Route.spectatorRoutes(
             ),
         )
     }
+}
 
+private fun Route.spectatorExchangeRoute(
+    jwtService: JwtService,
+    exchangeCodeRepository: SpectatorExchangeCodeRepository,
+    clock: Clock,
+) {
     post("/api/v1/spectator/exchange") {
         val request = call.receive<SpectatorExchangeRequestModel>()
         val code = runCatching { UUID.fromString(request.code) }.getOrNull()
@@ -150,7 +174,9 @@ fun Route.spectatorRoutes(
             ),
         )
     }
+}
 
+private fun Route.spectatorSnapshotRoute(jwtService: JwtService, spectatorService: SpectatorService) {
     get("/api/v1/spectator/snapshot") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.SPECTATOR)) return@get
@@ -169,54 +195,50 @@ fun Route.spectatorRoutes(
             )
         call.respond(snapshot.toResponseModel())
     }
+}
 
+private fun Route.spectatorLiveRoute(jwtService: JwtService, webSocketService: SpectatorWebSocketService) {
     webSocket("/api/v1/spectator/live") {
         runCatching {
-            val json = Json { ignoreUnknownKeys = true }
-
-            val authFrame = withTimeoutOrNull(5_000.milliseconds) { incoming.receive() } as? Frame.Text
-            val token = authFrame?.let {
-                runCatching { json.decodeFromString<WsAuthMessage>(string = it.readText()).token }.getOrNull()
-            }
-            if (token == null) {
-                close(
-                    reason = CloseReason(
-                        code = CloseReason.Codes.VIOLATED_POLICY,
-                        message = "Access token required"
-                    )
-                )
-                return@webSocket
-            }
-            val principal = jwtService.verifyAccessToken(token = token)
-            if (principal == null || !principal.hasAnyScope(Scopes.SPECTATOR)) {
-                close(
-                    reason = CloseReason(
-                        code = CloseReason.Codes.VIOLATED_POLICY,
-                        message = "Invalid or insufficient spectator token"
-                    )
-                )
-                return@webSocket
-            }
-            val eventId = principal.eventId
-            if (eventId == null) {
-                close(
-                    reason = CloseReason(
-                        code = CloseReason.Codes.VIOLATED_POLICY,
-                        message = "Not a spectator token"
-                    )
-                )
-                return@webSocket
-            }
+            val eventId = resolveSpectatorEventId(jwtService = jwtService) ?: return@webSocket
 
             webSocketService.addConnection(eventId = eventId, session = this)
             try {
-                for (frame in incoming) {
-                }
+                closeReason.await()
             } finally {
                 webSocketService.removeConnection(eventId = eventId, session = this)
             }
         }
     }
+}
+
+private suspend fun DefaultWebSocketServerSession.resolveSpectatorEventId(jwtService: JwtService): UUID? {
+    val json = Json { ignoreUnknownKeys = true }
+
+    val authFrame = withTimeoutOrNull(5_000.milliseconds) { incoming.receive() } as? Frame.Text
+    val token = authFrame?.let {
+        runCatching { json.decodeFromString<WsAuthMessage>(string = it.readText()).token }.getOrNull()
+    }
+    if (token == null) {
+        close(reason = CloseReason(code = CloseReason.Codes.VIOLATED_POLICY, message = "Access token required"))
+        return null
+    }
+    val principal = jwtService.verifyAccessToken(token = token)
+    if (principal == null || !principal.hasAnyScope(Scopes.SPECTATOR)) {
+        close(
+            reason = CloseReason(
+                code = CloseReason.Codes.VIOLATED_POLICY,
+                message = "Invalid or insufficient spectator token"
+            )
+        )
+        return null
+    }
+    val eventId = principal.eventId
+    if (eventId == null) {
+        close(reason = CloseReason(code = CloseReason.Codes.VIOLATED_POLICY, message = "Not a spectator token"))
+        return null
+    }
+    return eventId
 }
 
 internal fun SpectatorSnapshot.toResponseModel(): SpectatorSnapshotResponseModel {

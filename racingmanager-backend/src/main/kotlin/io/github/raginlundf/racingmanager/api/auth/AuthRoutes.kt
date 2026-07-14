@@ -28,6 +28,13 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
 fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymentMode: DeploymentMode) {
+    registerRoutes(authService = authService, deploymentMode = deploymentMode)
+    setupRoutes(authService = authService, deploymentMode = deploymentMode)
+    loginRoutes(authService = authService)
+    sessionRoutes(authService = authService, jwtService = jwtService)
+}
+
+private fun Route.registerRoutes(authService: AuthService, deploymentMode: DeploymentMode) {
     post("/api/v1/register") {
         if (deploymentMode != DeploymentMode.HOSTED) {
             call.respond(
@@ -76,7 +83,9 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
             }
         }
     }
+}
 
+private fun Route.setupRoutes(authService: AuthService, deploymentMode: DeploymentMode) {
     get("/api/v1/auth/setup-status") {
         call.respond(SetupStatusResponseModel(firstRun = authService.isFirstRun(), mode = deploymentMode.name))
     }
@@ -120,7 +129,9 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
             }
         }
     }
+}
 
+private fun Route.loginRoutes(authService: AuthService) {
     post("/api/v1/auth/login") {
         val request = call.receive<LoginRequestModel>()
         val correlationId = call.request.headers["X-Correlation-Id"]
@@ -167,7 +178,9 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
             }
         }
     }
+}
 
+private fun Route.sessionRoutes(authService: AuthService, jwtService: JwtService) {
     post("/api/v1/auth/refresh") {
         val request = call.receive<RefreshRequestModel>()
         when (val result = authService.refresh(refreshToken = request.refreshToken)) {

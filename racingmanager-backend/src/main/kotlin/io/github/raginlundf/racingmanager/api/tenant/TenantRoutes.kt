@@ -17,7 +17,6 @@ import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -31,11 +30,20 @@ import java.util.UUID
     always scoped to the caller's own tenant (`principal.tenantId`), never a
     tenant id from the request. */
 fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
+    tenantSelfRoutes(jwtService, authService)
+    tenantUserRoutes(jwtService, authService)
+    tenantUserUpdateRoutes(jwtService, authService)
+}
+
+private fun Route.tenantSelfRoutes(jwtService: JwtService, authService: AuthService) {
     get("/api/v1/tenant") {
         val principal = call.authenticateRequest(jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
         val tenant = authService.getTenant(principal.tenantId)
-            ?: return@get call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"))
+            ?: return@get call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"),
+            )
         call.respond(
             TenantResponseModel(
                 id = tenant.id.toString(),
@@ -52,7 +60,10 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
         if (!call.requireScope(principal, Scopes.ADMIN)) return@put
         val request = call.receive<UpdateTenantRequestModel>()
         val tenant = authService.updateTenant(principal.tenantId, request.displayName, request.settings)
-            ?: return@put call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"))
+            ?: return@put call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"),
+            )
         call.respond(
             TenantResponseModel(
                 id = tenant.id.toString(),
@@ -63,7 +74,9 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
             ),
         )
     }
+}
 
+private fun Route.tenantUserRoutes(jwtService: JwtService, authService: AuthService) {
     get("/api/v1/tenant/users") {
         val principal = call.authenticateRequest(jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
@@ -92,28 +105,18 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
             )
         }
 
-        when (val result = authService.createTenantUser(principal.tenantId, request.username, request.password, request.displayName, role)) {
-            is CreateTenantUserResult.Success -> {
-                call.respond(
-                    status = HttpStatusCode.Created,
-                    message = TenantUserResponseModel(
-                        userId = result.user.id.toString(),
-                        username = result.user.username,
-                        displayName = result.user.displayName,
-                        role = result.user.role.name,
-                        status = MembershipStatus.ACTIVE.name,
-                    ),
-                )
-            }
-            is CreateTenantUserResult.UsernameTaken -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "USERNAME_TAKEN", message = "Username already exists in this tenant"),
-                )
-            }
-        }
+        val result = authService.createTenantUser(
+            principal.tenantId,
+            request.username,
+            request.password,
+            request.displayName,
+            role,
+        )
+        call.respondCreateTenantUser(result)
     }
+}
 
+private fun Route.tenantUserUpdateRoutes(jwtService: JwtService, authService: AuthService) {
     put("/api/v1/tenant/users/{userId}") {
         val principal = call.authenticateRequest(jwtService) ?: return@put
         if (!call.requireScope(principal, Scopes.ADMIN)) return@put
@@ -121,12 +124,21 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
         val request = call.receive<UpdateTenantUserRequestModel>()
         val role = request.role?.let {
             runCatching { UserRole.valueOf(it) }.getOrElse {
-                return@put call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_ROLE", message = "Role must be ADMIN or DIRECTOR"))
+                return@put call.respond(
+                    status = HttpStatusCode.BadRequest,
+                    message = ErrorResponseModel(code = "INVALID_ROLE", message = "Role must be ADMIN or DIRECTOR"),
+                )
             }
         }
         val status = request.status?.let {
             runCatching { MembershipStatus.valueOf(it) }.getOrElse {
-                return@put call.respond(status = HttpStatusCode.BadRequest, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Status must be ACTIVE or DISABLED"))
+                return@put call.respond(
+                    status = HttpStatusCode.BadRequest,
+                    message = ErrorResponseModel(
+                        code = "INVALID_STATUS",
+                        message = "Status must be ACTIVE or DISABLED",
+                    ),
+                )
             }
         }
 
@@ -138,7 +150,35 @@ fun Route.tenantRoutes(jwtService: JwtService, authService: AuthService) {
         if (!call.requireScope(principal, Scopes.ADMIN)) return@delete
         val userId = UUID.fromString(call.parameters["userId"])
 
-        call.respondTenantUserUpdate(authService.updateTenantUser(principal.tenantId, userId, status = MembershipStatus.DISABLED))
+        call.respondTenantUserUpdate(
+            authService.updateTenantUser(principal.tenantId, userId, status = MembershipStatus.DISABLED),
+        )
+    }
+}
+
+private suspend fun ApplicationCall.respondCreateTenantUser(result: CreateTenantUserResult) {
+    when (result) {
+        is CreateTenantUserResult.Success -> {
+            respond(
+                status = HttpStatusCode.Created,
+                message = TenantUserResponseModel(
+                    userId = result.user.id.toString(),
+                    username = result.user.username,
+                    displayName = result.user.displayName,
+                    role = result.user.role.name,
+                    status = MembershipStatus.ACTIVE.name,
+                ),
+            )
+        }
+        is CreateTenantUserResult.UsernameTaken -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "USERNAME_TAKEN",
+                    message = "Username already exists in this tenant",
+                ),
+            )
+        }
     }
 }
 
@@ -156,7 +196,10 @@ private suspend fun ApplicationCall.respondTenantUserUpdate(result: UpdateTenant
             )
         }
         is UpdateTenantUserResult.NotFound -> {
-            respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "USER_NOT_FOUND", message = "User not found in this tenant"))
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "USER_NOT_FOUND", message = "User not found in this tenant"),
+            )
         }
     }
 }

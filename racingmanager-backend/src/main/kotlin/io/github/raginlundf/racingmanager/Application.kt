@@ -23,6 +23,7 @@ import io.github.raginlundf.racingmanager.infrastructure.configureDatabase
 import io.github.raginlundf.racingmanager.infrastructure.configureDeploymentMode
 import io.github.raginlundf.racingmanager.infrastructure.configureLogging
 import io.github.raginlundf.racingmanager.infrastructure.configureWebSockets
+import io.github.raginlundf.racingmanager.infrastructure.gateway.ReconfigurableMeasurementGateway
 import io.github.raginlundf.racingmanager.infrastructure.gateway.configureMeasurementGateway
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
@@ -50,6 +51,7 @@ import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
+import javax.sql.DataSource
 
 private val logger = KotlinLogging.logger {}
 
@@ -90,78 +92,11 @@ fun Application.module() {
     // Connect the database first: the race-device gateway reads its persisted
     // settings during construction below, so the connection must already exist.
     val dataSource = configureDatabase()
-    val userRepository = UserRepository()
-    val auditRepository = AuditRepository()
-    val eventRepository = EventRepository()
-    val tenantRepository = TenantRepository()
-    val membershipRepository = MembershipRepository()
-    val refreshTokenRepository = RefreshTokenRepository()
-    val participantRepository = ParticipantRepository()
-    val heatRepository = HeatRepository()
-    val passwordHasher = PasswordHasher()
-    val eventService = EventService(
-        eventRepository = eventRepository,
-        participantRepository = participantRepository,
-        auditRepository = auditRepository
+    val repositories = Repositories()
+    val measurementGateway = configureMeasurementGateway(
+        settingsRepository = repositories.raceDeviceSettingsRepository,
     )
-    val participantService = ParticipantService(
-        participantRepository = participantRepository,
-        eventRepository = eventRepository,
-        auditRepository = auditRepository
-    )
-    val raceDeviceSettingsRepository = RaceDeviceSettingsRepository()
-    val measurementGateway = configureMeasurementGateway(settingsRepository = raceDeviceSettingsRepository)
-    val heatService = HeatService(
-        heatRepository = heatRepository,
-        eventRepository = eventRepository,
-        participantRepository = participantRepository,
-        auditRepository = auditRepository,
-        measurementGateway = measurementGateway
-    )
-    val qualificationRepository = QualificationRepository()
-    val qualificationService = QualificationService(
-        qualificationRepository = qualificationRepository,
-        heatRepository = heatRepository,
-        eventRepository = eventRepository,
-        participantRepository = participantRepository,
-        auditRepository = auditRepository
-    )
-    val knockoutRepository = KnockoutRepository()
-    val knockoutService = KnockoutService(
-        knockoutRepository = knockoutRepository,
-        heatRepository = heatRepository,
-        eventRepository = eventRepository,
-        participantRepository = participantRepository,
-        qualificationRepository = qualificationRepository,
-        auditRepository = auditRepository
-    )
-    val resultsService = ResultsService(
-        eventRepository = eventRepository,
-        participantRepository = participantRepository,
-        heatRepository = heatRepository,
-        qualificationRepository = qualificationRepository,
-        knockoutRepository = knockoutRepository,
-        auditRepository = auditRepository
-    )
-    val auditService = AuditService(auditRepository = auditRepository)
-    val spectatorService = SpectatorService(
-        eventRepository = eventRepository,
-        heatRepository = heatRepository,
-        participantRepository = participantRepository,
-        qualificationRepository = qualificationRepository,
-        knockoutRepository = knockoutRepository
-    )
-    val spectatorWebSocketService = SpectatorWebSocketService(
-        spectatorService = spectatorService,
-        heatRepository = heatRepository,
-        heatServiceEvents = heatService.events
-    )
-    val spectatorExchangeCodeRepository = SpectatorExchangeCodeRepository()
-    val importedPackageRepository = ImportedPackageRepository()
-    val localInstanceRepository = LocalInstanceRepository()
-    val pairingCodeRepository = PairingCodeRepository()
-    val pairedInstanceRepository = PairedInstanceRepository()
-    val syncedResultRepository = SyncedResultRepository()
+    val coreServices = CoreServices(repositories = repositories, measurementGateway = measurementGateway)
 
     configureLogging()
     configureSerialization()
@@ -170,36 +105,149 @@ fun Application.module() {
     val deploymentMode = configureDeploymentMode()
     val jwtKeyProvider = configureJwtKeyProvider(deploymentMode = deploymentMode)
     val jwtService = JwtService(keyProvider = jwtKeyProvider)
+    val securedServices = SecuredServices(
+        repositories = repositories,
+        dataSource = dataSource,
+        jwtService = jwtService,
+        jwtKeyProvider = jwtKeyProvider,
+    )
+
+    logUnfinishedHeats(diagnosticsService = securedServices.diagnosticsService)
+    seedDemoAdmin(authService = securedServices.authService, deploymentMode = deploymentMode)
+    configureWebSockets()
+    coreServices.spectatorWebSocketService.start()
+    configureAppRouting(
+        deploymentMode = deploymentMode,
+        jwtService = jwtService,
+        repositories = repositories,
+        coreServices = coreServices,
+        securedServices = securedServices,
+        measurementGateway = measurementGateway,
+    )
+}
+
+/** Startup dependency container: all repositories (no-arg constructors). */
+private class Repositories {
+    val userRepository = UserRepository()
+    val auditRepository = AuditRepository()
+    val eventRepository = EventRepository()
+    val tenantRepository = TenantRepository()
+    val membershipRepository = MembershipRepository()
+    val refreshTokenRepository = RefreshTokenRepository()
+    val participantRepository = ParticipantRepository()
+    val heatRepository = HeatRepository()
+    val raceDeviceSettingsRepository = RaceDeviceSettingsRepository()
+    val qualificationRepository = QualificationRepository()
+    val knockoutRepository = KnockoutRepository()
+    val spectatorExchangeCodeRepository = SpectatorExchangeCodeRepository()
+    val importedPackageRepository = ImportedPackageRepository()
+    val localInstanceRepository = LocalInstanceRepository()
+    val pairingCodeRepository = PairingCodeRepository()
+    val pairedInstanceRepository = PairedInstanceRepository()
+    val syncedResultRepository = SyncedResultRepository()
+}
+
+/** Domain services wired from [repositories]; unauthenticated, no JWT/deployment deps. */
+private class CoreServices(
+    repositories: Repositories,
+    measurementGateway: ReconfigurableMeasurementGateway,
+) {
+    val eventService = EventService(
+        eventRepository = repositories.eventRepository,
+        participantRepository = repositories.participantRepository,
+        auditRepository = repositories.auditRepository
+    )
+    val participantService = ParticipantService(
+        participantRepository = repositories.participantRepository,
+        eventRepository = repositories.eventRepository,
+        auditRepository = repositories.auditRepository
+    )
+    val heatService = HeatService(
+        heatRepository = repositories.heatRepository,
+        eventRepository = repositories.eventRepository,
+        participantRepository = repositories.participantRepository,
+        auditRepository = repositories.auditRepository,
+        measurementGateway = measurementGateway
+    )
+    val qualificationService = QualificationService(
+        qualificationRepository = repositories.qualificationRepository,
+        heatRepository = repositories.heatRepository,
+        eventRepository = repositories.eventRepository,
+        participantRepository = repositories.participantRepository,
+        auditRepository = repositories.auditRepository
+    )
+    val knockoutService = KnockoutService(
+        knockoutRepository = repositories.knockoutRepository,
+        heatRepository = repositories.heatRepository,
+        eventRepository = repositories.eventRepository,
+        participantRepository = repositories.participantRepository,
+        qualificationRepository = repositories.qualificationRepository,
+        auditRepository = repositories.auditRepository
+    )
+    val resultsService = ResultsService(
+        eventRepository = repositories.eventRepository,
+        participantRepository = repositories.participantRepository,
+        heatRepository = repositories.heatRepository,
+        qualificationRepository = repositories.qualificationRepository,
+        knockoutRepository = repositories.knockoutRepository,
+        auditRepository = repositories.auditRepository
+    )
+    val auditService = AuditService(auditRepository = repositories.auditRepository)
+    val spectatorService = SpectatorService(
+        eventRepository = repositories.eventRepository,
+        heatRepository = repositories.heatRepository,
+        participantRepository = repositories.participantRepository,
+        qualificationRepository = repositories.qualificationRepository,
+        knockoutRepository = repositories.knockoutRepository
+    )
+    val spectatorWebSocketService = SpectatorWebSocketService(
+        spectatorService = spectatorService,
+        heatRepository = repositories.heatRepository,
+        heatServiceEvents = heatService.events
+    )
+}
+
+/** Services that depend on the resolved JWT/deployment/database context. */
+private class SecuredServices(
+    repositories: Repositories,
+    dataSource: DataSource,
+    jwtService: JwtService,
+    jwtKeyProvider: JwtKeyProvider,
+) {
     val authService = AuthService(
-        userRepository = userRepository,
-        tenantRepository = tenantRepository,
-        membershipRepository = membershipRepository,
-        refreshTokenRepository = refreshTokenRepository,
-        auditRepository = auditRepository,
-        passwordHasher = passwordHasher,
+        userRepository = repositories.userRepository,
+        tenantRepository = repositories.tenantRepository,
+        membershipRepository = repositories.membershipRepository,
+        refreshTokenRepository = repositories.refreshTokenRepository,
+        auditRepository = repositories.auditRepository,
+        passwordHasher = PasswordHasher(),
         jwtService = jwtService
     )
     val localPackageService = LocalPackageService(
-        eventRepository = eventRepository,
-        participantRepository = participantRepository,
-        tenantRepository = tenantRepository,
-        importedPackageRepository = importedPackageRepository,
-        localInstanceRepository = localInstanceRepository,
+        eventRepository = repositories.eventRepository,
+        participantRepository = repositories.participantRepository,
+        tenantRepository = repositories.tenantRepository,
+        importedPackageRepository = repositories.importedPackageRepository,
+        localInstanceRepository = repositories.localInstanceRepository,
         jwtKeyProvider = jwtKeyProvider
     )
     val syncService = SyncService(
-        pairingCodeRepository = pairingCodeRepository,
-        pairedInstanceRepository = pairedInstanceRepository,
-        syncedResultRepository = syncedResultRepository,
-        eventRepository = eventRepository,
-        auditRepository = auditRepository
+        pairingCodeRepository = repositories.pairingCodeRepository,
+        pairedInstanceRepository = repositories.pairedInstanceRepository,
+        syncedResultRepository = repositories.syncedResultRepository,
+        eventRepository = repositories.eventRepository,
+        auditRepository = repositories.auditRepository
     )
     val diagnosticsService = DiagnosticsService(
         dataSource = dataSource,
-        eventRepository = eventRepository,
-        participantRepository = participantRepository,
-        heatRepository = heatRepository
+        eventRepository = repositories.eventRepository,
+        participantRepository = repositories.participantRepository,
+        heatRepository = repositories.heatRepository
     )
+}
+
+/** Warn on any unfinished heats found at startup (recovery guidance only). */
+private fun Application.logUnfinishedHeats(diagnosticsService: DiagnosticsService) {
     diagnosticsService.findUnfinishedHeats().let { unfinished ->
         if (unfinished.isNotEmpty()) {
             logger.warn { "Found ${unfinished.size} unfinished heat(s) on startup — recovery recommended" }
@@ -212,28 +260,36 @@ fun Application.module() {
             }
         }
     }
-    seedDemoAdmin(authService = authService, deploymentMode = deploymentMode)
-    configureWebSockets()
-    spectatorWebSocketService.start()
+}
+
+/** Registers all HTTP/WebSocket routes, threading the wired dependency containers. */
+private fun Application.configureAppRouting(
+    deploymentMode: DeploymentMode,
+    jwtService: JwtService,
+    repositories: Repositories,
+    coreServices: CoreServices,
+    securedServices: SecuredServices,
+    measurementGateway: ReconfigurableMeasurementGateway,
+) {
     configureRouting(
-        authService = authService,
+        authService = securedServices.authService,
         jwtService = jwtService,
-        eventService = eventService,
-        participantService = participantService,
-        heatService = heatService,
-        qualificationService = qualificationService,
-        knockoutService = knockoutService,
-        resultsService = resultsService,
-        spectatorService = spectatorService,
-        eventRepository = eventRepository,
-        webSocketService = spectatorWebSocketService,
-        auditService = auditService,
-        diagnosticsService = diagnosticsService,
+        eventService = coreServices.eventService,
+        participantService = coreServices.participantService,
+        heatService = coreServices.heatService,
+        qualificationService = coreServices.qualificationService,
+        knockoutService = coreServices.knockoutService,
+        resultsService = coreServices.resultsService,
+        spectatorService = coreServices.spectatorService,
+        eventRepository = repositories.eventRepository,
+        webSocketService = coreServices.spectatorWebSocketService,
+        auditService = coreServices.auditService,
+        diagnosticsService = securedServices.diagnosticsService,
         deploymentMode = deploymentMode,
-        spectatorExchangeCodeRepository = spectatorExchangeCodeRepository,
-        localPackageService = localPackageService,
-        syncService = syncService,
+        spectatorExchangeCodeRepository = repositories.spectatorExchangeCodeRepository,
+        localPackageService = securedServices.localPackageService,
+        syncService = securedServices.syncService,
         raceDeviceGateway = measurementGateway,
-        raceDeviceSettingsRepository = raceDeviceSettingsRepository
+        raceDeviceSettingsRepository = repositories.raceDeviceSettingsRepository
     )
 }

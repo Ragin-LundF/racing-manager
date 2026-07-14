@@ -24,6 +24,7 @@ import io.github.raginlundf.racingmanager.domain.event.MeasurementType
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -34,6 +35,41 @@ import io.ktor.server.routing.put
 import java.util.UUID
 
 fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventRepository: EventRepository) {
+    eventQueryRoutes(jwtService = jwtService, eventService = eventService, eventRepository = eventRepository)
+    eventCreateRoute(jwtService = jwtService, eventService = eventService)
+    eventUpdateRoute(jwtService = jwtService, eventService = eventService, eventRepository = eventRepository)
+    eventDeleteRoute(jwtService = jwtService, eventService = eventService, eventRepository = eventRepository)
+    eventActivateRoute(jwtService = jwtService, eventService = eventService, eventRepository = eventRepository)
+    eventArchiveRoute(jwtService = jwtService, eventService = eventService, eventRepository = eventRepository)
+    eventReactivateRoute(jwtService = jwtService, eventService = eventService, eventRepository = eventRepository)
+}
+
+private fun Route.eventQueryRoutes(
+    jwtService: JwtService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
+    get("/api/v1/events") {
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val events = eventService.findAllForTenant(tenantId = principal.tenantId)
+        call.respond(message = events.map { it.toResponseModel() })
+    }
+
+    get("/api/v1/events/{id}") {
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val id = UUID.fromString(call.parameters["id"])
+        val event = call.requireTenantEvent(
+            principal = principal,
+            eventId = id,
+            eventRepository = eventRepository
+        ) ?: return@get
+        call.respond(message = event.toResponseModel())
+    }
+}
+
+private fun Route.eventCreateRoute(jwtService: JwtService, eventService: EventService) {
     post("/api/v1/events") {
         val principal = call.authenticateRequest(jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -62,26 +98,13 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             message = (result as CreateEventResult.Success).event.toResponseModel(),
         )
     }
+}
 
-    get("/api/v1/events") {
-        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
-        val events = eventService.findAllForTenant(tenantId = principal.tenantId)
-        call.respond(message = events.map { it.toResponseModel() })
-    }
-
-    get("/api/v1/events/{id}") {
-        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
-        val id = UUID.fromString(call.parameters["id"])
-        val event = call.requireTenantEvent(
-            principal = principal,
-            eventId = id,
-            eventRepository = eventRepository
-        ) ?: return@get
-        call.respond(message = event.toResponseModel())
-    }
-
+private fun Route.eventUpdateRoute(
+    jwtService: JwtService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
     put("/api/v1/events/{id}") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@put
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@put
@@ -99,59 +122,70 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             maxParticipants = request.maxParticipants,
         )
 
-        when (val result = eventService.update(
+        val result = eventService.update(
             id = id,
             name = request.name,
             description = request.description,
             settings = settings,
             expectedVersion = request.expectedVersion,
             actorId = principal.userId
-        )) {
-            is UpdateEventResult.Success -> {
-                call.respond(message = result.event.toResponseModel())
-            }
+        )
+        call.respondEventUpdate(result)
+    }
+}
 
-            is UpdateEventResult.NotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
-                )
-            }
+private suspend fun ApplicationCall.respondEventUpdate(result: UpdateEventResult) {
+    when (result) {
+        is UpdateEventResult.Success -> {
+            respond(message = result.event.toResponseModel())
+        }
 
-            is UpdateEventResult.CannotModifyActiveEvent -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "CANNOT_MODIFY_ACTIVE_EVENT",
-                        message = "Cannot modify an event that is not in DRAFT status"
-                    ),
-                )
-            }
+        is UpdateEventResult.NotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
+            )
+        }
 
-            is UpdateEventResult.Conflict -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ConflictResponseModel(
-                        code = "VERSION_CONFLICT",
-                        message = "Event was modified by another user. Refresh and try again.",
-                        expectedVersion = result.expected,
-                        actualVersion = result.actual,
-                    ),
-                )
-            }
+        is UpdateEventResult.CannotModifyActiveEvent -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "CANNOT_MODIFY_ACTIVE_EVENT",
+                    message = "Cannot modify an event that is not in DRAFT status"
+                ),
+            )
+        }
 
-            is UpdateEventResult.Locked -> {
-                call.respond(
-                    status = HttpStatusCode.Locked,
-                    message = ErrorResponseModel(
-                        code = "EVENT_LOCKED_FOR_SYNC",
-                        message = "Event is checked out to a local instance and locked until results are synced back"
-                    ),
-                )
-            }
+        is UpdateEventResult.Conflict -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ConflictResponseModel(
+                    code = "VERSION_CONFLICT",
+                    message = "Event was modified by another user. Refresh and try again.",
+                    expectedVersion = result.expected,
+                    actualVersion = result.actual,
+                ),
+            )
+        }
+
+        is UpdateEventResult.Locked -> {
+            respond(
+                status = HttpStatusCode.Locked,
+                message = ErrorResponseModel(
+                    code = "EVENT_LOCKED_FOR_SYNC",
+                    message = "Event is checked out to a local instance and locked until results are synced back"
+                ),
+            )
         }
     }
+}
 
+private fun Route.eventDeleteRoute(
+    jwtService: JwtService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
     delete("/api/v1/events/{id}") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@delete
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@delete
@@ -170,7 +204,13 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             )
         }
     }
+}
 
+private fun Route.eventActivateRoute(
+    jwtService: JwtService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{id}/activate") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -216,7 +256,13 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             }
         }
     }
+}
 
+private fun Route.eventArchiveRoute(
+    jwtService: JwtService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{id}/archive") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -250,7 +296,13 @@ fun Route.eventRoutes(jwtService: JwtService, eventService: EventService, eventR
             }
         }
     }
+}
 
+private fun Route.eventReactivateRoute(
+    jwtService: JwtService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{id}/reactivate") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post

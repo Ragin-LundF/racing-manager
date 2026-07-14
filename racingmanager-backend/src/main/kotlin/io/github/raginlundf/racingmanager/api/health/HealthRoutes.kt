@@ -30,6 +30,11 @@ authenticated user") **and** scoped to `principal.tenantId` (design §J.1)
 — an admin in a hosted multi-tenant deployment sees and can only recover
 their own tenant's events/heats, never another tenant's. */
 fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtService) {
+    publicHealthRoutes(diagnosticsService = diagnosticsService)
+    diagnosticsRoutes(diagnosticsService = diagnosticsService, jwtService = jwtService)
+}
+
+private fun Route.publicHealthRoutes(diagnosticsService: DiagnosticsService) {
     get("/api/v1/health") {
         val db = diagnosticsService.checkDatabase()
         val status = if (db.connected) "UP" else "DOWN"
@@ -54,6 +59,18 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtSe
         call.respond(message = ReadinessResponseModel(status = overall, checks = checks))
     }
 
+    get("/api/v1/build-info") {
+        val pkg = BuildInfoResponseModel::class.java.`package`
+        call.respond(
+            BuildInfoResponseModel(
+                name = pkg?.implementationTitle ?: "racingmanager",
+                version = pkg?.implementationVersion ?: "1.0-SNAPSHOT",
+            ),
+        )
+    }
+}
+
+private fun Route.diagnosticsRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtService) {
     get("/api/v1/diagnostics") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
@@ -103,15 +120,5 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtSe
         val result = diagnosticsService.recoverHeat(heatId = parsedId, action = action, tenantId = principal.tenantId)
             ?: return@post call.respond(status = HttpStatusCode.NotFound, message = "Heat not found")
         call.respond(RecoveryActionResponseModel(heatId = result.heatId.toString(), action = result.action))
-    }
-
-    get("/api/v1/build-info") {
-        val pkg = BuildInfoResponseModel::class.java.`package`
-        call.respond(
-            BuildInfoResponseModel(
-                name = pkg?.implementationTitle ?: "racingmanager",
-                version = pkg?.implementationVersion ?: "1.0-SNAPSHOT",
-            ),
-        )
     }
 }

@@ -25,6 +25,10 @@ complexity:
     allowedFunctionsPerClass: 20
     allowedFunctionsPerInterface: 20
     allowedFunctionsPerObject: 20
+    # Ktor route files are one public `xxxRoutes` dispatcher plus many small
+    # per-endpoint/response helper functions; the default per-file cap of 11 is
+    # a poor fit for that pattern, so align it with the per-class/object cap.
+    allowedFunctionsPerFile: 20
 
 performance:
   # disabled since Kotlin compiler optimizations since 1.1.60

@@ -9,7 +9,6 @@ import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchStatus
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutStatus
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutTournamentEntity
 import io.github.raginlundf.racingmanager.domain.participant.ParticipantStatus
-import io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationStatus
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
@@ -26,6 +25,10 @@ class SpectatorService(
     private val qualificationRepository: QualificationRepository,
     private val knockoutRepository: KnockoutRepository,
 ) {
+    private companion object {
+        const val MAX_UPCOMING_HEATS = 5
+    }
+
     fun getSnapshot(eventId: UUID): SpectatorSnapshot? {
         val event = eventRepository.findById(eventId) ?: return null
 
@@ -35,8 +38,8 @@ class SpectatorService(
 
         val currentHeat = findCurrentHeat(allHeats)
         val upcomingHeats = findUpcomingHeats(allHeats, currentHeat?.id)
-        val rankings = if (qualification != null) calculateRankings(eventId, qualification, allHeats) else emptyList()
-        val knockoutState = buildKnockoutState(knockout, eventId)
+        val rankings = if (qualification != null) calculateRankings(eventId, allHeats) else emptyList()
+        val knockoutState = buildKnockoutState(knockout)
 
         return SpectatorSnapshot(
             event = event,
@@ -62,12 +65,11 @@ class SpectatorService(
         return allHeats
             .filter { it.status == HeatStatus.PLANNED && (excludeId == null || it.id != excludeId) }
             .sortedBy { it.heatNumber }
-            .take(5)
+            .take(MAX_UPCOMING_HEATS)
     }
 
     private fun calculateRankings(
         eventId: UUID,
-        qualification: QualificationEntity,
         heats: List<HeatEntity>,
     ): List<QualificationRanking> {
         val participants = participantRepository.findByEventId(eventId)
@@ -76,13 +78,11 @@ class SpectatorService(
         return QualificationRankingCalculator.calculate(
             participants = participants,
             heats = qualHeats,
-            qualification = qualification,
         )
     }
 
     private fun buildKnockoutState(
         tournament: KnockoutTournamentEntity?,
-        eventId: UUID,
     ): SpectatorKnockoutState? {
         if (tournament == null) return null
 

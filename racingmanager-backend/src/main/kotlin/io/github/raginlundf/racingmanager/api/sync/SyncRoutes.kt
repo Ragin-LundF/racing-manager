@@ -19,6 +19,7 @@ import io.github.raginlundf.racingmanager.domain.sync.PairedInstanceEntity
 import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -33,6 +34,18 @@ import java.util.UUID
 fresh local instance calls before it has any tenant-scoped credential at
 all; the one-time pairing code is what authorizes it, not a token. */
 fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymentMode: DeploymentMode) {
+    pairingTokenRoute(jwtService = jwtService, syncService = syncService, deploymentMode = deploymentMode)
+    pairRoute(syncService = syncService)
+    listInstancesRoute(jwtService = jwtService, syncService = syncService, deploymentMode = deploymentMode)
+    revokeInstanceRoute(jwtService = jwtService, syncService = syncService, deploymentMode = deploymentMode)
+    syncResultsRoute(jwtService = jwtService, syncService = syncService, deploymentMode = deploymentMode)
+}
+
+private fun Route.pairingTokenRoute(
+    jwtService: JwtService,
+    syncService: SyncService,
+    deploymentMode: DeploymentMode,
+) {
     post("/api/v1/tenant/local-instances/pairing-token") {
         if (deploymentMode != DeploymentMode.HOSTED) {
             call.respond(
@@ -51,7 +64,9 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
             )
         }
     }
+}
 
+private fun Route.pairRoute(syncService: SyncService) {
     post("/api/v1/local-instances/pair") {
         val request = call.receive<PairRequestModel>()
         val pairingCode = runCatching { UUID.fromString(request.pairingCode) }.getOrNull()
@@ -85,7 +100,13 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
             )
         }
     }
+}
 
+private fun Route.listInstancesRoute(
+    jwtService: JwtService,
+    syncService: SyncService,
+    deploymentMode: DeploymentMode,
+) {
     get("/api/v1/tenant/local-instances") {
         if (deploymentMode != DeploymentMode.HOSTED) {
             call.respond(
@@ -101,7 +122,13 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
         call.respond(syncService.listInstances(tenantId = principal.tenantId).map { it.toResponseModel() })
     }
+}
 
+private fun Route.revokeInstanceRoute(
+    jwtService: JwtService,
+    syncService: SyncService,
+    deploymentMode: DeploymentMode,
+) {
     post("/api/v1/tenant/local-instances/{id}/revoke") {
         if (deploymentMode != DeploymentMode.HOSTED) {
             call.respond(
@@ -125,7 +152,13 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
             )
         }
     }
+}
 
+private fun Route.syncResultsRoute(
+    jwtService: JwtService,
+    syncService: SyncService,
+    deploymentMode: DeploymentMode,
+) {
     post("/api/v1/tenant/local-instances/{id}/sync-results") {
         if (deploymentMode != DeploymentMode.HOSTED) {
             call.respond(
@@ -147,50 +180,53 @@ fun Route.syncRoutes(jwtService: JwtService, syncService: SyncService, deploymen
             return@post
         }
         val resultsJson = Json.encodeToString(serializer = JsonElement.serializer(), value = request.results)
+        val result = syncService.syncResults(
+            tenantId = principal.tenantId,
+            instanceId = instanceId,
+            eventId = eventId,
+            resultsJson = resultsJson,
+            actorId = principal.userId
+        )
+        call.respondSyncResults(result = result, eventId = eventId)
+    }
+}
 
-        when (val result =
-            syncService.syncResults(
-                tenantId = principal.tenantId,
-                instanceId = instanceId,
-                eventId = eventId,
-                resultsJson = resultsJson,
-                actorId = principal.userId
-            )) {
-            is SyncResultsResult.Success -> call.respond(
-                status = HttpStatusCode.Created,
-                message = SyncResultsResponseModel(
-                    syncedResultId = result.syncedResultId.toString(),
-                    eventId = eventId.toString(),
-                    status = "SYNCED"
-                ),
-            )
+private suspend fun ApplicationCall.respondSyncResults(result: SyncResultsResult, eventId: UUID) {
+    when (result) {
+        is SyncResultsResult.Success -> respond(
+            status = HttpStatusCode.Created,
+            message = SyncResultsResponseModel(
+                syncedResultId = result.syncedResultId.toString(),
+                eventId = eventId.toString(),
+                status = "SYNCED"
+            ),
+        )
 
-            is SyncResultsResult.InstanceNotFound -> call.respond(
-                status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel(code = "INSTANCE_NOT_FOUND", message = "Local instance not found")
-            )
+        is SyncResultsResult.InstanceNotFound -> respond(
+            status = HttpStatusCode.NotFound,
+            message = ErrorResponseModel(code = "INSTANCE_NOT_FOUND", message = "Local instance not found")
+        )
 
-            is SyncResultsResult.InstanceRevoked -> call.respond(
-                status = HttpStatusCode.Forbidden,
-                message = ErrorResponseModel(
-                    code = "INSTANCE_REVOKED",
-                    message = "This local instance has been revoked"
-                )
+        is SyncResultsResult.InstanceRevoked -> respond(
+            status = HttpStatusCode.Forbidden,
+            message = ErrorResponseModel(
+                code = "INSTANCE_REVOKED",
+                message = "This local instance has been revoked"
             )
+        )
 
-            is SyncResultsResult.EventNotFound -> call.respond(
-                status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found")
-            )
+        is SyncResultsResult.EventNotFound -> respond(
+            status = HttpStatusCode.NotFound,
+            message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found")
+        )
 
-            is SyncResultsResult.EventNotLocked -> call.respond(
-                status = HttpStatusCode.Conflict,
-                message = ErrorResponseModel(
-                    code = "EVENT_NOT_LOCKED",
-                    message = "Event was never checked out for local execution"
-                )
+        is SyncResultsResult.EventNotLocked -> respond(
+            status = HttpStatusCode.Conflict,
+            message = ErrorResponseModel(
+                code = "EVENT_NOT_LOCKED",
+                message = "Event was never checked out for local execution"
             )
-        }
+        )
     }
 }
 

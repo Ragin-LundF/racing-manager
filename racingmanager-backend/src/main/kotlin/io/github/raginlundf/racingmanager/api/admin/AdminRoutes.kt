@@ -31,6 +31,12 @@ platform-level scope, never a tenant role, and these routes only ever
 touch tenant **metadata** — never race data. `/api/v1/admin/setup*` is the
 one-time supervisor bootstrap, gated to hosted mode like `/api/v1/register`. */
 fun Route.adminRoutes(jwtService: JwtService, authService: AuthService, deploymentMode: DeploymentMode) {
+    adminSetupRoutes(authService = authService, deploymentMode = deploymentMode)
+    adminTenantRoutes(jwtService = jwtService, authService = authService)
+    adminTenantDeleteRoutes(jwtService = jwtService, authService = authService)
+}
+
+private fun Route.adminSetupRoutes(authService: AuthService, deploymentMode: DeploymentMode) {
     get("/api/v1/admin/setup-status") {
         call.respond(
             message = SetupStatusResponseModel(
@@ -79,7 +85,9 @@ fun Route.adminRoutes(jwtService: JwtService, authService: AuthService, deployme
             }
         }
     }
+}
 
+private fun Route.adminTenantRoutes(jwtService: JwtService, authService: AuthService) {
     get("/api/v1/admin/tenants") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.SUPERVISOR)) return@get
@@ -113,7 +121,9 @@ fun Route.adminRoutes(jwtService: JwtService, authService: AuthService, deployme
             )
         call.respond(tenant.toResponseModel())
     }
+}
 
+private fun Route.adminTenantDeleteRoutes(jwtService: JwtService, authService: AuthService) {
     delete("/api/v1/admin/tenants/{id}") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@delete
         if (!call.requireScope(principal, Scopes.SUPERVISOR)) return@delete

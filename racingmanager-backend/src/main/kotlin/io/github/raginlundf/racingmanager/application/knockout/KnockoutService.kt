@@ -176,25 +176,11 @@ class KnockoutService(
         }
 
         val now = clock.now()
-        val matches = mutableListOf<KnockoutMatchEntity>()
-
-        for ((index, pairing) in pairings.withIndex()) {
-            val (p1, p2) = pairing
-            val isBye = p2 == null
-            matches.add(
-                KnockoutMatchEntity(
-                    id = UUID.randomUUID(),
-                    tournamentId = tournament.id,
-                    roundNumber = 1,
-                    matchNumber = index + 1,
-                    participant1Id = p1,
-                    participant2Id = p2,
-                    status = if (isBye) KnockoutMatchStatus.COMPLETED else KnockoutMatchStatus.PLANNED,
-                    winnerId = if (isBye) p1 else null,
-                    createdAt = now,
-                ),
-            )
-        }
+        val matches = buildManualFirstRoundMatches(
+            tournamentId = tournament.id,
+            pairings = pairings,
+            createdAt = now,
+        ).toMutableList()
 
         for (match in matches) {
             knockoutRepository.insertMatch(match)
@@ -231,6 +217,28 @@ class KnockoutService(
         return SetManualPairingsResult.Success(tournament.copy(status = KnockoutStatus.IN_PROGRESS, updatedAt = now))
     }
 
+    private fun buildManualFirstRoundMatches(
+        tournamentId: UUID,
+        pairings: List<Pair<UUID, UUID?>>,
+        createdAt: kotlin.time.Instant,
+    ): List<KnockoutMatchEntity> {
+        return pairings.mapIndexed { index, pairing ->
+            val (p1, p2) = pairing
+            val isBye = p2 == null
+            KnockoutMatchEntity(
+                id = UUID.randomUUID(),
+                tournamentId = tournamentId,
+                roundNumber = 1,
+                matchNumber = index + 1,
+                participant1Id = p1,
+                participant2Id = p2,
+                status = if (isBye) KnockoutMatchStatus.COMPLETED else KnockoutMatchStatus.PLANNED,
+                winnerId = if (isBye) p1 else null,
+                createdAt = createdAt,
+            )
+        }
+    }
+
     fun createHeatForMatch(eventId: UUID, matchId: UUID, actorId: UUID): CreateHeatForMatchResult {
         val tournament = knockoutRepository.findByEventId(eventId)
             ?: return CreateHeatForMatchResult.TournamentNotFound
@@ -254,27 +262,7 @@ class KnockoutService(
         val heatNumber = existingHeats.size + 1
 
         val now = clock.now()
-        val lanes = mutableListOf(
-            HeatLaneAssignment(
-                lane = 1,
-                participantId = participant1Id,
-                participantStartNumber = 0,
-                participantFirstName = "",
-                participantLastName = "",
-            ),
-        )
-
-        if (participant2Id != null) {
-            lanes.add(
-                HeatLaneAssignment(
-                    lane = 2,
-                    participantId = participant2Id,
-                    participantStartNumber = 0,
-                    participantFirstName = "",
-                    participantLastName = "",
-                ),
-            )
-        }
+        val lanes = buildKnockoutHeatLanes(participant1Id = participant1Id, participant2Id = participant2Id)
 
         val heat = HeatEntity(
             id = UUID.randomUUID(),
@@ -304,7 +292,39 @@ class KnockoutService(
         return CreateHeatForMatchResult.Success(heat)
     }
 
-    fun recordMatchResult(eventId: UUID, matchId: UUID, winnerId: UUID, heatId: UUID, actorId: UUID): RecordMatchResult {
+    private fun buildKnockoutHeatLanes(participant1Id: UUID, participant2Id: UUID?): List<HeatLaneAssignment> {
+        val lanes = mutableListOf(
+            HeatLaneAssignment(
+                lane = 1,
+                participantId = participant1Id,
+                participantStartNumber = 0,
+                participantFirstName = "",
+                participantLastName = "",
+            ),
+        )
+
+        if (participant2Id != null) {
+            lanes.add(
+                HeatLaneAssignment(
+                    lane = 2,
+                    participantId = participant2Id,
+                    participantStartNumber = 0,
+                    participantFirstName = "",
+                    participantLastName = "",
+                ),
+            )
+        }
+
+        return lanes
+    }
+
+    fun recordMatchResult(
+        eventId: UUID,
+        matchId: UUID,
+        winnerId: UUID,
+        heatId: UUID,
+        actorId: UUID,
+    ): RecordMatchResult {
         val tournament = knockoutRepository.findByEventId(eventId)
             ?: return RecordMatchResult.TournamentNotFound
 
@@ -405,45 +425,9 @@ class KnockoutService(
         val firstPlaceMatch = finalMatches.find { it.matchNumber == 1 }
 
         val results = mutableListOf<KnockoutResultEntry>()
-
-        if (firstPlaceMatch?.winnerId != null) {
-            val first = rankings.find { it.participantId == firstPlaceMatch.winnerId }
-            results.add(KnockoutResultEntry(
-                rank = 1,
-                participantId = firstPlaceMatch.winnerId,
-                firstName = first?.firstName ?: "",
-                lastName = first?.lastName ?: "",
-                startNumber = first?.startNumber ?: 0,
-                club = first?.club,
-            ))
-        }
-
-        val loserOfFinal = firstPlaceMatch?.let { m ->
-            if (m.winnerId == m.participant1Id) m.participant2Id else m.participant1Id
-        }
-        if (loserOfFinal != null) {
-            val second = rankings.find { it.participantId == loserOfFinal }
-            results.add(KnockoutResultEntry(
-                rank = 2,
-                participantId = loserOfFinal,
-                firstName = second?.firstName ?: "",
-                lastName = second?.lastName ?: "",
-                startNumber = second?.startNumber ?: 0,
-                club = second?.club,
-            ))
-        }
-
-        if (thirdPlaceMatch?.winnerId != null) {
-            val third = rankings.find { it.participantId == thirdPlaceMatch.winnerId }
-            results.add(KnockoutResultEntry(
-                rank = 3,
-                participantId = thirdPlaceMatch.winnerId,
-                firstName = third?.firstName ?: "",
-                lastName = third?.lastName ?: "",
-                startNumber = third?.startNumber ?: 0,
-                club = third?.club,
-            ))
-        }
+        addFirstPlaceResult(results = results, firstPlaceMatch = firstPlaceMatch, rankings = rankings)
+        addSecondPlaceResult(results = results, firstPlaceMatch = firstPlaceMatch, rankings = rankings)
+        addThirdPlaceResult(results = results, thirdPlaceMatch = thirdPlaceMatch, rankings = rankings)
 
         return results
     }
@@ -455,22 +439,24 @@ class KnockoutService(
         val heats = heatRepository.findByEventId(eventId)
             .filter { it.round == 1 }
 
-        return calculateRankings(participants, heats, qualification)
+        return calculateRankings(participants, heats)
     }
 
     private fun calculateRankings(
         participants: List<io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity>,
         heats: List<HeatEntity>,
-        qualification: io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity,
     ): List<QualificationRanking> {
         return QualificationRankingCalculator.calculate(
             participants = participants,
             heats = heats,
-            qualification = qualification,
         )
     }
 
-    private fun createPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, mode: PairingMode): List<KnockoutMatchEntity> {
+    private fun createPairings(
+        tournamentId: UUID,
+        participants: List<KnockoutRankedParticipant>,
+        mode: PairingMode,
+    ): List<KnockoutMatchEntity> {
         val sorted = participants.sortedBy { it.qualificationRank }
         val matchCount = sorted.size / 2
         val hasBye = sorted.size % 2 != 0
@@ -539,7 +525,11 @@ class KnockoutService(
         return rounds
     }
 
-    private fun createFirstVsLastPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, matchCount: Int): List<KnockoutMatchEntity> {
+    private fun createFirstVsLastPairings(
+        tournamentId: UUID,
+        participants: List<KnockoutRankedParticipant>,
+        matchCount: Int,
+    ): List<KnockoutMatchEntity> {
         val shuffled = participants.toMutableList()
         val matches = mutableListOf<KnockoutMatchEntity>()
 
@@ -563,7 +553,11 @@ class KnockoutService(
         return matches
     }
 
-    private fun createAdjacentPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, matchCount: Int): List<KnockoutMatchEntity> {
+    private fun createAdjacentPairings(
+        tournamentId: UUID,
+        participants: List<KnockoutRankedParticipant>,
+        matchCount: Int,
+    ): List<KnockoutMatchEntity> {
         val matches = mutableListOf<KnockoutMatchEntity>()
 
         for (i in 0 until matchCount) {
@@ -586,7 +580,11 @@ class KnockoutService(
         return matches
     }
 
-    private fun createRandomPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, matchCount: Int): List<KnockoutMatchEntity> {
+    private fun createRandomPairings(
+        tournamentId: UUID,
+        participants: List<KnockoutRankedParticipant>,
+        matchCount: Int,
+    ): List<KnockoutMatchEntity> {
         val shuffled = participants.shuffled(java.util.Random(clock.now().toEpochMilliseconds()))
         val matches = mutableListOf<KnockoutMatchEntity>()
 
@@ -610,7 +608,11 @@ class KnockoutService(
         return matches
     }
 
-    private fun createManualPairings(tournamentId: UUID, participants: List<KnockoutRankedParticipant>, matchCount: Int): List<KnockoutMatchEntity> {
+    private fun createManualPairings(
+        tournamentId: UUID,
+        participants: List<KnockoutRankedParticipant>,
+        matchCount: Int,
+    ): List<KnockoutMatchEntity> {
         val matches = mutableListOf<KnockoutMatchEntity>()
 
         for (i in 0 until matchCount) {
@@ -632,4 +634,49 @@ class KnockoutService(
 
         return matches
     }
+}
+
+private fun addFirstPlaceResult(
+    results: MutableList<KnockoutResultEntry>,
+    firstPlaceMatch: KnockoutMatchEntity?,
+    rankings: List<QualificationRanking>,
+) {
+    val winnerId = firstPlaceMatch?.winnerId ?: return
+    results.add(buildResultEntry(rank = 1, participantId = winnerId, rankings = rankings))
+}
+
+private fun addSecondPlaceResult(
+    results: MutableList<KnockoutResultEntry>,
+    firstPlaceMatch: KnockoutMatchEntity?,
+    rankings: List<QualificationRanking>,
+) {
+    val loserOfFinal = firstPlaceMatch?.let { m ->
+        if (m.winnerId == m.participant1Id) m.participant2Id else m.participant1Id
+    } ?: return
+    results.add(buildResultEntry(rank = 2, participantId = loserOfFinal, rankings = rankings))
+}
+
+private fun addThirdPlaceResult(
+    results: MutableList<KnockoutResultEntry>,
+    thirdPlaceMatch: KnockoutMatchEntity?,
+    rankings: List<QualificationRanking>,
+) {
+    val winnerId = thirdPlaceMatch?.winnerId ?: return
+    results.add(buildResultEntry(rank = 3, participantId = winnerId, rankings = rankings))
+}
+
+private fun buildResultEntry(
+    rank: Int,
+    participantId: UUID,
+    rankings: List<QualificationRanking>,
+): KnockoutResultEntry {
+    val ranking = rankings.find { it.participantId == participantId }
+    return KnockoutResultEntry(
+        rank = rank,
+        participantId = participantId,
+        firstName = ranking?.firstName ?: "",
+        lastName = ranking?.lastName ?: "",
+        startNumber = ranking?.startNumber ?: 0,
+        club = ranking?.club,
+    )
 }

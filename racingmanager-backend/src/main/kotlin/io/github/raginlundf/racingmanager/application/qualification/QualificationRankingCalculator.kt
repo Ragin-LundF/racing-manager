@@ -3,7 +3,6 @@ package io.github.raginlundf.racingmanager.application.qualification
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.github.raginlundf.racingmanager.domain.participant.ParticipantEntity
-import io.github.raginlundf.racingmanager.domain.qualification.QualificationEntity
 import io.github.raginlundf.racingmanager.domain.qualification.QualificationRanking
 
 object QualificationRankingCalculator {
@@ -11,7 +10,6 @@ object QualificationRankingCalculator {
     fun calculate(
         participants: List<ParticipantEntity>,
         heats: List<HeatEntity>,
-        qualification: QualificationEntity,
     ): List<QualificationRanking> {
         val participantResults = participants.map { participant ->
             val participantHeats = heats.filter { heat ->

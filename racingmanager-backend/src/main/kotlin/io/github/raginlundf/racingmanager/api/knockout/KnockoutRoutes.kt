@@ -28,6 +28,7 @@ import io.github.raginlundf.racingmanager.domain.qualification.QualificationRank
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -36,6 +37,21 @@ import io.ktor.server.routing.post
 import java.util.UUID
 
 fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutService, eventRepository: EventRepository) {
+    knockoutSetupRoute(jwtService, knockoutService, eventRepository)
+    knockoutReadRoutes(jwtService, knockoutService, eventRepository)
+    knockoutManualPairingsRoute(jwtService, knockoutService, eventRepository)
+    knockoutPairingsRoute(jwtService, knockoutService, eventRepository)
+    knockoutHeatRoute(jwtService, knockoutService, eventRepository)
+    knockoutResultRoute(jwtService, knockoutService, eventRepository)
+    knockoutFinalizeRoute(jwtService, knockoutService, eventRepository)
+    knockoutMatchListRoutes(jwtService, knockoutService, eventRepository)
+}
+
+private fun Route.knockoutSetupRoute(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/knockout/setup") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -53,59 +69,69 @@ fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutServic
             )
             return@post
         }
-
-        when (val result = knockoutService.setup(
+        val result = knockoutService.setup(
             eventId = eventId,
             pairingMode = pairingMode,
             actorId = principal.userId
-        )) {
-            is SetupKnockoutResult.Success -> {
-                call.respond(status = HttpStatusCode.Created, message = result.tournament.toResponseModel())
-            }
+        )
+        call.respondSetupResult(result)
+    }
+}
 
-            is SetupKnockoutResult.EventNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found")
-                )
-            }
+private suspend fun ApplicationCall.respondSetupResult(result: SetupKnockoutResult) {
+    when (result) {
+        is SetupKnockoutResult.Success -> {
+            respond(status = HttpStatusCode.Created, message = result.tournament.toResponseModel())
+        }
 
-            is SetupKnockoutResult.EventNotActive -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "EVENT_NOT_ACTIVE", message = "Event must be ACTIVE")
-                )
-            }
+        is SetupKnockoutResult.EventNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found")
+            )
+        }
 
-            is SetupKnockoutResult.AlreadyExists -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "KNOCKOUT_ALREADY_EXISTS", message = "Knockout already exists")
-                )
-            }
+        is SetupKnockoutResult.EventNotActive -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "EVENT_NOT_ACTIVE", message = "Event must be ACTIVE")
+            )
+        }
 
-            is SetupKnockoutResult.QualificationNotFinalized -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "QUALIFICATION_NOT_FINALIZED",
-                        message = "Qualification must be finalized"
-                    )
-                )
-            }
+        is SetupKnockoutResult.AlreadyExists -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "KNOCKOUT_ALREADY_EXISTS", message = "Knockout already exists")
+            )
+        }
 
-            is SetupKnockoutResult.NotEnoughParticipants -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "NOT_ENOUGH_PARTICIPANTS",
-                        message = "At least 2 participants required"
-                    )
+        is SetupKnockoutResult.QualificationNotFinalized -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "QUALIFICATION_NOT_FINALIZED",
+                    message = "Qualification must be finalized"
                 )
-            }
+            )
+        }
+
+        is SetupKnockoutResult.NotEnoughParticipants -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "NOT_ENOUGH_PARTICIPANTS",
+                    message = "At least 2 participants required"
+                )
+            )
         }
     }
+}
 
+private fun Route.knockoutReadRoutes(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     get("/api/v1/events/{eventId}/knockout") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
@@ -135,7 +161,13 @@ fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutServic
         val participants = knockoutService.getQualifiedParticipants(eventId)
         call.respond(message = participants.map { it.toQualifiedResponseModel() })
     }
+}
 
+private fun Route.knockoutManualPairingsRoute(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/knockout/manual-pairings") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -152,62 +184,72 @@ fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutServic
                 second = p.participant2Id?.let { UUID.fromString(it) }
             )
         }
-
-        when (val result = knockoutService.setManualPairings(
+        val result = knockoutService.setManualPairings(
             eventId = eventId,
             pairings = pairings,
             actorId = principal.userId
-        )) {
-            is SetManualPairingsResult.Success -> {
-                call.respond(message = result.tournament.toResponseModel())
-            }
+        )
+        call.respondManualPairingsResult(result)
+    }
+}
 
-            is SetManualPairingsResult.TournamentNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
-                )
-            }
+private suspend fun ApplicationCall.respondManualPairingsResult(result: SetManualPairingsResult) {
+    when (result) {
+        is SetManualPairingsResult.Success -> {
+            respond(message = result.tournament.toResponseModel())
+        }
 
-            is SetManualPairingsResult.InvalidStatus -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Knockout must be PAIRING")
-                )
-            }
+        is SetManualPairingsResult.TournamentNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
+            )
+        }
 
-            is SetManualPairingsResult.PairingsAlreadyExist -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "PAIRINGS_ALREADY_EXIST",
-                        message = "Pairings already generated"
-                    )
-                )
-            }
+        is SetManualPairingsResult.InvalidStatus -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "INVALID_STATUS", message = "Knockout must be PAIRING")
+            )
+        }
 
-            is SetManualPairingsResult.NotEnoughParticipants -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "NOT_ENOUGH_PARTICIPANTS",
-                        message = "At least 1 pairing required"
-                    )
+        is SetManualPairingsResult.PairingsAlreadyExist -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "PAIRINGS_ALREADY_EXIST",
+                    message = "Pairings already generated"
                 )
-            }
+            )
+        }
 
-            is SetManualPairingsResult.WrongPairingMode -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "WRONG_PAIRING_MODE",
-                        message = "Knockout must be in MANUAL mode"
-                    )
+        is SetManualPairingsResult.NotEnoughParticipants -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "NOT_ENOUGH_PARTICIPANTS",
+                    message = "At least 1 pairing required"
                 )
-            }
+            )
+        }
+
+        is SetManualPairingsResult.WrongPairingMode -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "WRONG_PAIRING_MODE",
+                    message = "Knockout must be in MANUAL mode"
+                )
+            )
         }
     }
+}
 
+private fun Route.knockoutPairingsRoute(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/knockout/pairings") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -217,61 +259,58 @@ fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutServic
             eventId = eventId,
             eventRepository = eventRepository
         ) ?: return@post
+        val result = knockoutService.generatePairings(eventId = eventId, actorId = principal.userId)
+        call.respondPairingsResult(result)
+    }
+}
 
-        when (val result = knockoutService.generatePairings(eventId = eventId, actorId = principal.userId)) {
-            is GeneratePairingsResult.Success -> {
-                call.respond(message = result.tournament.toResponseModel())
-            }
+private suspend fun ApplicationCall.respondPairingsResult(result: GeneratePairingsResult) {
+    when (result) {
+        is GeneratePairingsResult.Success -> {
+            respond(message = result.tournament.toResponseModel())
+        }
 
-            is GeneratePairingsResult.TournamentNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
+        is GeneratePairingsResult.TournamentNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
+            )
+        }
+
+        is GeneratePairingsResult.InvalidStatus -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "INVALID_STATUS", message = "Knockout must be PAIRING")
+            )
+        }
+
+        is GeneratePairingsResult.PairingsAlreadyExist -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "PAIRINGS_ALREADY_EXIST",
+                    message = "Pairings already generated"
                 )
-            }
+            )
+        }
 
-            is GeneratePairingsResult.InvalidStatus -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Knockout must be PAIRING")
+        is GeneratePairingsResult.NotEnoughParticipants -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "NOT_ENOUGH_PARTICIPANTS",
+                    message = "At least 2 participants required"
                 )
-            }
-
-            is GeneratePairingsResult.PairingsAlreadyExist -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "PAIRINGS_ALREADY_EXIST",
-                        message = "Pairings already generated"
-                    )
-                )
-            }
-
-            is GeneratePairingsResult.NotEnoughParticipants -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "NOT_ENOUGH_PARTICIPANTS",
-                        message = "At least 2 participants required"
-                    )
-                )
-            }
+            )
         }
     }
+}
 
-    get("/api/v1/events/{eventId}/knockout/matches") {
-        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        call.requireTenantEvent(
-            principal = principal,
-            eventId = eventId,
-            eventRepository = eventRepository
-        ) ?: return@get
-        val matches = knockoutService.getMatches(eventId = eventId)
-        call.respond(matches.map { it.toResponseModel() })
-    }
-
+private fun Route.knockoutHeatRoute(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/knockout/heat") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -283,46 +322,56 @@ fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutServic
         ) ?: return@post
         val request = call.receive<CreateHeatForMatchRequestModel>()
         val matchId = UUID.fromString(request.matchId)
-
-        when (val result = knockoutService.createHeatForMatch(
+        val result = knockoutService.createHeatForMatch(
             eventId = eventId,
             matchId = matchId,
             actorId = principal.userId
-        )) {
-            is CreateHeatForMatchResult.Success -> {
-                call.respond(status = HttpStatusCode.Created, message = result.heat)
-            }
+        )
+        call.respondCreateHeatResult(result)
+    }
+}
 
-            is CreateHeatForMatchResult.TournamentNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
-                )
-            }
+private suspend fun ApplicationCall.respondCreateHeatResult(result: CreateHeatForMatchResult) {
+    when (result) {
+        is CreateHeatForMatchResult.Success -> {
+            respond(status = HttpStatusCode.Created, message = result.heat)
+        }
 
-            is CreateHeatForMatchResult.MatchNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "MATCH_NOT_FOUND", message = "Match not found")
-                )
-            }
+        is CreateHeatForMatchResult.TournamentNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
+            )
+        }
 
-            is CreateHeatForMatchResult.MatchAlreadyCompleted -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "MATCH_ALREADY_COMPLETED", message = "Match already completed")
-                )
-            }
+        is CreateHeatForMatchResult.MatchNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "MATCH_NOT_FOUND", message = "Match not found")
+            )
+        }
 
-            is CreateHeatForMatchResult.MissingParticipants -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "MISSING_PARTICIPANTS", message = "Match has no participants")
-                )
-            }
+        is CreateHeatForMatchResult.MatchAlreadyCompleted -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "MATCH_ALREADY_COMPLETED", message = "Match already completed")
+            )
+        }
+
+        is CreateHeatForMatchResult.MissingParticipants -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "MISSING_PARTICIPANTS", message = "Match has no participants")
+            )
         }
     }
+}
 
+private fun Route.knockoutResultRoute(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/knockout/result") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -336,54 +385,64 @@ fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutServic
         val matchId = UUID.fromString(request.matchId)
         val winnerId = UUID.fromString(request.winnerId)
         val heatId = UUID.fromString(request.heatId)
-
-        when (knockoutService.recordMatchResult(
+        val result = knockoutService.recordMatchResult(
             eventId = eventId,
             matchId = matchId,
             winnerId = winnerId,
             heatId = heatId,
             actorId = principal.userId
-        )) {
-            is RecordMatchResult.Success -> {
-                call.respond(
-                    status = HttpStatusCode.OK,
-                    message = ErrorResponseModel(code = "OK", message = "Match result recorded")
-                )
-            }
+        )
+        call.respondRecordMatchResult(result)
+    }
+}
 
-            is RecordMatchResult.TournamentNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
-                )
-            }
+private suspend fun ApplicationCall.respondRecordMatchResult(result: RecordMatchResult) {
+    when (result) {
+        is RecordMatchResult.Success -> {
+            respond(
+                status = HttpStatusCode.OK,
+                message = ErrorResponseModel(code = "OK", message = "Match result recorded")
+            )
+        }
 
-            is RecordMatchResult.MatchNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "MATCH_NOT_FOUND", message = "Match not found")
-                )
-            }
+        is RecordMatchResult.TournamentNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
+            )
+        }
 
-            is RecordMatchResult.MatchAlreadyCompleted -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "MATCH_ALREADY_COMPLETED", message = "Match already completed")
-                )
-            }
+        is RecordMatchResult.MatchNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "MATCH_NOT_FOUND", message = "Match not found")
+            )
+        }
 
-            is RecordMatchResult.WinnerNotInMatch -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "WINNER_NOT_IN_MATCH",
-                        message = "Winner must be a participant in the match"
-                    )
+        is RecordMatchResult.MatchAlreadyCompleted -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "MATCH_ALREADY_COMPLETED", message = "Match already completed")
+            )
+        }
+
+        is RecordMatchResult.WinnerNotInMatch -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "WINNER_NOT_IN_MATCH",
+                    message = "Winner must be a participant in the match"
                 )
-            }
+            )
         }
     }
+}
 
+private fun Route.knockoutFinalizeRoute(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/knockout/finalize") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -393,39 +452,62 @@ fun Route.knockoutRoutes(jwtService: JwtService, knockoutService: KnockoutServic
             eventId = eventId,
             eventRepository = eventRepository
         ) ?: return@post
+        val result = knockoutService.finalize(eventId = eventId, actorId = principal.userId)
+        call.respondFinalizeResult(result)
+    }
+}
 
-        when (val result = knockoutService.finalize(eventId = eventId, actorId = principal.userId)) {
-            is FinalizeKnockoutResult.Success -> {
-                call.respond(
-                    status = HttpStatusCode.OK,
-                    message = ErrorResponseModel(code = "OK", message = "Knockout finalized")
-                )
-            }
-
-            is FinalizeKnockoutResult.TournamentNotFound -> {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
-                )
-            }
-
-            is FinalizeKnockoutResult.InvalidStatus -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "INVALID_STATUS", message = "Knockout must be IN_PROGRESS")
-                )
-            }
-
-            is FinalizeKnockoutResult.IncompleteMatches -> {
-                call.respond(
-                    status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(
-                        code = "INCOMPLETE_MATCHES",
-                        message = "${result.count} match(es) still incomplete"
-                    )
-                )
-            }
+private suspend fun ApplicationCall.respondFinalizeResult(result: FinalizeKnockoutResult) {
+    when (result) {
+        is FinalizeKnockoutResult.Success -> {
+            respond(
+                status = HttpStatusCode.OK,
+                message = ErrorResponseModel(code = "OK", message = "Knockout finalized")
+            )
         }
+
+        is FinalizeKnockoutResult.TournamentNotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "KNOCKOUT_NOT_FOUND", message = "Knockout not found")
+            )
+        }
+
+        is FinalizeKnockoutResult.InvalidStatus -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "INVALID_STATUS", message = "Knockout must be IN_PROGRESS")
+            )
+        }
+
+        is FinalizeKnockoutResult.IncompleteMatches -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "INCOMPLETE_MATCHES",
+                    message = "${result.count} match(es) still incomplete"
+                )
+            )
+        }
+    }
+}
+
+private fun Route.knockoutMatchListRoutes(
+    jwtService: JwtService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
+    get("/api/v1/events/{eventId}/knockout/matches") {
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(
+            principal = principal,
+            eventId = eventId,
+            eventRepository = eventRepository
+        ) ?: return@get
+        val matches = knockoutService.getMatches(eventId = eventId)
+        call.respond(matches.map { it.toResponseModel() })
     }
 
     get("/api/v1/events/{eventId}/knockout/results") {

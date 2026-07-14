@@ -38,6 +38,20 @@ fun Route.participantRoutes(
     participantService: ParticipantService,
     eventRepository: EventRepository
 ) {
+    participantQueryRoutes(jwtService, participantService, eventRepository)
+    participantCreateRoute(jwtService, participantService, eventRepository)
+    participantUpdateRoute(jwtService, participantService, eventRepository)
+    participantDeactivateRoute(jwtService, participantService, eventRepository)
+    participantReactivateRoute(jwtService, participantService, eventRepository)
+    participantRandomizeRoute(jwtService, participantService, eventRepository)
+    participantImportRoute(jwtService, participantService, eventRepository)
+}
+
+private fun Route.participantQueryRoutes(
+    jwtService: JwtService,
+    participantService: ParticipantService,
+    eventRepository: EventRepository
+) {
     get("/api/v1/events/{eventId}/participants") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
@@ -68,7 +82,13 @@ fun Route.participantRoutes(
             )
         call.respond(message = participant.toResponseModel())
     }
+}
 
+private fun Route.participantCreateRoute(
+    jwtService: JwtService,
+    participantService: ParticipantService,
+    eventRepository: EventRepository
+) {
     post("/api/v1/events/{eventId}/participants") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -119,7 +139,13 @@ fun Route.participantRoutes(
             }
         }
     }
+}
 
+private fun Route.participantUpdateRoute(
+    jwtService: JwtService,
+    participantService: ParticipantService,
+    eventRepository: EventRepository
+) {
     put("/api/v1/events/{eventId}/participants/{id}") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@put
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@put
@@ -162,7 +188,13 @@ fun Route.participantRoutes(
             }
         }
     }
+}
 
+private fun Route.participantDeactivateRoute(
+    jwtService: JwtService,
+    participantService: ParticipantService,
+    eventRepository: EventRepository
+) {
     post("/api/v1/events/{eventId}/participants/{id}/deactivate") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -192,7 +224,13 @@ fun Route.participantRoutes(
             )
         }
     }
+}
 
+private fun Route.participantReactivateRoute(
+    jwtService: JwtService,
+    participantService: ParticipantService,
+    eventRepository: EventRepository
+) {
     post("/api/v1/events/{eventId}/participants/{id}/reactivate") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -222,7 +260,13 @@ fun Route.participantRoutes(
             )
         }
     }
+}
 
+private fun Route.participantRandomizeRoute(
+    jwtService: JwtService,
+    participantService: ParticipantService,
+    eventRepository: EventRepository
+) {
     post("/api/v1/events/{eventId}/participants/randomize") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -265,7 +309,13 @@ fun Route.participantRoutes(
             }
         }
     }
+}
 
+private fun Route.participantImportRoute(
+    jwtService: JwtService,
+    participantService: ParticipantService,
+    eventRepository: EventRepository
+) {
     post("/api/v1/events/{eventId}/participants/import") {
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post

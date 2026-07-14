@@ -10,9 +10,11 @@ import io.github.raginlundf.racingmanager.application.auth.Scopes
 import io.github.raginlundf.racingmanager.application.bootstrap.ImportResult
 import io.github.raginlundf.racingmanager.application.bootstrap.IssueResult
 import io.github.raginlundf.racingmanager.application.bootstrap.LocalPackageService
+import io.github.raginlundf.racingmanager.application.auth.RequestPrincipal
 import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -25,6 +27,23 @@ against the caller's own (already-authenticated) tenant only. Neither
 operation ever takes a tenant-selection parameter, so there is no
 cross-tenant surface to guard on either side. */
 fun Route.bootstrapRoutes(
+    jwtService: JwtService,
+    localPackageService: LocalPackageService,
+    deploymentMode: DeploymentMode
+) {
+    localPackageIssueRoutes(
+        jwtService = jwtService,
+        localPackageService = localPackageService,
+        deploymentMode = deploymentMode,
+    )
+    localPackageImportRoutes(
+        jwtService = jwtService,
+        localPackageService = localPackageService,
+        deploymentMode = deploymentMode,
+    )
+}
+
+private fun Route.localPackageIssueRoutes(
     jwtService: JwtService,
     localPackageService: LocalPackageService,
     deploymentMode: DeploymentMode
@@ -56,7 +75,13 @@ fun Route.bootstrapRoutes(
             )
         }
     }
+}
 
+private fun Route.localPackageImportRoutes(
+    jwtService: JwtService,
+    localPackageService: LocalPackageService,
+    deploymentMode: DeploymentMode
+) {
     post("/api/v1/tenant/local-packages/import") {
         if (deploymentMode != DeploymentMode.LOCAL) {
             call.respond(
@@ -72,53 +97,65 @@ fun Route.bootstrapRoutes(
         if (!call.requireScope(principal, Scopes.ADMIN)) return@post
 
         val request = call.receive<LocalPackageImportRequestModel>()
-        when (val result =
-            localPackageService.import(
-                artifact = request.artifact,
-                targetTenantId = principal.tenantId,
-                importedByUserId = principal.userId,
-                dryRun = request.dryRun
-            )) {
-            is ImportResult.Success -> call.respond(
-                status = HttpStatusCode.Created,
-                message = LocalPackageImportResponseModel(
-                    localInstanceId = result.localInstanceId.toString(),
-                    tenantId = result.tenantId.toString(),
-                    importedEventIds = result.importedEventIds.map { it.toString() },
-                    alreadyImported = result.alreadyImported,
-                    dryRun = false,
-                    originTenantDisplayName = result.originTenantDisplayName,
-                ),
-            )
+        call.respondLocalPackageImport(
+            localPackageService = localPackageService,
+            principal = principal,
+            request = request,
+        )
+    }
+}
 
-            is ImportResult.Preview -> call.respond(
-                LocalPackageImportResponseModel(
-                    localInstanceId = "",
-                    tenantId = principal.tenantId.toString(),
-                    importedEventIds = result.importedEventIds.map { it.toString() },
-                    alreadyImported = result.alreadyImported,
-                    dryRun = true,
-                    originTenantDisplayName = result.originTenantDisplayName,
-                ),
-            )
+private suspend fun ApplicationCall.respondLocalPackageImport(
+    localPackageService: LocalPackageService,
+    principal: RequestPrincipal,
+    request: LocalPackageImportRequestModel
+) {
+    val result = localPackageService.import(
+        artifact = request.artifact,
+        targetTenantId = principal.tenantId,
+        importedByUserId = principal.userId,
+        dryRun = request.dryRun
+    )
+    when (result) {
+        is ImportResult.Success -> respond(
+            status = HttpStatusCode.Created,
+            message = LocalPackageImportResponseModel(
+                localInstanceId = result.localInstanceId.toString(),
+                tenantId = result.tenantId.toString(),
+                importedEventIds = result.importedEventIds.map { it.toString() },
+                alreadyImported = result.alreadyImported,
+                dryRun = false,
+                originTenantDisplayName = result.originTenantDisplayName,
+            ),
+        )
 
-            is ImportResult.InvalidArtifact -> call.respond(
-                status = HttpStatusCode.BadRequest,
-                message = ErrorResponseModel(code = "INVALID_ARTIFACT", message = "The package artifact is malformed")
-            )
+        is ImportResult.Preview -> respond(
+            LocalPackageImportResponseModel(
+                localInstanceId = "",
+                tenantId = principal.tenantId.toString(),
+                importedEventIds = result.importedEventIds.map { it.toString() },
+                alreadyImported = result.alreadyImported,
+                dryRun = true,
+                originTenantDisplayName = result.originTenantDisplayName,
+            ),
+        )
 
-            is ImportResult.InvalidSignature -> call.respond(
-                status = HttpStatusCode.BadRequest,
-                message = ErrorResponseModel(
-                    code = "INVALID_SIGNATURE",
-                    message = "The package artifact failed integrity verification"
-                )
-            )
+        is ImportResult.InvalidArtifact -> respond(
+            status = HttpStatusCode.BadRequest,
+            message = ErrorResponseModel(code = "INVALID_ARTIFACT", message = "The package artifact is malformed")
+        )
 
-            is ImportResult.Expired -> call.respond(
-                status = HttpStatusCode.BadRequest,
-                message = ErrorResponseModel(code = "PACKAGE_EXPIRED", message = "This package has expired")
+        is ImportResult.InvalidSignature -> respond(
+            status = HttpStatusCode.BadRequest,
+            message = ErrorResponseModel(
+                code = "INVALID_SIGNATURE",
+                message = "The package artifact failed integrity verification"
             )
-        }
+        )
+
+        is ImportResult.Expired -> respond(
+            status = HttpStatusCode.BadRequest,
+            message = ErrorResponseModel(code = "PACKAGE_EXPIRED", message = "This package has expired")
+        )
     }
 }

@@ -33,6 +33,7 @@ import io.github.raginlundf.racingmanager.domain.qualification.QualificationRank
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.header
@@ -43,7 +44,23 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import java.util.UUID
 
-fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, eventService: EventService, eventRepository: EventRepository) {
+fun Route.resultsRoutes(
+    jwtService: JwtService,
+    resultsService: ResultsService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
+    resultsSnapshotRoutes(jwtService, resultsService, eventRepository)
+    resultsDownloadRoutes(jwtService, resultsService, eventRepository)
+    resultsLifecycleRoutes(jwtService, eventService, eventRepository)
+    resultsRestoreRoutes(jwtService, resultsService, eventRepository)
+}
+
+private fun Route.resultsSnapshotRoutes(
+    jwtService: JwtService,
+    resultsService: ResultsService,
+    eventRepository: EventRepository,
+) {
     get("/api/v1/events/{eventId}/results/snapshot") {
         val principal = call.authenticateRequest(jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
@@ -55,72 +72,6 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
                 message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
             )
         call.respond(snapshot.toResponseModel())
-    }
-
-    post("/api/v1/events/{eventId}/results/complete") {
-        val principal = call.authenticateRequest(jwtService) ?: return@post
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
-
-        when (val result = eventService.completeEvent(eventId, principal.userId)) {
-            is CompleteEventResult.Success -> {
-                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel(code = "OK", message = "Event completed"))
-            }
-            is CompleteEventResult.NotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
-            }
-            is CompleteEventResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be ACTIVE"))
-            }
-        }
-    }
-
-    post("/api/v1/events/{eventId}/results/reopen") {
-        val principal = call.authenticateRequest(jwtService) ?: return@post
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
-
-        when (val result = eventService.reopenEvent(eventId, principal.userId)) {
-            is ReopenEventResult.Success -> {
-                call.respond(status = HttpStatusCode.OK, message = ErrorResponseModel(code = "OK", message = "Event reopened"))
-            }
-            is ReopenEventResult.NotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
-            }
-            is ReopenEventResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be COMPLETED"))
-            }
-        }
-    }
-
-    get("/api/v1/events/{eventId}/results/csv") {
-        val principal = call.authenticateRequest(jwtService) ?: return@get
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
-        val result = resultsService.exportCsv(eventId)
-            ?: return@get call.respond(
-                status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
-            )
-        call.response.header(HttpHeaders.ContentDisposition, "attachment; filename=\"${result.filename}\"")
-        call.respondText(result.csv, ContentType.Text.Plain)
-    }
-
-    get("/api/v1/events/{eventId}/results/html") {
-        val principal = call.authenticateRequest(jwtService) ?: return@get
-        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
-        val eventId = UUID.fromString(call.parameters["eventId"])
-        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
-        val locale = call.request.headers["Accept-Language"]?.take(2) ?: "en"
-        val result = resultsService.exportHtml(eventId, locale)
-            ?: return@get call.respond(
-                status = HttpStatusCode.NotFound,
-                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
-            )
-        call.respondText(result.html, ContentType.Text.Html)
     }
 
     get("/api/v1/events/{eventId}/results/json") {
@@ -148,7 +99,73 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
             )
         call.respond(result.toResponseModel())
     }
+}
 
+private fun Route.resultsDownloadRoutes(
+    jwtService: JwtService,
+    resultsService: ResultsService,
+    eventRepository: EventRepository,
+) {
+    get("/api/v1/events/{eventId}/results/csv") {
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
+        val result = resultsService.exportCsv(eventId)
+            ?: return@get call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
+            )
+        call.response.header(HttpHeaders.ContentDisposition, "attachment; filename=\"${result.filename}\"")
+        call.respondText(result.csv, ContentType.Text.Plain)
+    }
+
+    get("/api/v1/events/{eventId}/results/html") {
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@get
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
+        val locale = call.request.headers["Accept-Language"]?.take(2) ?: "en"
+        val result = resultsService.exportHtml(eventId, locale)
+            ?: return@get call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
+            )
+        call.respondText(result.html, ContentType.Text.Html)
+    }
+}
+
+private fun Route.resultsLifecycleRoutes(
+    jwtService: JwtService,
+    eventService: EventService,
+    eventRepository: EventRepository,
+) {
+    post("/api/v1/events/{eventId}/results/complete") {
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
+
+        val result = eventService.completeEvent(eventId, principal.userId)
+        call.respondCompleteEvent(result)
+    }
+
+    post("/api/v1/events/{eventId}/results/reopen") {
+        val principal = call.authenticateRequest(jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
+        val eventId = UUID.fromString(call.parameters["eventId"])
+        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
+
+        val result = eventService.reopenEvent(eventId, principal.userId)
+        call.respondReopenEvent(result)
+    }
+}
+
+private fun Route.resultsRestoreRoutes(
+    jwtService: JwtService,
+    resultsService: ResultsService,
+    eventRepository: EventRepository,
+) {
     post("/api/v1/events/{eventId}/results/restore") {
         val principal = call.authenticateRequest(jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
@@ -156,19 +173,79 @@ fun Route.resultsRoutes(jwtService: JwtService, resultsService: ResultsService, 
         call.requireTenantEvent(principal, eventId, eventRepository) ?: return@post
         val backup = call.receive<BackupResponseModel>()
 
-        when (val result = resultsService.restoreFromBackup(eventId, backup, principal.userId)) {
-            is RestoreResult.Success -> {
-                call.respond(status = HttpStatusCode.OK, message = result.toResponseModel())
-            }
-            is RestoreResult.NotFound -> {
-                call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"))
-            }
-            is RestoreResult.InvalidStatus -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be ACTIVE"))
-            }
-            is RestoreResult.SnapshotMismatch -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "SNAPSHOT_MISMATCH", message = "Backup does not match this event"))
-            }
+        val result = resultsService.restoreFromBackup(eventId, backup, principal.userId)
+        call.respondRestore(result)
+    }
+}
+
+private suspend fun ApplicationCall.respondCompleteEvent(result: CompleteEventResult) {
+    when (result) {
+        is CompleteEventResult.Success -> {
+            respond(
+                status = HttpStatusCode.OK,
+                message = ErrorResponseModel(code = "OK", message = "Event completed"),
+            )
+        }
+        is CompleteEventResult.NotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
+            )
+        }
+        is CompleteEventResult.InvalidStatus -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be ACTIVE"),
+            )
+        }
+    }
+}
+
+private suspend fun ApplicationCall.respondReopenEvent(result: ReopenEventResult) {
+    when (result) {
+        is ReopenEventResult.Success -> {
+            respond(
+                status = HttpStatusCode.OK,
+                message = ErrorResponseModel(code = "OK", message = "Event reopened"),
+            )
+        }
+        is ReopenEventResult.NotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
+            )
+        }
+        is ReopenEventResult.InvalidStatus -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be COMPLETED"),
+            )
+        }
+    }
+}
+
+private suspend fun ApplicationCall.respondRestore(result: RestoreResult) {
+    when (result) {
+        is RestoreResult.Success -> {
+            respond(status = HttpStatusCode.OK, message = result.toResponseModel())
+        }
+        is RestoreResult.NotFound -> {
+            respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "EVENT_NOT_FOUND", message = "Event not found"),
+            )
+        }
+        is RestoreResult.InvalidStatus -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "INVALID_STATUS", message = "Event must be ACTIVE"),
+            )
+        }
+        is RestoreResult.SnapshotMismatch -> {
+            respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(code = "SNAPSHOT_MISMATCH", message = "Backup does not match this event"),
+            )
         }
     }
 }
@@ -252,7 +329,7 @@ private fun Measurement.toResponseModel(): HeatResultMeasurementModel {
     )
 }
 
-private fun io.github.raginlundf.racingmanager.application.results.JsonExport.toResponseModel(): JsonExportResponseModel {
+private fun JsonExport.toResponseModel(): JsonExportResponseModel {
     return JsonExportResponseModel(
         schemaVersion = schemaVersion,
         exportedAt = exportedAt,
@@ -260,7 +337,7 @@ private fun io.github.raginlundf.racingmanager.application.results.JsonExport.to
     )
 }
 
-private fun io.github.raginlundf.racingmanager.application.results.BackupExport.toResponseModel(): BackupResponseModel {
+private fun BackupExport.toResponseModel(): BackupResponseModel {
     return BackupResponseModel(
         schemaVersion = schemaVersion,
         exportedAt = exportedAt,

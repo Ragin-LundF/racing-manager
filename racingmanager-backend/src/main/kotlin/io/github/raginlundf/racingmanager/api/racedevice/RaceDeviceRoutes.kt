@@ -36,6 +36,16 @@ fun Route.raceDeviceRoutes(
     settingsRepository: RaceDeviceSettingsRepository,
     deploymentMode: DeploymentMode,
 ) {
+    raceDeviceSettingsRoutes(jwtService, gateway, settingsRepository, deploymentMode)
+    raceDeviceTestRoutes(jwtService, deploymentMode)
+}
+
+private fun Route.raceDeviceSettingsRoutes(
+    jwtService: JwtService,
+    gateway: ReconfigurableMeasurementGateway,
+    settingsRepository: RaceDeviceSettingsRepository,
+    deploymentMode: DeploymentMode,
+) {
     get("/api/v1/racedevice/settings") {
         if (!call.requireLocalMode(deploymentMode)) return@get
         val principal = call.authenticateRequest(jwtService) ?: return@get
@@ -48,13 +58,21 @@ fun Route.raceDeviceRoutes(
         val principal = call.authenticateRequest(jwtService) ?: return@put
         if (!call.requireScope(principal, Scopes.ADMIN)) return@put
         val request = call.receive<UpdateRaceDeviceSettingsRequestModel>()
-        val settings = parseSettings(mode = request.mode, endpoint = request.endpoint, finishTimeoutMs = request.finishTimeoutMs)
-            ?: return@put call.respondValidationError()
+        val settings = parseSettings(
+            mode = request.mode,
+            endpoint = request.endpoint,
+            finishTimeoutMs = request.finishTimeoutMs,
+        ) ?: return@put call.respondValidationError()
         settingsRepository.save(settings = settings)
         gateway.reconfigure(newSettings = settings)
         call.respond(settings.toResponseModel())
     }
+}
 
+private fun Route.raceDeviceTestRoutes(
+    jwtService: JwtService,
+    deploymentMode: DeploymentMode,
+) {
     post("/api/v1/racedevice/test") {
         if (!call.requireLocalMode(deploymentMode)) return@post
         val principal = call.authenticateRequest(jwtService) ?: return@post
@@ -96,7 +114,10 @@ private suspend fun ApplicationCall.requireLocalMode(deploymentMode: DeploymentM
     if (deploymentMode == DeploymentMode.LOCAL) return true
     respond(
         status = HttpStatusCode.Forbidden,
-        message = ErrorResponseModel(code = "NOT_LOCAL", message = "Race-device configuration is only available in local mode"),
+        message = ErrorResponseModel(
+            code = "NOT_LOCAL",
+            message = "Race-device configuration is only available in local mode",
+        ),
     )
     return false
 }

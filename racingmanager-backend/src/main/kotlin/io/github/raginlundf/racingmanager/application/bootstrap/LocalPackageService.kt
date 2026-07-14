@@ -97,12 +97,7 @@ class LocalPackageService(
             events = events,
         )
 
-        // Check out each exported event (design §I.3): hosted edits are
-        // rejected until the local instance syncs its results back.
-        eventIds.forEach { id ->
-            val event = eventRepository.findByIdForTenant(id, tenantId) ?: return@forEach
-            eventRepository.update(event.copy(lockedForSync = true, syncStatus = SyncStatus.SYNC_PENDING, version = event.version + 1, updatedAt = now))
-        }
+        checkoutExportedEvents(eventIds, tenantId, now)
         val payloadBytes = json.encodeToString(LocalPackagePayload.serializer(), payload).toByteArray(Charsets.UTF_8)
 
         // Local package export/import (design §I.3) always runs in DeploymentMode.LOCAL,
@@ -126,32 +121,81 @@ class LocalPackageService(
         )
     }
 
-    fun import(artifact: LocalPackageArtifact, targetTenantId: UUID, importedByUserId: UUID, dryRun: Boolean): ImportResult {
-        val payloadBytes = decodeBase64(artifact.payload) ?: return ImportResult.InvalidArtifact
-        val signatureBytes = decodeBase64(artifact.signature) ?: return ImportResult.InvalidArtifact
-        val publicKey = decodePublicKey(artifact.publicKey) ?: return ImportResult.InvalidArtifact
+    // Check out each exported event (design §I.3): hosted edits are
+    // rejected until the local instance syncs its results back.
+    private fun checkoutExportedEvents(eventIds: List<UUID>, tenantId: UUID, now: kotlin.time.Instant) {
+        eventIds.forEach { id ->
+            val event = eventRepository.findByIdForTenant(id, tenantId) ?: return@forEach
+            eventRepository.update(
+                event.copy(
+                    lockedForSync = true,
+                    syncStatus = SyncStatus.SYNC_PENDING,
+                    version = event.version + 1,
+                    updatedAt = now,
+                ),
+            )
+        }
+    }
 
-        val verified = runCatching {
+    fun import(
+        artifact: LocalPackageArtifact,
+        targetTenantId: UUID,
+        importedByUserId: UUID,
+        dryRun: Boolean,
+    ): ImportResult {
+        val decoded = decodeArtifact(artifact) ?: return ImportResult.InvalidArtifact
+        if (!verifySignature(decoded)) return ImportResult.InvalidSignature
+        val parsed = parsePayload(decoded.payloadBytes) ?: return ImportResult.InvalidArtifact
+        if (clock.now() > parsed.expiresAt) return ImportResult.Expired
+        return resolveImport(parsed, targetTenantId, importedByUserId, dryRun)
+    }
+
+    /** Base64-decodes the three artifact components; a null result means the
+        artifact is structurally corrupt (invalid base64 or key material). */
+    private fun decodeArtifact(artifact: LocalPackageArtifact): DecodedArtifact? {
+        val payloadBytes = decodeBase64(artifact.payload) ?: return null
+        val signatureBytes = decodeBase64(artifact.signature) ?: return null
+        val publicKey = decodePublicKey(artifact.publicKey) ?: return null
+        return DecodedArtifact(payloadBytes = payloadBytes, signatureBytes = signatureBytes, publicKey = publicKey)
+    }
+
+    private fun verifySignature(decoded: DecodedArtifact): Boolean {
+        return runCatching {
             Signature.getInstance("SHA256withRSA").apply {
-                initVerify(publicKey)
-                update(payloadBytes)
-            }.verify(signatureBytes)
+                initVerify(decoded.publicKey)
+                update(decoded.payloadBytes)
+            }.verify(decoded.signatureBytes)
         }.getOrDefault(false)
-        if (!verified) return ImportResult.InvalidSignature
+    }
 
-        val payload = runCatching { json.decodeFromString(LocalPackagePayload.serializer(), String(payloadBytes, Charsets.UTF_8)) }
-            .getOrNull() ?: return ImportResult.InvalidArtifact
-        val packageId = runCatching { UUID.fromString(payload.packageId) }.getOrNull() ?: return ImportResult.InvalidArtifact
-        val originTenantId = runCatching { UUID.fromString(payload.tenantId) }.getOrNull() ?: return ImportResult.InvalidArtifact
-        val expiresAt = runCatching { Instant.parse(payload.expiresAt) }.getOrNull() ?: return ImportResult.InvalidArtifact
+    /** Deserializes the verified payload and parses its identifiers/timestamp;
+        a null result means the payload is structurally invalid. */
+    private fun parsePayload(payloadBytes: ByteArray): ParsedPackage? {
+        val payload = runCatching {
+            json.decodeFromString(LocalPackagePayload.serializer(), String(payloadBytes, Charsets.UTF_8))
+        }.getOrNull() ?: return null
+        val packageId = runCatching { UUID.fromString(payload.packageId) }.getOrNull() ?: return null
+        val originTenantId = runCatching { UUID.fromString(payload.tenantId) }.getOrNull() ?: return null
+        val expiresAt = runCatching { Instant.parse(payload.expiresAt) }.getOrNull() ?: return null
+        return ParsedPackage(
+            payload = payload,
+            packageId = packageId,
+            originTenantId = originTenantId,
+            expiresAt = expiresAt,
+        )
+    }
 
-        if (clock.now() > expiresAt) return ImportResult.Expired
-
-        val existing = importedPackageRepository.findById(packageId)
+    private fun resolveImport(
+        parsed: ParsedPackage,
+        targetTenantId: UUID,
+        importedByUserId: UUID,
+        dryRun: Boolean,
+    ): ImportResult {
+        val existing = importedPackageRepository.findById(parsed.packageId)
         if (dryRun) {
             return ImportResult.Preview(
-                importedEventIds = existing?.importedEventIds ?: payload.events.map { UUID.fromString(it.id) },
-                originTenantDisplayName = payload.tenantDisplayName,
+                importedEventIds = existing?.importedEventIds ?: parsed.payload.events.map { UUID.fromString(it.id) },
+                originTenantDisplayName = parsed.payload.tenantDisplayName,
                 alreadyImported = existing != null,
             )
         }
@@ -161,72 +205,114 @@ class LocalPackageService(
                 tenantId = targetTenantId,
                 importedEventIds = existing.importedEventIds,
                 alreadyImported = true,
-                originTenantDisplayName = payload.tenantDisplayName,
+                originTenantDisplayName = parsed.payload.tenantDisplayName,
             )
         }
 
         val now = clock.now()
-        val importedEventIds = transaction {
-            payload.events.map { pe ->
+        val importedEventIds = persistEvents(parsed, targetTenantId, importedByUserId, now)
+        importedPackageRepository.insert(
+            ImportedPackageEntity(
+                packageId = parsed.packageId,
+                originTenantId = parsed.originTenantId,
+                importedEventIds = importedEventIds,
+                importedAt = now,
+            ),
+        )
+        return ImportResult.Success(
+            localInstanceId = ensureLocalInstance().id,
+            tenantId = targetTenantId,
+            importedEventIds = importedEventIds,
+            alreadyImported = false,
+            originTenantDisplayName = parsed.payload.tenantDisplayName,
+        )
+    }
+
+    private fun persistEvents(
+        parsed: ParsedPackage,
+        targetTenantId: UUID,
+        importedByUserId: UUID,
+        now: Instant,
+    ): List<UUID> {
+        return transaction {
+            parsed.payload.events.map { pe ->
                 val eventId = UUID.fromString(pe.id)
-                eventRepository.insert(
-                    EventEntity(
-                        id = eventId,
-                        tenantId = targetTenantId,
-                        name = pe.name,
-                        description = pe.description,
-                        status = EventStatus.valueOf(pe.status),
-                        settings = EventSettings(
-                            laneType = LaneType.valueOf(pe.laneType),
-                            measurementType = MeasurementType.valueOf(pe.measurementType),
-                            maxParticipants = pe.maxParticipants,
-                        ),
-                        createdBy = importedByUserId,
-                        createdAt = now,
-                        originTenantId = originTenantId,
-                        originPackageId = packageId,
-                        syncStatus = SyncStatus.IMPORTED,
-                    ),
-                )
+                eventRepository.insert(buildEvent(pe, eventId, targetTenantId, importedByUserId, parsed, now))
                 pe.participants.forEach { pp ->
-                    val participantId = UUID.fromString(pp.id)
-                    participantRepository.insert(
-                        ParticipantEntity(
-                            id = participantId,
-                            eventId = eventId,
-                            startNumber = pp.startNumber,
-                            firstName = pp.firstName,
-                            lastName = pp.lastName,
-                            club = pp.club,
-                            status = ParticipantStatus.valueOf(pp.status),
-                            sortOrder = pp.sortOrder,
-                            vehicle = pp.vehicleName?.let { name ->
-                                VehicleEntity(id = UUID.randomUUID(), participantId = participantId, name = name, category = pp.vehicleCategory)
-                            },
-                            createdAt = now,
-                        ),
-                    )
+                    participantRepository.insert(buildParticipant(pp, eventId, now))
                 }
                 eventId
             }
         }
+    }
 
-        importedPackageRepository.insert(
-            ImportedPackageEntity(packageId = packageId, originTenantId = originTenantId, importedEventIds = importedEventIds, importedAt = now),
-        )
-        val instance = ensureLocalInstance()
-
-        return ImportResult.Success(
-            localInstanceId = instance.id,
+    private fun buildEvent(
+        pe: PackagedEvent,
+        eventId: UUID,
+        targetTenantId: UUID,
+        importedByUserId: UUID,
+        parsed: ParsedPackage,
+        now: Instant,
+    ): EventEntity {
+        return EventEntity(
+            id = eventId,
             tenantId = targetTenantId,
-            importedEventIds = importedEventIds,
-            alreadyImported = false,
-            originTenantDisplayName = payload.tenantDisplayName,
+            name = pe.name,
+            description = pe.description,
+            status = EventStatus.valueOf(pe.status),
+            settings = EventSettings(
+                laneType = LaneType.valueOf(pe.laneType),
+                measurementType = MeasurementType.valueOf(pe.measurementType),
+                maxParticipants = pe.maxParticipants,
+            ),
+            createdBy = importedByUserId,
+            createdAt = now,
+            originTenantId = parsed.originTenantId,
+            originPackageId = parsed.packageId,
+            syncStatus = SyncStatus.IMPORTED,
         )
     }
 
+    private fun buildParticipant(pp: PackagedParticipant, eventId: UUID, now: Instant): ParticipantEntity {
+        val participantId = UUID.fromString(pp.id)
+        return ParticipantEntity(
+            id = participantId,
+            eventId = eventId,
+            startNumber = pp.startNumber,
+            firstName = pp.firstName,
+            lastName = pp.lastName,
+            club = pp.club,
+            status = ParticipantStatus.valueOf(pp.status),
+            sortOrder = pp.sortOrder,
+            vehicle = pp.vehicleName?.let { name ->
+                VehicleEntity(
+                    id = UUID.randomUUID(),
+                    participantId = participantId,
+                    name = name,
+                    category = pp.vehicleCategory,
+                )
+            },
+            createdAt = now,
+        )
+    }
+
+    private class DecodedArtifact(
+        val payloadBytes: ByteArray,
+        val signatureBytes: ByteArray,
+        val publicKey: RSAPublicKey,
+    )
+
+    private class ParsedPackage(
+        val payload: LocalPackagePayload,
+        val packageId: UUID,
+        val originTenantId: UUID,
+        val expiresAt: Instant,
+    )
+
     private fun ensureLocalInstance(): LocalInstanceEntity {
-        return localInstanceRepository.find() ?: LocalInstanceEntity(id = UUID.randomUUID(), createdAt = clock.now()).also { localInstanceRepository.insert(it) }
+        return localInstanceRepository.find()
+            ?: LocalInstanceEntity(id = UUID.randomUUID(), createdAt = clock.now())
+                .also { localInstanceRepository.insert(it) }
     }
 
     private fun decodeBase64(value: String): ByteArray? {
