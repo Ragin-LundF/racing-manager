@@ -62,6 +62,13 @@
   border-color: var(--color-text-muted);
 }
 
+/* Highlight the nav button for the currently-open child view. */
+.actions button.active {
+  border-color: var(--color-action);
+  color: var(--color-action);
+  font-weight: 600;
+}
+
 /* Activate is the primary affirmative action for an inactive (DRAFT) event. */
 .actions button.success {
   background: var(--color-success);

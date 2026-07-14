@@ -9,6 +9,8 @@ import io.github.raginlundf.racingmanager.application.participant.CreateParticip
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
 import io.github.raginlundf.racingmanager.application.qualification.QualificationService
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
+import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
+import io.github.raginlundf.racingmanager.domain.heat.Measurement
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchStatus
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutStatus
 import io.github.raginlundf.racingmanager.domain.knockout.PairingMode
@@ -466,6 +468,88 @@ class KnockoutServiceTest {
         assertNotNull(actual = completed)
         assertEquals(expected = KnockoutMatchStatus.COMPLETED, actual = completed.status)
         assertEquals(expected = participantIds[0], actual = completed.winnerId)
+    }
+
+    @Test
+    fun `createHeatForMatch links the heat, sets IN_PROGRESS, and carries real lane names`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+        val match1 = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 1 && it.matchNumber == 1 }
+
+        val heat = (knockoutService.createHeatForMatch(
+            eventId = eventId, matchId = match1.id, actorId = actorId
+        ) as CreateHeatForMatchResult.Success).heat
+
+        val updated = knockoutService.getMatches(eventId = eventId).first { it.id == match1.id }
+        assertEquals(expected = heat.id, actual = updated.heatId)
+        assertEquals(expected = KnockoutMatchStatus.IN_PROGRESS, actual = updated.status)
+        assertTrue(actual = heat.lanes.all { it.participantStartNumber > 0 && it.participantFirstName.isNotEmpty() })
+    }
+
+    @Test
+    fun `recordResultFromHeat records the fastest lane as winner and advances the bracket`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+        val match1 = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 1 && it.matchNumber == 1 }
+        val heat = (knockoutService.createHeatForMatch(
+            eventId = eventId, matchId = match1.id, actorId = actorId
+        ) as CreateHeatForMatchResult.Success).heat
+
+        // Lane 1 (participant1) finishes faster than lane 2 (participant2).
+        heatRepository.insertMeasurement(
+            Measurement(UUID.randomUUID(), heat.id, 1, 1_000_000_000, LaneOutcome.FINISHED, heat.createdAt),
+        )
+        heatRepository.insertMeasurement(
+            Measurement(UUID.randomUUID(), heat.id, 2, 2_000_000_000, LaneOutcome.FINISHED, heat.createdAt),
+        )
+
+        val result = knockoutService.recordResultFromHeat(eventId = eventId, heatId = heat.id, actorId = actorId)
+        assertIs<RecordResultFromHeatResult.Success>(value = result)
+
+        val completed = knockoutService.getMatches(eventId = eventId).first { it.id == match1.id }
+        assertEquals(expected = KnockoutMatchStatus.COMPLETED, actual = completed.status)
+        assertEquals(expected = match1.participant1Id, actual = completed.winnerId)
+        val finalMatch = knockoutService.getMatches(eventId = eventId).first { it.roundNumber == 2 && it.matchNumber == 1 }
+        assertEquals(expected = match1.participant1Id, actual = finalMatch.participant1Id)
+    }
+
+    @Test
+    fun `recordResultFromHeat returns NoWinner when no lane finished`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+        val match1 = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 1 && it.matchNumber == 1 }
+        val heat = (knockoutService.createHeatForMatch(
+            eventId = eventId, matchId = match1.id, actorId = actorId
+        ) as CreateHeatForMatchResult.Success).heat
+        heatRepository.insertMeasurement(
+            Measurement(UUID.randomUUID(), heat.id, 1, 0L, LaneOutcome.DNF, heat.createdAt),
+        )
+        heatRepository.insertMeasurement(
+            Measurement(UUID.randomUUID(), heat.id, 2, 0L, LaneOutcome.DNF, heat.createdAt),
+        )
+
+        val result = knockoutService.recordResultFromHeat(eventId = eventId, heatId = heat.id, actorId = actorId)
+        assertIs<RecordResultFromHeatResult.NoWinner>(value = result)
+        val stillOpen = knockoutService.getMatches(eventId = eventId).first { it.id == match1.id }
+        assertEquals(expected = KnockoutMatchStatus.IN_PROGRESS, actual = stillOpen.status)
+    }
+
+    @Test
+    fun `recordResultFromHeat returns NoMatch for a heat not tied to a knockout match`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        val qualificationHeat = heatRepository.findByEventId(eventId = eventId).first()
+
+        val result = knockoutService.recordResultFromHeat(
+            eventId = eventId, heatId = qualificationHeat.id, actorId = actorId,
+        )
+        assertIs<RecordResultFromHeatResult.NoMatch>(value = result)
     }
 
     @Test

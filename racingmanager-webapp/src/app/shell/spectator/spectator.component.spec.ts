@@ -62,6 +62,10 @@ const mockSnapshot: SpectatorSnapshotResponse = {
       },
     ],
   },
+  knockoutStandings: [
+    { participantId: 'p1', startNumber: 1, firstName: 'Alice', lastName: 'Smith', bestQualificationTimeNanos: 1_500_000_000, bestKnockoutTimeNanos: 1_400_000_000, state: 'WON' },
+    { participantId: 'p2', startNumber: 2, firstName: 'Bob', lastName: 'Jones', bestQualificationTimeNanos: 1_600_000_000, state: 'OUT' },
+  ],
 };
 
 async function createComponent(spectatorClient: Partial<SpectatorClient>): Promise<ComponentFixture<SpectatorShellComponent>> {
@@ -231,5 +235,48 @@ describe('SpectatorShellComponent', () => {
     c.snapshot.set(mockSnapshot);
     const name = c.getParticipantName('unknown-id');
     expect(name).toBeTruthy();
+  });
+
+  it('translates the ACCEPTED heat state instead of showing the raw key', async () => {
+    window.location.hash = '#code=abc123';
+    const accepted: SpectatorSnapshotResponse = {
+      ...mockSnapshot,
+      currentHeat: { ...mockSnapshot.currentHeat!, status: 'ACCEPTED' },
+    };
+    const fixture = await createComponent({
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(accepted),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    });
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Result accepted');
+    expect(text).not.toContain('spectator.heatState');
+  });
+
+  it('shows knockout standings (not the bracket) during the knockout phase', async () => {
+    window.location.hash = '#code=abc123';
+    const fixture = await createComponent({
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    });
+    expect(fixture.nativeElement.querySelector('.bracket')).toBeNull();
+    const rows = fixture.nativeElement.querySelectorAll('.standing');
+    expect(rows.length).toBe(2);
+    expect(rows[0].textContent).toContain('Alice');
+    expect(fixture.nativeElement.querySelector('.standing-badge.WON')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.standing-times')).toBeTruthy();
+  });
+
+  it('shows the qualification rankings table when there is no knockout', async () => {
+    window.location.hash = '#code=abc123';
+    const qualOnly: SpectatorSnapshotResponse = { ...mockSnapshot, knockout: undefined, knockoutStandings: undefined };
+    const fixture = await createComponent({
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(qualOnly),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    });
+    expect(fixture.nativeElement.querySelector('.leaderboard table')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.standing')).toBeNull();
   });
 });

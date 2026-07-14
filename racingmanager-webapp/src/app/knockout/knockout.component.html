@@ -30,8 +30,10 @@
   @if (tournament(); as t) {
     <div class="section">
       <h3>{{ 'knockout.statusTitle' | translate }}</h3>
-      <p><strong>{{ 'knockout.status' | translate }}</strong> {{ t.status }}</p>
-      <p><strong>{{ 'knockout.pairingMode' | translate }}</strong> {{ 'knockout.mode' + t.pairingMode | translate }}</p>
+      <div class="meta">
+        <span class="chip" [class]="statusChipClass(t.status)">{{ 'knockout.status' | translate }} {{ t.status }}</span>
+        <span class="chip chip-muted">{{ 'knockout.pairingMode' | translate }} {{ pairingModeKey(t.pairingMode) | translate }}</span>
+      </div>
 
       @if (t.status === 'PAIRING') {
         @if (t.pairingMode === 'MANUAL') {
@@ -82,40 +84,34 @@
     @if (matches().length > 0) {
       <div class="section">
         <h3>{{ 'knockout.bracketTitle' | translate }}</h3>
-        <div class="bracket">
-          @for (round of getRounds(); track round) {
-            <div class="round-column">
-              <div class="round-header">{{ 'knockout.roundLabel' | translate: { number: round } }}</div>
-              @for (match of matchesByRound(round); track match.id) {
-                <div class="match-card" [class]="matchStatusClass(match.status)">
+        @for (round of getRounds(); track round) {
+          <h4 class="round-title">{{ 'knockout.roundLabel' | translate: { number: round } }}</h4>
+          <div class="heat-list">
+            @for (match of matchesByRound(round); track match.id) {
+              <div class="heat-item" [class]="matchStatusClass(match.status)">
+                <div>
                   @if (isBye(match)) {
-                    <div class="match-participant winner">
-                      <span class="participant-name">{{ getParticipantName(match.participant1Id) }}</span>
-                      <span class="bye-badge">{{ 'knockout.bye' | translate }}</span>
-                    </div>
+                    <strong>{{ getParticipantName(match.participant1Id) }}</strong>
+                    <span class="chip chip-muted">{{ 'knockout.bye' | translate }}</span>
                   } @else {
-                    <div class="match-participant" [class.winner]="match.winnerId === match.participant1Id">
-                      <span class="participant-name">{{ getParticipantName(match.participant1Id) }}</span>
-                    </div>
-                    <div class="match-vs">vs</div>
-                    <div class="match-participant" [class.winner]="match.winnerId === match.participant2Id">
-                      <span class="participant-name">{{ getParticipantName(match.participant2Id) }}</span>
-                    </div>
+                    <strong [class.winner]="match.winnerId === match.participant1Id">{{ getParticipantName(match.participant1Id) }}</strong>
+                    <span class="lane-info"> vs </span>
+                    <strong [class.winner]="match.winnerId === match.participant2Id">{{ getParticipantName(match.participant2Id) }}</strong>
                   }
-                  <div class="match-status">{{ match.status }}</div>
-                  <div class="match-actions">
-                    @if (match.status === 'PLANNED' && match.participant1Id) {
-                      <button class="small" (click)="onCreateHeat(match)" [disabled]="loading()">{{ 'knockout.createHeat' | translate }}</button>
-                    }
-                    @if (match.heatId) {
-                      <a class="small-link" [routerLink]="['../race-control']">{{ 'knockout.goToRaceControl' | translate }}</a>
-                    }
-                  </div>
                 </div>
-              }
-            </div>
-          }
-        </div>
+                <div class="heat-actions">
+                  <span class="chip" [class]="matchStatusChipClass(match.status)">{{ match.status }}</span>
+                  @if (match.status === 'PLANNED' && match.participant1Id) {
+                    <button class="primary" (click)="onCreateHeat(match)" [disabled]="loading()">{{ 'knockout.createHeat' | translate }}</button>
+                  }
+                  @if (match.heatId) {
+                    <button class="primary" [routerLink]="['../race-control']">{{ 'knockout.goToRaceControl' | translate }}</button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
       </div>
     }
 

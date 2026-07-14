@@ -72,6 +72,16 @@ export interface SpectatorKnockoutStateModel {
   rounds: SpectatorKnockoutRoundModel[];
 }
 
+export interface SpectatorParticipantStandingModel {
+  participantId: string;
+  startNumber: number;
+  firstName: string;
+  lastName: string;
+  bestQualificationTimeNanos?: number;
+  bestKnockoutTimeNanos?: number;
+  state: string;
+}
+
 export interface SpectatorSnapshotResponse {
   event: SpectatorEventModel;
   currentHeat?: SpectatorHeatModel;
@@ -79,4 +89,5 @@ export interface SpectatorSnapshotResponse {
   qualificationRankings: SpectatorRankingEntryModel[];
   qualificationStatus?: string;
   knockout?: SpectatorKnockoutStateModel;
+  knockoutStandings?: SpectatorParticipantStandingModel[];
 }

@@ -12,6 +12,7 @@ import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorKnockout
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorKnockoutRoundModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorKnockoutStateModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorLaneModel
+import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorParticipantStandingModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorRankingEntryModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorSnapshotResponseModel
 import io.github.raginlundf.racingmanager.api.spectator.models.SpectatorTokenResponseModel
@@ -276,6 +277,17 @@ internal fun SpectatorSnapshot.toResponseModel(): SpectatorSnapshotResponseModel
                         },
                     )
                 },
+            )
+        },
+        knockoutStandings = knockoutStandings.map { s ->
+            SpectatorParticipantStandingModel(
+                participantId = s.participantId.toString(),
+                startNumber = s.startNumber,
+                firstName = s.firstName,
+                lastName = s.lastName,
+                bestQualificationTimeNanos = s.bestQualificationTimeNanos,
+                bestKnockoutTimeNanos = s.bestKnockoutTimeNanos,
+                state = s.state,
             )
         },
     )

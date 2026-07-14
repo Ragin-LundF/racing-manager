@@ -11,4 +11,5 @@ data class SpectatorSnapshot(
     val qualificationRankings: List<QualificationRanking>,
     val qualificationStatus: String?,
     val knockout: SpectatorKnockoutState?,
+    val knockoutStandings: List<SpectatorParticipantStanding>,
 )

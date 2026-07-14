@@ -120,6 +120,16 @@ class KnockoutRepository {
         }
     }
 
+    /** Link a heat to a match and move it forward, without touching the winner. */
+    fun updateMatchHeat(id: UUID, heatId: UUID, status: KnockoutMatchStatus) {
+        transaction {
+            KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
+                it[KnockoutMatchTable.heatId] = heatId
+                it[KnockoutMatchTable.status] = status.name
+            }
+        }
+    }
+
     fun updateMatchResult(id: UUID, winnerId: UUID, heatId: UUID, status: KnockoutMatchStatus) {
         transaction {
             KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {

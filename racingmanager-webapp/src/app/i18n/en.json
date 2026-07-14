@@ -689,9 +689,15 @@
       "FINISHED": "Race completed",
       "CANCELLED": "Heat cancelled",
       "TIMEOUT": "Timeout",
-      "TECHNICAL_ERROR": "Technical hold"
+      "TECHNICAL_ERROR": "Technical hold",
+      "ACCEPTED": "Result accepted",
+      "REJECTED": "Result rejected"
     },
     "knockoutBracket": "Knockout Bracket",
+    "knockoutStandings": "Knockout",
+    "qualTime": "Qualification",
+    "koTime": "Knockout",
+    "won": "Won",
     "roundLabel": "Round {{number}}",
     "bye": "Bye",
     "winner": "Winner",

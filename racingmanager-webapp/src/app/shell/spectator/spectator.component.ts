@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { interval, Subscription, switchMap, tap } from 'rxjs';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 import { SpectatorClient } from '../../libs/clients/spectator/spectator.client';
-import { SpectatorKnockoutStateModel, SpectatorLaneModel, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
+import { SpectatorLaneModel, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
 
 @Component({
   selector: 'app-spectator-shell',
@@ -40,6 +40,9 @@ export class SpectatorShellComponent implements OnInit {
   protected readonly upcomingHeats = computed(() => this.snapshot()?.upcomingHeats ?? this.lastKnownSnapshot()?.upcomingHeats ?? []);
   protected readonly rankings = computed(() => this.snapshot()?.qualificationRankings ?? this.lastKnownSnapshot()?.qualificationRankings ?? []);
   protected readonly knockout = computed(() => this.snapshot()?.knockout ?? this.lastKnownSnapshot()?.knockout ?? null);
+  protected readonly knockoutStandings = computed(() => this.snapshot()?.knockoutStandings ?? this.lastKnownSnapshot()?.knockoutStandings ?? []);
+  /** Once a knockout tournament exists, the leaderboard switches to knockout standings. */
+  protected readonly knockoutActive = computed(() => this.knockout() !== null);
   protected readonly eventName = computed(() => this.snapshot()?.event?.name ?? this.lastKnownSnapshot()?.event?.name ?? '');
   protected readonly qualificationStatus = computed(() => this.snapshot()?.qualificationStatus ?? this.lastKnownSnapshot()?.qualificationStatus ?? null);
   protected readonly hasLiveData = computed(() => this.snapshot() !== null || this.lastKnownSnapshot() !== null);
@@ -240,12 +243,11 @@ export class SpectatorShellComponent implements OnInit {
     return participantId.slice(0, 8);
   }
 
-  protected getKnockoutParticipantName(participantId: string | undefined | null): string {
-    return this.getParticipantName(participantId);
-  }
-
-  protected getKnockoutRounds(knockout: SpectatorKnockoutStateModel | null): SpectatorKnockoutStateModel['rounds'] {
-    return knockout?.rounds ?? [];
+  /** Translation key for a knockout standing badge, or null when no badge should show. */
+  protected standingBadge(state: string): string | null {
+    if (state === 'WON') return 'spectator.won';
+    if (state === 'BYE') return 'spectator.bye';
+    return null;
   }
 
   protected trackById(_index: number, item: { id: string }): string {

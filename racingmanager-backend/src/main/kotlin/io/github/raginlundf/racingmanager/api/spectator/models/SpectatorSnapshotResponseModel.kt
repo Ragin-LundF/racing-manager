@@ -10,4 +10,5 @@ data class SpectatorSnapshotResponseModel(
     val qualificationRankings: List<SpectatorRankingEntryModel> = emptyList(),
     val qualificationStatus: String? = null,
     val knockout: SpectatorKnockoutStateModel? = null,
+    val knockoutStandings: List<SpectatorParticipantStandingModel> = emptyList(),
 )

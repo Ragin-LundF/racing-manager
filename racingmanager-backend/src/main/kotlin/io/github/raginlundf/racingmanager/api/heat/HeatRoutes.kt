@@ -67,7 +67,12 @@ fun Route.heatRoutes(
     heatStartRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatFinishRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatCancelRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
-    heatAcceptRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
+    heatAcceptRoutes(
+        jwtService = jwtService,
+        heatService = heatService,
+        knockoutService = knockoutService,
+        eventRepository = eventRepository,
+    )
     heatRejectRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatRepeatRoutes(
         jwtService = jwtService,
@@ -349,6 +354,7 @@ private fun Route.heatCancelRoutes(
 private fun Route.heatAcceptRoutes(
     jwtService: JwtService,
     heatService: HeatService,
+    knockoutService: KnockoutService,
     eventRepository: EventRepository,
 ) {
     post("/api/v1/events/{eventId}/heats/{id}/accept") {
@@ -362,7 +368,12 @@ private fun Route.heatAcceptRoutes(
         ) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
         when (val result = heatService.acceptResult(id = id, actorId = principal.userId)) {
-            is AcceptResult.Success -> call.respond(mapOf("status" to "accepted"))
+            is AcceptResult.Success -> {
+                // If this heat belongs to a knockout match, derive its winner from the timing and
+                // advance the bracket. No-op for qualification/standalone heats.
+                knockoutService.recordResultFromHeat(eventId = eventId, heatId = id, actorId = principal.userId)
+                call.respond(mapOf("status" to "accepted"))
+            }
             is AcceptResult.NotFound -> call.respond(
                 status = HttpStatusCode.NotFound,
                 message = ErrorResponseModel(code = "HEAT_NOT_FOUND", message = "Heat not found")

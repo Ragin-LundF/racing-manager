@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { EventResponse } from '../libs/clients/event/event.models';
 import { SelectedEventService } from '../core/selected-event.service';
@@ -9,7 +9,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [RouterLink, RouterOutlet, TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, TranslatePipe],
   templateUrl: './event-detail.component.html',
   styleUrl: './event-detail.component.scss',
 })

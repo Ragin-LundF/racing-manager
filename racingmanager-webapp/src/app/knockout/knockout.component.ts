@@ -231,6 +231,32 @@ export class KnockoutComponent {
     return 'planned';
   }
 
+  protected statusChipClass(status: string): string {
+    if (status === 'PAIRING' || status === 'IN_PROGRESS') return 'chip-success';
+    if (status === 'FINALIZED') return 'chip-warning';
+    return 'chip-muted';
+  }
+
+  protected matchStatusChipClass(status: string): string {
+    if (status === 'COMPLETED') return 'chip-success';
+    if (status === 'IN_PROGRESS') return 'chip-warning';
+    return 'chip-muted';
+  }
+
+  protected pairingModeKey(mode: string): string {
+    const keys: Record<string, string> = {
+      FIRST_VS_LAST: 'knockout.modeFirstVsLast',
+      ADJACENT: 'knockout.modeAdjacent',
+      RANDOM: 'knockout.modeRandom',
+      MANUAL: 'knockout.modeManual',
+    };
+    return keys[mode] ?? mode;
+  }
+
+  protected getMatchPairing(match: KnockoutMatchResponse): string {
+    return `${this.getParticipantName(match.participant1Id)} vs ${this.getParticipantName(match.participant2Id)}`;
+  }
+
   protected isBye(match: KnockoutMatchResponse): boolean {
     return match.participant2Id === null && match.status === 'COMPLETED';
   }

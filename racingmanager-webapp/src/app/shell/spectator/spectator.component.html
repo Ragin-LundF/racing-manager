@@ -30,7 +30,35 @@
     </div>
   } @else {
     <div class="stage">
-      <!-- LEFT: Qualification leaderboard -->
+      <!-- LEFT: Qualification leaderboard, or knockout standings once the KO phase starts -->
+      @if (knockoutActive()) {
+      <section class="panel col leaderboard">
+        <div class="col-title">
+          <h2>{{ 'spectator.knockoutStandings' | translate }}</h2>
+        </div>
+        @if (knockoutStandings().length > 0) {
+          <div class="table-scroll">
+            @for (s of knockoutStandings(); track s.participantId) {
+              <div class="standing" [class.out]="s.state === 'OUT'">
+                <div class="standing-name">
+                  <span class="name">{{ s.firstName }} {{ s.lastName }}</span>
+                  @if (standingBadge(s.state); as badge) {
+                    <span class="standing-badge" [class]="s.state">{{ badge | translate }}</span>
+                  }
+                </div>
+                <div class="standing-times tnum">
+                  <span class="qual"><span class="lbl">{{ 'spectator.qualTime' | translate }}</span> {{ formatSeconds(s.bestQualificationTimeNanos) }}</span>
+                  <span class="ko"><span class="lbl">{{ 'spectator.koTime' | translate }}</span> {{ formatSeconds(s.bestKnockoutTimeNanos) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+          <p class="unit-note">{{ 'spectator.timesInSeconds' | translate }}</p>
+        } @else {
+          <p class="muted">{{ 'spectator.noRankings' | translate }}</p>
+        }
+      </section>
+      } @else {
       <section class="panel col leaderboard">
         <div class="col-title">
           <h2>{{ 'spectator.leaderboard' | translate }}</h2>
@@ -64,6 +92,7 @@
           <p class="muted">{{ 'spectator.noRankings' | translate }}</p>
         }
       </section>
+      }
 
       <!-- CENTER: Current heat, the visual focal point -->
       <section class="col current-heat">
@@ -141,43 +170,6 @@
         }
       </section>
     </div>
-
-    <!-- Knockout Bracket -->
-      @if (knockout(); as ko) {
-        <section class="panel bracket">
-          <h2>{{ 'spectator.knockoutBracket' | translate }}</h2>
-          <span class="status-badge">{{ ko.status }}</span>
-          <div class="bracket-rounds">
-            @for (round of getKnockoutRounds(ko); track round.roundNumber) {
-              <div class="round-column">
-                <h3>{{ 'spectator.roundLabel' | translate: { number: round.roundNumber } }}</h3>
-                @for (match of round.matches; track match.id) {
-                  <div class="match-card" [class.completed]="match.status === 'COMPLETED'" [class.bye]="match.isBye">
-                    @if (match.isBye) {
-                      <div class="match-participant winner">
-                        <span>{{ getKnockoutParticipantName(match.participant1Id) }}</span>
-                        <span class="bye-badge">{{ 'spectator.bye' | translate }}</span>
-                      </div>
-                    } @else {
-                      <div class="match-participant" [class.winner]="match.winnerId === match.participant1Id">
-                        <span>{{ getKnockoutParticipantName(match.participant1Id) }}</span>
-                      </div>
-                      <div class="match-participant" [class.winner]="match.winnerId === match.participant2Id">
-                        <span>{{ getKnockoutParticipantName(match.participant2Id) }}</span>
-                      </div>
-                    }
-                    @if (match.status === 'COMPLETED' && match.winnerId) {
-                      <div class="match-winner">
-                        {{ 'spectator.winner' | translate }}: {{ getKnockoutParticipantName(match.winnerId) }}
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </section>
-      }
 
     <footer class="event-footer">
       <span class="foot-left">{{ eventName() }}</span>

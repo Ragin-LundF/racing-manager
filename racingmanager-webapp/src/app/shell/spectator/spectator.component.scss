@@ -207,6 +207,54 @@
   color: var(--color-text-muted);
 }
 
+/* ---------- Knockout standings (left column during KO) ---------- */
+.standing {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.standing.out { opacity: 0.5; }
+.standing-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.standing-name .name { font-weight: 600; font-size: 15px; }
+.standing-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px var(--space-2);
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.standing-badge.WON {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 45%, transparent);
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+}
+.standing-badge.BYE {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  background: var(--color-bg-raised);
+}
+.standing-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+.standing-times .lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-right: var(--space-1);
+}
+.standing-times .ko { text-align: right; }
+
 /* ---------- Current heat (center, focal point) ---------- */
 .current-heat {
   align-items: stretch;
@@ -417,10 +465,12 @@
 
 .status-strip .dot.ARMED,
 .status-strip .dot.STARTED { background: var(--color-warning); }
-.status-strip .dot.FINISHED { background: var(--color-success); }
+.status-strip .dot.FINISHED,
+.status-strip .dot.ACCEPTED { background: var(--color-success); }
 .status-strip .dot.CANCELLED,
 .status-strip .dot.TIMEOUT,
-.status-strip .dot.TECHNICAL_ERROR { background: var(--color-error); }
+.status-strip .dot.TECHNICAL_ERROR,
+.status-strip .dot.REJECTED { background: var(--color-error); }
 
 .status-strip .diff { color: var(--color-text-secondary); }
 
@@ -502,87 +552,6 @@
 .muted.centered {
   margin: auto;
   text-align: center;
-}
-
-/* ---------- Knockout bracket (full-width, when present) ---------- */
-.bracket {
-  margin: 0 var(--space-4) var(--space-4);
-  background: var(--color-bg-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-  padding: var(--space-4);
-}
-
-.fullscreen .bracket { background: #111; border-color: #333; }
-
-.bracket h2 {
-  margin: 0 0 var(--space-3);
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.status-badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 1px var(--space-2);
-  border-radius: var(--radius-control);
-  background: var(--color-bg-raised);
-  margin-bottom: var(--space-3);
-}
-
-.bracket-rounds {
-  display: flex;
-  gap: var(--space-4);
-  overflow-x: auto;
-}
-
-.round-column { min-width: 180px; }
-
-.round-column h3 {
-  margin: 0 0 var(--space-2);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-.match-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-2);
-  font-size: 12px;
-}
-
-.match-card.completed { border-color: var(--color-success); }
-.match-card.bye { opacity: 0.7; }
-
-.match-participant {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px 0;
-}
-
-.match-participant.winner { font-weight: 700; }
-
-.bye-badge {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0 var(--space-1);
-  border-radius: 2px;
-  background: var(--color-bg-raised);
-}
-
-.match-winner {
-  margin-top: var(--space-1);
-  padding-top: var(--space-1);
-  border-top: 1px solid var(--color-border);
-  font-size: 11px;
-  color: var(--color-success);
-  font-weight: 600;
 }
 
 .finalized-badge {

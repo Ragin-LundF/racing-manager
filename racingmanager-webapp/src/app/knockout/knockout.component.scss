@@ -6,19 +6,26 @@
 .section h3 { margin-top: 0; font-size: 15px; font-weight: 600; }
 .setup-form { display: flex; gap: var(--space-2); align-items: center; }
 .setup-form select { height: var(--control-height-compact); padding: 0 var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-bg-raised); color: var(--color-text-primary); font-size: 14px; }
-.bracket { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-4); }
-.round-column { display: flex; flex-direction: column; gap: var(--space-3); min-width: 200px; }
-.round-header { font-weight: 600; font-size: 13px; color: var(--color-text-secondary); text-align: center; padding: var(--space-2); }
-.match-card { border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-2) var(--space-3); background: var(--color-bg-raised); }
-.match-card.finished { border-color: var(--color-success); }
-.match-card.in-progress { border-color: var(--color-lane-1); }
-.match-card.planned { opacity: 0.85; }
-.match-participant { display: flex; align-items: center; justify-content: space-between; padding: var(--space-1) 0; font-size: 14px; }
-.match-participant.winner { font-weight: 600; color: var(--color-success); }
-.match-vs { font-size: 11px; color: var(--color-text-secondary); text-align: center; }
-.match-status { font-size: 11px; color: var(--color-text-secondary); text-align: center; margin-top: var(--space-1); }
-.match-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); justify-content: center; }
-.bye-badge { font-size: 10px; background: var(--color-warning); color: #08130b; padding: 1px 6px; border-radius: 3px; font-weight: 600; margin-left: var(--space-2); }
+
+/* Status/mode chips (aligned with the qualification page). */
+.meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.chip { display: inline-flex; align-items: center; padding: 2px var(--space-3); border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
+.chip-success { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 40%, transparent); background: color-mix(in srgb, var(--color-success) 14%, transparent); }
+.chip-warning { color: var(--color-warning); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); background: color-mix(in srgb, var(--color-warning) 14%, transparent); }
+.chip-muted { color: var(--color-text-secondary); border-color: var(--color-border); background: var(--color-bg-raised); }
+.chip-error { color: var(--color-error); border-color: color-mix(in srgb, var(--color-error) 40%, transparent); background: color-mix(in srgb, var(--color-error) 14%, transparent); }
+
+/* Match rows, grouped per round (mirrors the qualification heat list). */
+.round-title { margin: var(--space-3) 0 var(--space-2); font-size: 13px; font-weight: 600; color: var(--color-text-secondary); }
+.heat-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.heat-item { display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-bg-raised); }
+.heat-item.finished { border-color: var(--color-success); }
+.heat-item.in-progress { border-color: var(--color-lane-1); }
+.heat-item.planned { opacity: 0.85; }
+.heat-actions { display: flex; align-items: center; gap: var(--space-3); }
+.lane-info { font-size: 13px; color: var(--color-text-secondary); }
+.winner { color: var(--color-success); }
+
 .podium { display: flex; gap: var(--space-4); justify-content: center; padding: var(--space-4); }
 .podium-step { text-align: center; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-panel); min-width: 140px; background: var(--color-bg-raised); }
 .podium-step.gold { border-color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
@@ -38,14 +45,11 @@ button:hover { border-color: var(--color-text-muted); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary { background: var(--color-action); color: #08130b; border-color: var(--color-action); font-weight: 600; }
 button.success { background: var(--color-success); color: #08130b; border-color: var(--color-success); font-weight: 600; }
-button.small { height: 26px; padding: 0 var(--space-2); font-size: 12px; }
 button.danger-small { height: 26px; width: 26px; padding: 0; font-size: 12px; border-color: var(--color-error); color: var(--color-error); margin-left: auto; }
-.small-link { font-size: 12px; }
 .confirm-dialog { margin-top: var(--space-4); padding: var(--space-4); border: 1px solid var(--color-warning); border-radius: var(--radius-panel); background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-panel)); }
 
-/* Phone: tighten the bracket columns and podium so more fits without scroll. */
+/* Phone: let the podium shrink and manual selects flex. */
 @media (max-width: 640px) {
-  .round-column { min-width: 160px; }
   .podium-step { min-width: 0; flex: 1; padding: var(--space-3); }
   .manual-form select { min-width: 0; flex: 1; }
 }

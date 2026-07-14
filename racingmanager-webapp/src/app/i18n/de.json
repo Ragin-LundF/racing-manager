@@ -689,9 +689,15 @@
       "FINISHED": "Rennen abgeschlossen",
       "CANCELLED": "Lauf abgebrochen",
       "TIMEOUT": "Zeitüberschreitung",
-      "TECHNICAL_ERROR": "Technische Unterbrechung"
+      "TECHNICAL_ERROR": "Technische Unterbrechung",
+      "ACCEPTED": "Ergebnis bestätigt",
+      "REJECTED": "Ergebnis abgelehnt"
     },
     "knockoutBracket": "K.o.-Turnierbaum",
+    "knockoutStandings": "K.o.-Phase",
+    "qualTime": "Qualifikation",
+    "koTime": "K.o.",
+    "won": "Sieg",
     "roundLabel": "Runde {{number}}",
     "bye": "Freilos",
     "winner": "Sieger",

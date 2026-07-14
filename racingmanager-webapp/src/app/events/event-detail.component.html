@@ -28,13 +28,13 @@
           <a [routerLink]="['edit']">{{ 'events.detail.edit' | translate }}</a>
         }
         @if (e.status === 'ACTIVE' || e.status === 'COMPLETED') {
-          <button [routerLink]="['race-control']">{{ 'events.detail.raceControl' | translate }}</button>
-          <button [routerLink]="['qualification']">{{ 'events.detail.qualification' | translate }}</button>
-          <button [routerLink]="['knockout']">{{ 'events.detail.knockout' | translate }}</button>
-          <button [routerLink]="['results']">{{ 'events.detail.results' | translate }}</button>
-          <button [routerLink]="['export']">{{ 'events.detail.export' | translate }}</button>
-          <button [routerLink]="['audit']">{{ 'events.detail.audit' | translate }}</button>
-          <button [routerLink]="['diagnostics']">{{ 'events.detail.diagnostics' | translate }}</button>
+          <button [routerLink]="['race-control']" routerLinkActive="active">{{ 'events.detail.raceControl' | translate }}</button>
+          <button [routerLink]="['qualification']" routerLinkActive="active">{{ 'events.detail.qualification' | translate }}</button>
+          <button [routerLink]="['knockout']" routerLinkActive="active">{{ 'events.detail.knockout' | translate }}</button>
+          <button [routerLink]="['results']" routerLinkActive="active">{{ 'events.detail.results' | translate }}</button>
+          <button [routerLink]="['export']" routerLinkActive="active">{{ 'events.detail.export' | translate }}</button>
+          <button [routerLink]="['audit']" routerLinkActive="active">{{ 'events.detail.audit' | translate }}</button>
+          <button [routerLink]="['diagnostics']" routerLinkActive="active">{{ 'events.detail.diagnostics' | translate }}</button>
         }
         @if (e.status === 'ACTIVE') {
           <button (click)="onArchive()">{{ 'events.detail.archive' | translate }}</button>

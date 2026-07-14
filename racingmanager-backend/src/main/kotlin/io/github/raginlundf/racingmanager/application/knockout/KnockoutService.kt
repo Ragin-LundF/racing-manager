@@ -6,6 +6,7 @@ import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.heat.HeatLaneAssignment
 import io.github.raginlundf.racingmanager.domain.heat.HeatStatus
+import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchEntity
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchStatus
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutRankedParticipant
@@ -262,7 +263,11 @@ class KnockoutService(
         val heatNumber = existingHeats.size + 1
 
         val now = clock.now()
-        val lanes = buildKnockoutHeatLanes(participant1Id = participant1Id, participant2Id = participant2Id)
+        val lanes = buildKnockoutHeatLanes(
+            eventId = eventId,
+            participant1Id = participant1Id,
+            participant2Id = participant2Id,
+        )
 
         val heat = HeatEntity(
             id = UUID.randomUUID(),
@@ -276,6 +281,13 @@ class KnockoutService(
         )
 
         heatRepository.insert(heat)
+        // Link the heat to the match and move it forward so the UI shows a "Run" action
+        // and the accept flow can auto-record the winner from this heat's timing.
+        knockoutRepository.updateMatchHeat(
+            id = matchId,
+            heatId = heat.id,
+            status = KnockoutMatchStatus.IN_PROGRESS,
+        )
 
         auditRepository.insert(
             AuditEntryEntity(
@@ -292,29 +304,27 @@ class KnockoutService(
         return CreateHeatForMatchResult.Success(heat)
     }
 
-    private fun buildKnockoutHeatLanes(participant1Id: UUID, participant2Id: UUID?): List<HeatLaneAssignment> {
-        val lanes = mutableListOf(
-            HeatLaneAssignment(
-                lane = 1,
-                participantId = participant1Id,
-                participantStartNumber = 0,
-                participantFirstName = "",
-                participantLastName = "",
-            ),
-        )
-
-        if (participant2Id != null) {
-            lanes.add(
-                HeatLaneAssignment(
-                    lane = 2,
-                    participantId = participant2Id,
-                    participantStartNumber = 0,
-                    participantFirstName = "",
-                    participantLastName = "",
-                ),
+    private fun buildKnockoutHeatLanes(
+        eventId: UUID,
+        participant1Id: UUID,
+        participant2Id: UUID?,
+    ): List<HeatLaneAssignment> {
+        val byId = participantRepository.findByEventId(eventId).associateBy { it.id }
+        fun lane(number: Int, participantId: UUID): HeatLaneAssignment {
+            val p = byId[participantId]
+            return HeatLaneAssignment(
+                lane = number,
+                participantId = participantId,
+                participantStartNumber = p?.startNumber ?: 0,
+                participantFirstName = p?.firstName ?: "",
+                participantLastName = p?.lastName ?: "",
             )
         }
 
+        val lanes = mutableListOf(lane(number = 1, participantId = participant1Id))
+        if (participant2Id != null) {
+            lanes.add(lane(number = 2, participantId = participant2Id))
+        }
         return lanes
     }
 
@@ -332,7 +342,7 @@ class KnockoutService(
         val match = matches.find { it.id == matchId }
             ?: return RecordMatchResult.MatchNotFound
 
-        if (match.status != KnockoutMatchStatus.PLANNED) {
+        if (match.status == KnockoutMatchStatus.COMPLETED) {
             return RecordMatchResult.MatchAlreadyCompleted
         }
 
@@ -372,6 +382,39 @@ class KnockoutService(
         )
 
         return RecordMatchResult.Success
+    }
+
+    /**
+     * Derive and record the winner of the knockout match tied to [heatId] from that heat's timing
+     * (fastest FINISHED lane), advancing the bracket. Called best-effort when a heat result is accepted
+     * — the knockout equivalent of qualification reading results from the hardware/simulation.
+     */
+    fun recordResultFromHeat(eventId: UUID, heatId: UUID, actorId: UUID): RecordResultFromHeatResult {
+        val tournament = knockoutRepository.findByEventId(eventId)
+            ?: return RecordResultFromHeatResult.NoMatch
+        val match = knockoutRepository.findMatchesByTournamentId(tournament.id).find { it.heatId == heatId }
+            ?: return RecordResultFromHeatResult.NoMatch
+        if (match.status == KnockoutMatchStatus.COMPLETED) {
+            return RecordResultFromHeatResult.NoMatch
+        }
+
+        val heat = heatRepository.findById(heatId)
+            ?: return RecordResultFromHeatResult.NoMatch
+
+        val winnerId = heat.lanes
+            .mapNotNull { lane ->
+                heat.measurements
+                    .firstOrNull { it.lane == lane.lane && it.outcome == LaneOutcome.FINISHED }
+                    ?.let { lane.participantId to it.durationNanos }
+            }
+            .minByOrNull { it.second }
+            ?.first
+            ?: return RecordResultFromHeatResult.NoWinner
+
+        return when (recordMatchResult(eventId, match.id, winnerId, heatId, actorId)) {
+            is RecordMatchResult.Success -> RecordResultFromHeatResult.Success
+            else -> RecordResultFromHeatResult.NoWinner
+        }
     }
 
     /**
