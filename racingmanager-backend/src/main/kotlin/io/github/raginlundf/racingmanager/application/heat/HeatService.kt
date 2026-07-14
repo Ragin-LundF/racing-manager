@@ -306,7 +306,7 @@ class HeatService(
         heatRepository.findById(id = id)
             ?: return RepeatHeatResult.NotFound
 
-        heatRepository.updateStatus(id = id, status = HeatStatus.PLANNED)
+        heatRepository.reopenForRepeat(id = id)
 
         auditRepository.insert(
             entry = AuditEntryEntity(

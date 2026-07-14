@@ -374,6 +374,65 @@ class KnockoutService(
         return RecordMatchResult.Success
     }
 
+    /**
+     * Undo the recorded result of the completed match whose heat is [heatId] (used when that heat is
+     * repeated). Clears the winner, resets the match to PLANNED, removes the winner from the next-round
+     * slot it advanced into, and reopens the tournament if it was finalized. Blocked if that downstream
+     * match has already been raced.
+     */
+    fun resetMatchForHeat(eventId: UUID, heatId: UUID, actorId: UUID): ResetMatchResult {
+        val tournament = knockoutRepository.findByEventId(eventId)
+            ?: return ResetMatchResult.NoMatch
+
+        val matches = knockoutRepository.findMatchesByTournamentId(tournament.id)
+        val match = matches.find { it.heatId == heatId }
+            ?: return ResetMatchResult.NoMatch
+        if (match.status != KnockoutMatchStatus.COMPLETED) {
+            return ResetMatchResult.NoMatch
+        }
+
+        val nextRound = match.roundNumber + 1
+        val targetMatchNumber = ((match.matchNumber - 1) / 2) + 1
+        val target = matches.find { it.roundNumber == nextRound && it.matchNumber == targetMatchNumber }
+
+        if (target != null && target.status == KnockoutMatchStatus.COMPLETED) {
+            return ResetMatchResult.HasCompletedDependent
+        }
+
+        knockoutRepository.resetMatch(match.id)
+
+        if (target != null) {
+            val isFirstInPair = (match.matchNumber % 2) == 1
+            if (isFirstInPair) {
+                knockoutRepository.updateMatchParticipants(target.id, null, target.participant2Id)
+            } else {
+                knockoutRepository.updateMatchParticipants(target.id, target.participant1Id, null)
+            }
+        }
+
+        if (tournament.status == KnockoutStatus.FINALIZED) {
+            knockoutRepository.updateStatus(
+                id = tournament.id,
+                status = KnockoutStatus.IN_PROGRESS,
+                updatedAt = clock.now(),
+            )
+        }
+
+        auditRepository.insert(
+            AuditEntryEntity(
+                id = UUID.randomUUID(),
+                actorId = actorId,
+                action = "KNOCKOUT_MATCH_RESET",
+                targetType = "KnockoutMatch",
+                targetId = match.id,
+                summary = "Match result reset for repeat",
+                occurredAt = clock.now(),
+            ),
+        )
+
+        return ResetMatchResult.Success
+    }
+
     fun finalize(eventId: UUID, actorId: UUID): FinalizeKnockoutResult {
         val tournament = knockoutRepository.findByEventId(eventId)
             ?: return FinalizeKnockoutResult.TournamentNotFound

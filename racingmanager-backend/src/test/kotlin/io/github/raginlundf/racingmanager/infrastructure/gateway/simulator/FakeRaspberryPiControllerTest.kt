@@ -13,6 +13,7 @@ import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class FakeRaspberryPiControllerTest {
@@ -82,6 +83,30 @@ class FakeRaspberryPiControllerTest {
         assertTrue(actual = finishes.all { it.elapsedNs in 2_000_000L..4_000_000L })
         val finished = events.filterIsInstance<DeviceEvent.RaceFinished>().single()
         assertTrue(actual = finished.results.all { it.status == "finished" })
+    }
+
+    @Test
+    fun `repeating the same race produces fresh results`() = runBlocking {
+        // Same raceId run twice (re-prepare → re-start). The attempt counter must vary the RNG so a
+        // repeated race is not a byte-identical replay. Range is kept small for speed but wide enough
+        // that two independent runs colliding on every lane is negligible.
+        val controller = FakeRaspberryPiController(
+            rampDelayMs = 1, raceMinMs = 2, raceMaxMs = 200, dnfProbability = 0.0,
+        )
+
+        suspend fun runOnce(): List<Long> {
+            val events = collect(controller = controller, stopOn = { it is DeviceEvent.RaceFinished }) {
+                controller.onCommand(text = prepare(lanes = listOf(1, 2)))
+                controller.onCommand(text = start())
+            }
+            return events.filterIsInstance<DeviceEvent.FinishDetected>().sortedBy { it.lane }.map { it.elapsedNs }
+        }
+
+        val first = runOnce()
+        val second = runOnce()
+
+        assertEquals(expected = 2, actual = first.size)
+        assertNotEquals(illegal = first, actual = second)
     }
 
     @Test

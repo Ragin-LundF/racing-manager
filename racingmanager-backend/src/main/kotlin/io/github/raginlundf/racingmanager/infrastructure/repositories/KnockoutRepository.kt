@@ -130,6 +130,17 @@ class KnockoutRepository {
         }
     }
 
+    /** Undo a recorded result: clear the winner/heat and set the match back to PLANNED. */
+    fun resetMatch(id: UUID) {
+        transaction {
+            KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
+                it[winnerId] = null
+                it[heatId] = null
+                it[status] = KnockoutMatchStatus.PLANNED.name
+            }
+        }
+    }
+
     fun deleteAll() {
         transaction {
             KnockoutMatchTable.deleteAll()

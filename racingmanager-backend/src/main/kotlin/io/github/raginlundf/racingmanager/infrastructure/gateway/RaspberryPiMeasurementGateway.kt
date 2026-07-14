@@ -40,6 +40,9 @@ class RaspberryPiMeasurementGateway(
     // ponytail: a plain set of seen ids — a race day is at most a few thousand
     // frames, so unbounded growth is a non-issue. Swap for a bounded LRU if this
     // ever runs long-lived against chatty hardware.
+    // ponytail: process-lifetime dedup. If a real device reuses messageIds across a heat repeat within
+    // one process, its frames would be dropped here — revisit (scope the set per heat run) only if
+    // observed on real hardware; the simulator emits fresh ids so repeats work today.
     private val seenMessageIds = Collections.synchronizedSet(mutableSetOf<String>())
 
     init {

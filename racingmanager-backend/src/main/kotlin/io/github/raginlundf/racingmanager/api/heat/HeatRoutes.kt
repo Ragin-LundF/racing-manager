@@ -20,6 +20,8 @@ import io.github.raginlundf.racingmanager.application.heat.CreateHeatResult
 import io.github.raginlundf.racingmanager.application.heat.FinishHeatResult
 import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.heat.HeatServiceEvent
+import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
+import io.github.raginlundf.racingmanager.application.knockout.ResetMatchResult
 import io.github.raginlundf.racingmanager.application.heat.RejectResult
 import io.github.raginlundf.racingmanager.application.heat.RepeatHeatResult
 import io.github.raginlundf.racingmanager.application.heat.StartHeatResult
@@ -52,7 +54,12 @@ import kotlin.time.Duration.Companion.milliseconds
 @Serializable
 private data class WsAuthMessage(val type: String? = null, val token: String)
 
-fun Route.heatRoutes(jwtService: JwtService, heatService: HeatService, eventRepository: EventRepository) {
+fun Route.heatRoutes(
+    jwtService: JwtService,
+    heatService: HeatService,
+    knockoutService: KnockoutService,
+    eventRepository: EventRepository,
+) {
     heatCollectionRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatDetailRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatCreateRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
@@ -62,7 +69,12 @@ fun Route.heatRoutes(jwtService: JwtService, heatService: HeatService, eventRepo
     heatCancelRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatAcceptRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatRejectRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
-    heatRepeatRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
+    heatRepeatRoutes(
+        jwtService = jwtService,
+        heatService = heatService,
+        knockoutService = knockoutService,
+        eventRepository = eventRepository,
+    )
     heatMeasurementRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
     heatLiveRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
 }
@@ -403,6 +415,7 @@ private fun Route.heatRejectRoutes(
 private fun Route.heatRepeatRoutes(
     jwtService: JwtService,
     heatService: HeatService,
+    knockoutService: KnockoutService,
     eventRepository: EventRepository,
 ) {
     post("/api/v1/events/{eventId}/heats/{id}/repeat") {
@@ -415,6 +428,21 @@ private fun Route.heatRepeatRoutes(
             eventRepository = eventRepository
         ) ?: return@post
         val id = UUID.fromString(call.parameters["id"])
+
+        // Undo any linked knockout result first, so we never clear the heat while leaving a frozen
+        // match. Blocked if the match's winner already advanced into a completed downstream match.
+        val reset = knockoutService.resetMatchForHeat(eventId = eventId, heatId = id, actorId = principal.userId)
+        if (reset is ResetMatchResult.HasCompletedDependent) {
+            call.respond(
+                status = HttpStatusCode.Conflict,
+                message = ErrorResponseModel(
+                    code = "KNOCKOUT_DEPENDENT_COMPLETED",
+                    message = "Cannot repeat: the winner already advanced to a completed match."
+                )
+            )
+            return@post
+        }
+
         when (val result = heatService.repeat(id = id, actorId = principal.userId)) {
             is RepeatHeatResult.Success -> call.respond(result.heat.toResponseModel())
             is RepeatHeatResult.NotFound -> call.respond(

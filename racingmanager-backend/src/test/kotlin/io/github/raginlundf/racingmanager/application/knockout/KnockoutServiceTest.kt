@@ -469,6 +469,76 @@ class KnockoutServiceTest {
     }
 
     @Test
+    fun `resetMatchForHeat undoes a recorded result and clears the downstream slot`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+        val match1 = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 1 && it.matchNumber == 1 }
+        val heat = (knockoutService.createHeatForMatch(
+            eventId = eventId, matchId = match1.id, actorId = actorId
+        ) as CreateHeatForMatchResult.Success).heat
+        val winner = match1.participant1Id!!
+        knockoutService.recordMatchResult(
+            eventId = eventId, matchId = match1.id, winnerId = winner, heatId = heat.id, actorId = actorId
+        )
+
+        val finalBefore = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 2 && it.matchNumber == 1 }
+        assertEquals(expected = winner, actual = finalBefore.participant1Id)
+
+        val result = knockoutService.resetMatchForHeat(eventId = eventId, heatId = heat.id, actorId = actorId)
+        assertIs<ResetMatchResult.Success>(value = result)
+
+        val after = knockoutService.getMatches(eventId = eventId)
+        val match1After = after.first { it.id == match1.id }
+        assertEquals(expected = KnockoutMatchStatus.PLANNED, actual = match1After.status)
+        assertNull(actual = match1After.winnerId)
+        val finalAfter = after.first { it.roundNumber == 2 && it.matchNumber == 1 }
+        assertNull(actual = finalAfter.participant1Id)
+        assertEquals(expected = finalBefore.participant2Id, actual = finalAfter.participant2Id)
+    }
+
+    @Test
+    fun `resetMatchForHeat is blocked when the downstream match already completed`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+
+        val round1 = knockoutService.getMatches(eventId = eventId)
+            .filter { it.roundNumber == 1 }.sortedBy { it.matchNumber }
+        var firstHeatId: UUID? = null
+        for (m in round1) {
+            val h = (knockoutService.createHeatForMatch(
+                eventId = eventId, matchId = m.id, actorId = actorId
+            ) as CreateHeatForMatchResult.Success).heat
+            if (m.matchNumber == 1) firstHeatId = h.id
+            knockoutService.recordMatchResult(
+                eventId = eventId, matchId = m.id, winnerId = m.participant1Id!!, heatId = h.id, actorId = actorId
+            )
+        }
+
+        val finalMatch = knockoutService.getMatches(eventId = eventId).first { it.roundNumber == 2 }
+        val finalHeat = (knockoutService.createHeatForMatch(
+            eventId = eventId, matchId = finalMatch.id, actorId = actorId
+        ) as CreateHeatForMatchResult.Success).heat
+        knockoutService.recordMatchResult(
+            eventId = eventId,
+            matchId = finalMatch.id,
+            winnerId = finalMatch.participant1Id!!,
+            heatId = finalHeat.id,
+            actorId = actorId,
+        )
+
+        val result = knockoutService.resetMatchForHeat(eventId = eventId, heatId = firstHeatId!!, actorId = actorId)
+        assertIs<ResetMatchResult.HasCompletedDependent>(value = result)
+
+        val match1After = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 1 && it.matchNumber == 1 }
+        assertEquals(expected = KnockoutMatchStatus.COMPLETED, actual = match1After.status)
+    }
+
+    @Test
     fun `recordMatchResult returns TournamentNotFound`() {
         val result = knockoutService.recordMatchResult(
             eventId = eventId,

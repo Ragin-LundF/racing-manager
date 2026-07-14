@@ -23,6 +23,9 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.UserReposi
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
+import io.github.raginlundf.racingmanager.domain.heat.HeatStatus
+import io.github.raginlundf.racingmanager.domain.heat.LaneOutcome
+import io.github.raginlundf.racingmanager.domain.heat.Measurement
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import kotlin.test.AfterTest
@@ -33,6 +36,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class QualificationServiceTest {
 
@@ -330,6 +334,37 @@ class QualificationServiceTest {
         val q = qualificationService.findByEventId(eventId = eventId)
         assertNotNull(actual = q)
         assertEquals(expected = QualificationStatus.IN_PROGRESS, actual = q.status)
+    }
+
+    @Test
+    fun `repeating a heat clears its results from live rankings`(): Unit = runBlocking {
+        // Seed a finished round-1 heat with a measurement directly, so the assertion is deterministic
+        // (independent of the simulated gateway's async timing).
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
+        val heat = heatRepository.findByEventId(eventId = eventId).first { it.round == 1 && it.lanes.isNotEmpty() }
+        val lane = heat.lanes.first()
+        heatRepository.insertMeasurement(
+            measurement = Measurement(
+                id = UUID.randomUUID(),
+                heatId = heat.id,
+                lane = lane.lane,
+                durationNanos = 1_000_000_000,
+                outcome = LaneOutcome.FINISHED,
+                receivedAt = heat.createdAt,
+            ),
+        )
+        heatRepository.updateStatus(id = heat.id, status = HeatStatus.FINISHED, finishedAt = heat.createdAt)
+
+        val before = qualificationService.getRankings(eventId = eventId).first { it.participantId == lane.participantId }
+        assertEquals(expected = 1, actual = before.completedRuns)
+        assertNotNull(actual = before.bestTimeNanos)
+
+        heatService.repeat(id = heat.id, actorId = actorId)
+
+        val after = qualificationService.getRankings(eventId = eventId).first { it.participantId == lane.participantId }
+        assertEquals(expected = 0, actual = after.completedRuns)
+        assertNull(actual = after.bestTimeNanos)
     }
 
     @Test

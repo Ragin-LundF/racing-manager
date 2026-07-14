@@ -12,6 +12,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteAll
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -58,7 +59,7 @@ class HeatRepository {
         return transaction {
             HeatTable.selectAll()
                 .where { HeatTable.eventId eq eventId }
-                .orderBy(HeatTable.createdAt to SortOrder.DESC)
+                .orderBy(HeatTable.createdAt to SortOrder.DESC, HeatTable.heatNumber to SortOrder.DESC)
                 .limit(count = 1)
                 .singleOrNull()
                 ?.let { row -> mapRow(row = row) }
@@ -105,6 +106,19 @@ class HeatRepository {
                 if (armedAt != null) it[HeatTable.armedAt] = armedAt
                 if (startedAt != null) it[HeatTable.startedAt] = startedAt
                 if (finishedAt != null) it[HeatTable.finishedAt] = finishedAt
+            }
+        }
+    }
+
+    /** Reopen a heat for a repeat: discard the previous run's measurements and clear its timestamps. */
+    fun reopenForRepeat(id: UUID) {
+        transaction {
+            MeasurementTable.deleteWhere { MeasurementTable.heatId eq id }
+            HeatTable.update(where = { HeatTable.id eq id }) {
+                it[status] = HeatStatus.PLANNED.name
+                it[armedAt] = null
+                it[startedAt] = null
+                it[finishedAt] = null
             }
         }
     }

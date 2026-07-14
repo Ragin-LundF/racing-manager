@@ -71,6 +71,7 @@ class HeatServiceTest {
         raceMinMs = 2,
         raceMaxMs = 4,
         dnfTimeoutMs = 6,
+        dnfProbability = 0.0,
     )
     private val heatService = HeatService(
         heatRepository = heatRepository,
@@ -283,6 +284,23 @@ class HeatServiceTest {
 
         val success = assertIs<RepeatHeatResult.Success>(value = result)
         assertEquals(expected = HeatStatus.PLANNED, actual = success.heat.status)
+    }
+
+    @Test
+    fun `repeat clears measurements and resets timestamps`(): Unit = runBlocking {
+        val heatId = createFinishedHeat()
+        // Sanity: a finished simulated run has measurements and timestamps.
+        val finished = heatService.findById(id = heatId)!!
+        assertTrue(actual = finished.measurements.isNotEmpty())
+
+        heatService.repeat(id = heatId, actorId = actorId)
+
+        val reopened = heatService.findById(id = heatId)!!
+        assertEquals(expected = HeatStatus.PLANNED, actual = reopened.status)
+        assertTrue(actual = reopened.measurements.isEmpty())
+        assertNull(actual = reopened.armedAt)
+        assertNull(actual = reopened.startedAt)
+        assertNull(actual = reopened.finishedAt)
     }
 
     @Test

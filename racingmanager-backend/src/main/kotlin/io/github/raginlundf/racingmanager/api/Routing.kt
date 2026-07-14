@@ -70,7 +70,12 @@ fun Application.configureRouting(
             participantService = participantService,
             eventRepository = eventRepository
         )
-        heatRoutes(jwtService = jwtService, heatService = heatService, eventRepository = eventRepository)
+        heatRoutes(
+            jwtService = jwtService,
+            heatService = heatService,
+            knockoutService = knockoutService,
+            eventRepository = eventRepository,
+        )
         qualificationRoutes(
             jwtService = jwtService,
             qualificationService = qualificationService,
