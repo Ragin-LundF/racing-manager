@@ -223,11 +223,15 @@ class QualificationService(
             .filter { it.round == 1 }
 
         val totalHeats = heats.size
-        val completedHeats = heats.count { it.status == HeatStatus.FINISHED || it.status == HeatStatus.TIMEOUT }
+        val completedHeats = heats.count {
+            it.status == HeatStatus.FINISHED || it.status == HeatStatus.TIMEOUT || it.status == HeatStatus.ACCEPTED
+        }
         val inProgressHeats = heats.count { it.status == HeatStatus.ARMED || it.status == HeatStatus.STARTED }
         val plannedHeats = heats.count { it.status == HeatStatus.PLANNED }
         val cancelledHeats = heats.count {
-            it.status == HeatStatus.CANCELLED || it.status == HeatStatus.TECHNICAL_ERROR
+            it.status == HeatStatus.CANCELLED ||
+                it.status == HeatStatus.TECHNICAL_ERROR ||
+                it.status == HeatStatus.REJECTED
         }
 
         val participants = participantRepository.findByEventId(eventId)
@@ -270,7 +274,9 @@ class QualificationService(
             h.status != HeatStatus.FINISHED &&
             h.status != HeatStatus.TIMEOUT &&
             h.status != HeatStatus.CANCELLED &&
-            h.status != HeatStatus.TECHNICAL_ERROR
+            h.status != HeatStatus.TECHNICAL_ERROR &&
+            h.status != HeatStatus.ACCEPTED &&
+            h.status != HeatStatus.REJECTED
         }
 
         if (incompleteHeats.isNotEmpty()) {

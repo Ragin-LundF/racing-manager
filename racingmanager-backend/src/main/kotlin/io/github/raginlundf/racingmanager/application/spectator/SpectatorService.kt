@@ -56,7 +56,11 @@ class SpectatorService(
         if (active.isNotEmpty()) return active.first()
 
         val latestFinished = heats
-            .filter { it.status == HeatStatus.FINISHED || it.status == HeatStatus.TIMEOUT }
+            .filter {
+                it.status == HeatStatus.FINISHED ||
+                    it.status == HeatStatus.TIMEOUT ||
+                    it.status == HeatStatus.ACCEPTED
+            }
             .maxByOrNull { it.finishedAt ?: it.createdAt }
         return latestFinished
     }

@@ -220,6 +220,11 @@ class HeatServiceTest {
             participantIds = listOf(participantId1, participantId2),
             actorId = actorId
         )
+        heatService.create(
+            eventId = eventId,
+            participantIds = listOf(participantId1, participantId2),
+            actorId = actorId
+        )
 
         val latest = heatService.findLatestByEventId(eventId = eventId)
         assertNotNull(actual = latest)
@@ -282,22 +287,36 @@ class HeatServiceTest {
 
     @Test
     fun `accept result returns Success`(): Unit = runBlocking {
-        val created = heatService.create(
-            eventId = eventId,
-            participantIds = listOf(participantId1, participantId2),
-            actorId = actorId
-        )
-        val heatId = (created as CreateHeatResult.Success).heat.id
-        heatService.arm(id = heatId, actorId = actorId)
-        heatService.start(id = heatId, actorId = actorId)
-        heatService.finish(id = heatId, actorId = actorId)
+        val heatId = createFinishedHeat()
 
         val result = heatService.acceptResult(id = heatId, actorId = actorId)
         assertIs<AcceptResult.Success>(value = result)
+        assertEquals(expected = HeatStatus.ACCEPTED, actual = heatService.findById(id = heatId)!!.status)
     }
 
     @Test
     fun `reject result returns Success`(): Unit = runBlocking {
+        val heatId = createFinishedHeat()
+
+        val result = heatService.rejectResult(id = heatId, actorId = actorId)
+        assertIs<RejectResult.Success>(value = result)
+        assertEquals(expected = HeatStatus.REJECTED, actual = heatService.findById(id = heatId)!!.status)
+    }
+
+    @Test
+    fun `repeat after reject resets the heat to PLANNED`(): Unit = runBlocking {
+        val heatId = createFinishedHeat()
+        heatService.rejectResult(id = heatId, actorId = actorId)
+
+        val result = heatService.repeat(id = heatId, actorId = actorId)
+        assertIs<RepeatHeatResult.Success>(value = result)
+        assertEquals(expected = HeatStatus.PLANNED, actual = result.heat.status)
+    }
+
+    // On the default SIMULATED event, start() kicks off async measurements that drive the heat to
+    // FINISHED. Wait for it to settle before accept/reject, so a late measurement can't clobber the
+    // status we assert on (a real device is likewise settled before the operator decides).
+    private suspend fun createFinishedHeat(): UUID {
         val created = heatService.create(
             eventId = eventId,
             participantIds = listOf(participantId1, participantId2),
@@ -306,10 +325,12 @@ class HeatServiceTest {
         val heatId = (created as CreateHeatResult.Success).heat.id
         heatService.arm(id = heatId, actorId = actorId)
         heatService.start(id = heatId, actorId = actorId)
-        heatService.finish(id = heatId, actorId = actorId)
-
-        val result = heatService.rejectResult(id = heatId, actorId = actorId)
-        assertIs<RejectResult.Success>(value = result)
+        withTimeout(2_000.milliseconds) {
+            while (heatService.findById(id = heatId)!!.status != HeatStatus.FINISHED) {
+                delay(duration = 10.milliseconds)
+            }
+        }
+        return heatId
     }
 
     @Test

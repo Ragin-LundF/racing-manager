@@ -24,7 +24,10 @@ export class RaceControlComponent implements OnDestroy {
   protected participants = signal<ParticipantResponse[]>([]);
   protected selectedParticipantIds = signal<string[]>([]);
   protected error = signal('');
+  protected success = signal('');
   protected creating = signal(false);
+  protected confirmingAcceptId = signal<string | null>(null);
+  protected accepting = signal(false);
 
   private ws: WebSocket | null = null;
 
@@ -128,22 +131,45 @@ export class RaceControlComponent implements OnDestroy {
   }
 
   protected onAccept(heat: HeatResponse): void {
+    this.confirmingAcceptId.set(heat.id);
+  }
+
+  protected onCancelAccept(): void {
+    this.confirmingAcceptId.set(null);
+  }
+
+  protected onConfirmAccept(heat: HeatResponse): void {
+    this.accepting.set(true);
     this.heatService.acceptResult(this.eventId, heat.id).subscribe({
-      next: () => this.loadHeats(),
-      error: () => this.error.set(this.translate.instant('races.control.acceptError')),
+      next: () => {
+        this.confirmingAcceptId.set(null);
+        this.accepting.set(false);
+        this.success.set(this.translate.instant('races.control.acceptSuccess'));
+        this.loadHeats();
+      },
+      error: () => {
+        this.accepting.set(false);
+        this.error.set(this.translate.instant('races.control.acceptError'));
+      },
     });
   }
 
   protected onReject(heat: HeatResponse): void {
     this.heatService.rejectResult(this.eventId, heat.id).subscribe({
-      next: () => this.loadHeats(),
+      next: () => {
+        this.success.set(this.translate.instant('races.control.rejectSuccess'));
+        this.loadHeats();
+      },
       error: () => this.error.set(this.translate.instant('races.control.rejectError')),
     });
   }
 
   protected onRepeat(heat: HeatResponse): void {
     this.heatService.repeat(this.eventId, heat.id).subscribe({
-      next: () => this.loadHeats(),
+      next: () => {
+        this.success.set(this.translate.instant('races.control.repeatSuccess'));
+        this.loadHeats();
+      },
       error: () => this.error.set(this.translate.instant('races.control.repeatError')),
     });
   }

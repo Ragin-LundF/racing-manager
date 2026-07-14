@@ -8,4 +8,6 @@ enum class HeatStatus {
     CANCELLED,
     TIMEOUT,
     TECHNICAL_ERROR,
+    ACCEPTED,
+    REJECTED,
 }

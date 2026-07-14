@@ -6,6 +6,9 @@
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
+  @if (success()) {
+    <p class="success">{{ success() }}</p>
+  }
 
   <div class="create-section">
     <h3>{{ 'races.control.createHeat' | translate }}</h3>
@@ -69,9 +72,27 @@
             <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
           }
           @if (heat.status === 'FINISHED' || heat.status === 'TIMEOUT') {
-            <button class="success" (click)="onAccept(heat)">{{ 'races.control.accept' | translate }}</button>
-            <button class="danger" (click)="onReject(heat)">{{ 'races.control.reject' | translate }}</button>
-            <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
+            @if (confirmingAcceptId() === heat.id) {
+              <div class="confirm-dialog">
+                <p>{{ 'races.control.acceptConfirm' | translate }}</p>
+                <button class="success" (click)="onConfirmAccept(heat)" [disabled]="accepting()">{{ 'races.control.confirmAccept' | translate }}</button>
+                <button (click)="onCancelAccept()" [disabled]="accepting()">{{ 'races.control.cancelAccept' | translate }}</button>
+              </div>
+            } @else {
+              <button class="success" (click)="onAccept(heat)">{{ 'races.control.accept' | translate }}</button>
+              <button class="danger" (click)="onReject(heat)">{{ 'races.control.reject' | translate }}</button>
+              <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
+            }
+          }
+          @if (heat.status === 'ACCEPTED') {
+            <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
+            <button class="danger" [disabled]="true">{{ 'races.control.reject' | translate }}</button>
+            <button [disabled]="true">{{ 'races.control.repeat' | translate }}</button>
+          }
+          @if (heat.status === 'REJECTED') {
+            <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
+            <button class="danger" [disabled]="true">{{ 'races.control.reject' | translate }}</button>
+            <button class="success" (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
           }
           @if (heat.status === 'CANCELLED' || heat.status === 'TECHNICAL_ERROR') {
             <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>

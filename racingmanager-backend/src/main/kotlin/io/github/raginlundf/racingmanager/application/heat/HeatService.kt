@@ -266,7 +266,11 @@ class HeatService(
             ),
         )
 
+        heatRepository.updateStatus(id = id, status = HeatStatus.ACCEPTED)
+
+        val updated = heatRepository.findById(id = id)!!
         _events.tryEmit(value = HeatServiceEvent.HeatResultAccepted(heatId = id))
+        _events.tryEmit(value = HeatServiceEvent.HeatStateChanged(heat = updated))
         return AcceptResult.Success
     }
 
@@ -290,7 +294,11 @@ class HeatService(
             ),
         )
 
+        heatRepository.updateStatus(id = id, status = HeatStatus.REJECTED)
+
+        val updated = heatRepository.findById(id = id)!!
         _events.tryEmit(value = HeatServiceEvent.HeatResultRejected(heatId = id))
+        _events.tryEmit(value = HeatServiceEvent.HeatStateChanged(heat = updated))
         return RejectResult.Success
     }
 
