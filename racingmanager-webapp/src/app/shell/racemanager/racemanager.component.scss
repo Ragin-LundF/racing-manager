@@ -108,6 +108,21 @@
   font-size: 21px;
   font-weight: 600;
 }
+
+/* Hamburger — hidden on desktop, revealed at the phone breakpoint. */
+.nav-toggle {
+  display: none;
+  height: var(--control-height-compact);
+  width: var(--control-height-compact);
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Scrim behind the drawer — inert until the drawer opens on phones. */
+.nav-scrim {
+  display: none;
+}
 .top-actions {
   display: flex;
   align-items: center;
@@ -233,4 +248,72 @@
 .muted {
   color: var(--color-text-muted);
   font-size: 12px;
+}
+
+/* ---- Responsive ---- */
+
+/* Tablet: drop the context sidebar under the content, tighten padding. */
+@media (max-width: 1024px) {
+  .workspace {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
+  .workspace.has-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phone: nav rail becomes an off-canvas drawer toggled by the hamburger. */
+@media (max-width: 640px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    width: 240px;
+    max-width: 80vw;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 200ms ease;
+  }
+  .nav-rail.open {
+    transform: none;
+  }
+
+  .nav-scrim.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .top-bar {
+    grid-column: 1;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+  }
+  .workspace {
+    grid-column: 1;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .page-title {
+    font-size: 17px;
+  }
+  .top-actions .user {
+    display: none;
+  }
+  .active-event select {
+    max-width: 40vw;
+  }
 }

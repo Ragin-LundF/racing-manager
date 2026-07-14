@@ -68,6 +68,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Responsive breakpoints (no SCSS mixins by design — two literal widths, used
+   consistently across component stylesheets):
+     max-width: 1024px  → tablet: stack the context sidebar under content.
+     max-width: 640px   → phone: off-canvas nav drawer, condensed top bar. */
+
+/* Wrap wide <table>s in <div class="table-scroll"> so they scroll horizontally
+   inside their own box instead of overflowing the page (spec: responsive). */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll > table {
+  min-width: max-content;
+}
+
 /* Timing values and other numeric columns opt in via .tnum (spec §3.2). */
 .tnum {
   font-variant-numeric: tabular-nums;

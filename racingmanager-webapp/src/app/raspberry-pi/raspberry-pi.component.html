@@ -86,6 +86,7 @@
     </div>
 
     <h3>{{ 'raspberryPi.connection.fieldsHeading' | translate }}</h3>
+    <div class="table-scroll">
     <table class="info-table">
       <thead>
         <tr>
@@ -101,12 +102,14 @@
         <tr><td><code>payload</code></td><td>{{ 'raspberryPi.connection.fPayload' | translate }}</td></tr>
       </tbody>
     </table>
+    </div>
   </section>
 
   <!-- Commands -->
   <section class="section">
     <h2>{{ 'raspberryPi.commands.heading' | translate }}</h2>
     <p>{{ 'raspberryPi.commands.intro' | translate }}</p>
+    <div class="table-scroll">
     <table class="info-table">
       <thead>
         <tr>
@@ -124,12 +127,14 @@
         <tr><td><code>ping</code></td><td>—</td><td>{{ 'raspberryPi.commands.ping' | translate }}</td></tr>
       </tbody>
     </table>
+    </div>
   </section>
 
   <!-- Events -->
   <section class="section">
     <h2>{{ 'raspberryPi.events.heading' | translate }}</h2>
     <p>{{ 'raspberryPi.events.intro' | translate }}</p>
+    <div class="table-scroll">
     <table class="info-table">
       <thead>
         <tr>
@@ -148,6 +153,7 @@
         <tr><td><code>pong</code></td><td>—</td><td>{{ 'raspberryPi.events.pong' | translate }}</td></tr>
       </tbody>
     </table>
+    </div>
 
     <div class="code-block">
       <button class="copy-btn" (click)="copy('finish', finishSample)">
@@ -172,6 +178,7 @@
   <!-- Error codes -->
   <section class="section">
     <h2>{{ 'raspberryPi.errors.heading' | translate }}</h2>
+    <div class="table-scroll">
     <table class="info-table">
       <thead>
         <tr>
@@ -187,6 +194,7 @@
         <tr><td><code>SENSOR_STUCK</code></td><td>{{ 'raspberryPi.errors.sensorStuck' | translate }}</td></tr>
       </tbody>
     </table>
+    </div>
   </section>
 
   <!-- Python example -->

@@ -38,6 +38,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary { background: var(--color-action); color: #08130b; border-color: var(--color-action); font-weight: 600; }
 button.danger { background: var(--color-error); color: #fff; border-color: var(--color-error); }
 button.success { background: var(--color-success); color: #08130b; border-color: var(--color-success); font-weight: 600; }
+
+/* Phone: let the lane grid drop to a single narrow column. */
+@media (max-width: 640px) {
+  .lanes { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
 button.warning { background: var(--color-warning); color: #1a1305; border-color: var(--color-warning); font-weight: 600; }
 
 .create-section { margin-bottom: var(--space-4); padding: var(--space-4); border: 1px dashed var(--color-border); border-radius: var(--radius-panel); background: var(--color-bg-panel); }

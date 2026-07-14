@@ -15,6 +15,7 @@
   @if (participants().length === 0) {
     <div class="empty">{{ 'participants.list.empty' | translate }}</div>
   } @else {
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -57,5 +58,6 @@
         }
       </tbody>
     </table>
+    </div>
   }
 </div>

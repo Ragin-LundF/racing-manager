@@ -2,6 +2,7 @@
   @if (tenants().length === 0) {
     <div class="empty">{{ 'supervisor.tenants.empty' | translate }}</div>
   } @else {
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -25,5 +26,6 @@
         }
       </tbody>
     </table>
+    </div>
   }
 </div>

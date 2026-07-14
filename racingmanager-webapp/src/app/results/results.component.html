@@ -25,6 +25,7 @@
     @if (s.qualificationRankings.length > 0) {
       <section class="rankings">
         <h3>{{ 'results.qualificationTitle' | translate }}</h3>
+        <div class="table-scroll">
         <table>
           <thead>
             <tr>
@@ -51,12 +52,14 @@
             }
           </tbody>
         </table>
+        </div>
       </section>
     }
 
     @if (s.knockoutResults.length > 0) {
       <section class="knockout-results">
         <h3>{{ 'results.knockoutTitle' | translate }}</h3>
+        <div class="table-scroll">
         <table>
           <thead>
             <tr>
@@ -75,6 +78,7 @@
             }
           </tbody>
         </table>
+        </div>
       </section>
     }
   } @else {

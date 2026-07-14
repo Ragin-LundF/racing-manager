@@ -41,6 +41,15 @@ export class RaceManagerShellComponent {
   protected readonly progress = signal<QualificationProgressResponse | null>(null);
   protected readonly upcomingHeats = signal<HeatScheduleResponse[]>([]);
 
+  /** Off-canvas nav drawer state — only affects the ≤640px layout. */
+  protected readonly navOpen = signal(false);
+  protected toggleNav(): void {
+    this.navOpen.update((open) => !open);
+  }
+  protected closeNav(): void {
+    this.navOpen.set(false);
+  }
+
   constructor() {
     // Reload the event list on start and whenever it changes (e.g. a delete).
     effect(() => {

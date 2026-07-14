@@ -16,6 +16,7 @@
   @if (entries().length === 0) {
     <div class="empty">{{ 'audit.empty' | translate }}</div>
   } @else {
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -42,5 +43,6 @@
         }
       </tbody>
     </table>
+    </div>
   }
 </div>

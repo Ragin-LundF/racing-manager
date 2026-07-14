@@ -19,6 +19,7 @@
   @if (diagnostics(); as d) {
     <section class="section">
       <h3>{{ 'diagnostics.databaseTitle' | translate }}</h3>
+      <div class="table-scroll">
       <table class="info-table">
         <tr>
           <td>{{ 'diagnostics.connected' | translate }}</td>
@@ -35,10 +36,12 @@
           <td>{{ d.database.pingMs }} ms</td>
         </tr>
       </table>
+      </div>
     </section>
 
     <section class="section">
       <h3>{{ 'diagnostics.eventsTitle' | translate }}</h3>
+      <div class="table-scroll">
       <table class="info-table">
         <tr><td>{{ 'diagnostics.totalEvents' | translate }}</td><td>{{ d.events.total }}</td></tr>
         <tr><td>{{ 'diagnostics.draftEvents' | translate }}</td><td>{{ d.events.draft }}</td></tr>
@@ -48,6 +51,7 @@
         <tr><td>{{ 'diagnostics.totalParticipants' | translate }}</td><td>{{ d.events.totalParticipants }}</td></tr>
         <tr><td>{{ 'diagnostics.totalHeats' | translate }}</td><td>{{ d.events.totalHeats }}</td></tr>
       </table>
+      </div>
     </section>
 
     @if (readiness(); as r) {
@@ -61,6 +65,7 @@
             <span class="status-err">{{ r.status }}</span>
           }
         </p>
+        <div class="table-scroll">
         <table class="info-table">
           @for (check of r.checks; track check.name) {
             <tr>
@@ -78,6 +83,7 @@
             </tr>
           }
         </table>
+        </div>
       </section>
     }
 
@@ -86,6 +92,7 @@
       @if (d.unfinishedHeats.length === 0) {
         <p>{{ 'diagnostics.noUnfinishedHeats' | translate }}</p>
       } @else {
+        <div class="table-scroll">
         <table class="info-table">
           <thead>
             <tr>
@@ -113,6 +120,7 @@
             }
           </tbody>
         </table>
+        </div>
       }
     </section>
 

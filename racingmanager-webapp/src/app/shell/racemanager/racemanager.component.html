@@ -1,11 +1,14 @@
 <div class="shell">
-  <aside class="nav-rail">
+  <!-- Scrim behind the drawer on phones; tap to close (spec: responsive nav). -->
+  <div class="nav-scrim" [class.open]="navOpen()" (click)="closeNav()"></div>
+
+  <aside class="nav-rail" [class.open]="navOpen()">
     <div class="brand">
       <span class="brand-mark">🏁</span>
       <span class="brand-name">{{ 'racemanager.brand' | translate }}</span>
     </div>
 
-    <nav class="nav-items">
+    <nav class="nav-items" (click)="closeNav()">
       <a
         class="nav-item"
         [routerLink]="['/', 'racemanager']"
@@ -102,6 +105,9 @@
   </aside>
 
   <header class="top-bar">
+    <!-- Hamburger: only visible ≤640px (see .nav-toggle in scss). -->
+    <button class="nav-toggle" type="button" (click)="toggleNav()" aria-label="Menu">☰</button>
+
     <!-- ponytail: page title derives from the active event, not the child route -->
     <h1 class="page-title">{{ activeEvent()?.name ?? 'Race Director' }}</h1>
 
