@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { interval, Subscription, switchMap, tap } from 'rxjs';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 import { SpectatorClient } from '../../libs/clients/spectator/spectator.client';
-import { SpectatorKnockoutStateModel, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
+import { SpectatorKnockoutStateModel, SpectatorLaneModel, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
 
 @Component({
   selector: 'app-spectator-shell',
@@ -35,6 +35,8 @@ export class SpectatorShellComponent implements OnInit {
   protected readonly currentHeat = computed(() => this.snapshot()?.currentHeat ?? this.lastKnownSnapshot()?.currentHeat ?? null);
   protected readonly lane1 = computed(() => this.currentHeat()?.lanes?.[0] ?? null);
   protected readonly lane2 = computed(() => this.currentHeat()?.lanes?.[1] ?? null);
+  /** One car in the heat: clean up the versus layout (no VS badge / split). */
+  protected readonly singleLane = computed(() => !!this.lane1() && !this.lane2());
   protected readonly upcomingHeats = computed(() => this.snapshot()?.upcomingHeats ?? this.lastKnownSnapshot()?.upcomingHeats ?? []);
   protected readonly rankings = computed(() => this.snapshot()?.qualificationRankings ?? this.lastKnownSnapshot()?.qualificationRankings ?? []);
   protected readonly knockout = computed(() => this.snapshot()?.knockout ?? this.lastKnownSnapshot()?.knockout ?? null);
@@ -60,6 +62,12 @@ export class SpectatorShellComponent implements OnInit {
     interval(1000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.clock.set(this.formatClock()));
+  }
+
+  /** True while this lane has no measured time yet and the heat is running — the
+      time slot then shows the animated "waiting" placeholder instead of "—". */
+  protected laneIsRunning(lane: SpectatorLaneModel | null): boolean {
+    return this.currentHeat()?.status === 'STARTED' && lane?.durationNanos == null && lane?.outcome !== 'DNF';
   }
 
   private formatClock(): string {

@@ -8,8 +8,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
-import kotlin.time.Instant
 import java.util.UUID
+import kotlin.time.Instant
 
 class PairedInstanceRepository {
 
@@ -39,13 +39,17 @@ class PairedInstanceRepository {
 
     fun updateStatus(id: UUID, status: PairedInstanceStatus) {
         transaction {
-            PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.status] = status.name }
+            PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) {
+                it[PairedInstanceTable.status] = status.name
+            }
         }
     }
 
     fun updateLastSyncAt(id: UUID, lastSyncAt: Instant) {
         transaction {
-            PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) { it[PairedInstanceTable.lastSyncAt] = lastSyncAt }
+            PairedInstanceTable.update(where = { PairedInstanceTable.id eq id }) {
+                it[PairedInstanceTable.lastSyncAt] = lastSyncAt
+            }
         }
     }
 

@@ -5,13 +5,13 @@ import io.github.raginlundf.racingmanager.domain.event.EventEntity
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
 import io.github.raginlundf.racingmanager.domain.event.EventStatus
 import io.github.raginlundf.racingmanager.domain.event.SyncStatus
-import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
-import kotlin.time.Clock
 import java.util.UUID
+import kotlin.time.Clock
 
+@Suppress("TooManyFunctions")
 class EventService(
     private val eventRepository: EventRepository,
     private val participantRepository: ParticipantRepository,
@@ -38,9 +38,9 @@ class EventService(
             createdBy = actorId,
             createdAt = now,
         )
-        eventRepository.insert(event)
+        eventRepository.insert(event = event)
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_CREATED",
@@ -50,11 +50,11 @@ class EventService(
                 occurredAt = now,
             ),
         )
-        return CreateEventResult.Success(event)
+        return CreateEventResult.Success(event = event)
     }
 
     fun findById(id: UUID): EventEntity? {
-        return eventRepository.findById(id)
+        return eventRepository.findById(id = id)
     }
 
     fun findAll(): List<EventEntity> {
@@ -62,9 +62,10 @@ class EventService(
     }
 
     fun findAllForTenant(tenantId: UUID): List<EventEntity> {
-        return eventRepository.findAllForTenant(tenantId)
+        return eventRepository.findAllForTenant(tenantId = tenantId)
     }
 
+    @Suppress("LongParameterList")
     fun update(
         id: UUID,
         name: String,
@@ -73,7 +74,7 @@ class EventService(
         expectedVersion: Long,
         actorId: UUID,
     ): UpdateEventResult {
-        val existing = eventRepository.findById(id)
+        val existing = eventRepository.findById(id = id)
             ?: return UpdateEventResult.NotFound
 
         if (existing.lockedForSync) {
@@ -85,7 +86,7 @@ class EventService(
         }
 
         if (existing.version != expectedVersion) {
-            return UpdateEventResult.Conflict(expectedVersion, existing.version)
+            return UpdateEventResult.Conflict(expected = expectedVersion, actual = existing.version)
         }
 
         val now = clock.now()
@@ -97,9 +98,9 @@ class EventService(
             updatedAt = now,
         )
 
-        val success = eventRepository.update(updated)
+        val success = eventRepository.update(event = updated)
         if (!success) {
-            val refreshed = eventRepository.findById(id)
+            val refreshed = eventRepository.findById(id = id)
             return UpdateEventResult.Conflict(
                 expected = expectedVersion,
                 actual = refreshed?.version ?: -1,
@@ -107,7 +108,7 @@ class EventService(
         }
 
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_UPDATED",
@@ -117,21 +118,21 @@ class EventService(
                 occurredAt = now,
             ),
         )
-        return UpdateEventResult.Success(updated)
+        return UpdateEventResult.Success(event = updated)
     }
 
     fun delete(id: UUID, actorId: UUID): DeleteEventResult {
-        val existing = eventRepository.findById(id)
+        val existing = eventRepository.findById(id = id)
             ?: return DeleteEventResult.NotFound
 
         // Remove child participants (and their vehicles) first, then the event.
         // ponytail: qualification/heat rows keyed by this event become orphaned but
         // are unreachable once the event is gone — cascade them here if that matters.
-        participantRepository.deleteByEventId(id)
-        eventRepository.delete(id)
+        participantRepository.deleteByEventId(eventId = id)
+        eventRepository.delete(id = id)
 
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_DELETED",
@@ -145,15 +146,15 @@ class EventService(
     }
 
     fun activate(id: UUID, expectedVersion: Long, actorId: UUID): ActivateEventResult {
-        val existing = eventRepository.findById(id)
+        val existing = eventRepository.findById(id = id)
             ?: return ActivateEventResult.NotFound
 
         if (existing.status != EventStatus.DRAFT) {
-            return ActivateEventResult.InvalidStatus(existing.status)
+            return ActivateEventResult.InvalidStatus(current = existing.status)
         }
 
         if (existing.version != expectedVersion) {
-            return ActivateEventResult.Conflict(expectedVersion, existing.version)
+            return ActivateEventResult.Conflict(expected = expectedVersion, actual = existing.version)
         }
 
         val now = clock.now()
@@ -165,12 +166,16 @@ class EventService(
             // An imported event becomes "actively being run locally" the moment
             // it's activated (design §I.4) — organically-created events have no
             // sync status and this is a no-op for them.
-            syncStatus = if (existing.syncStatus == SyncStatus.IMPORTED) SyncStatus.LOCAL_ACTIVE else existing.syncStatus,
+            syncStatus = if (existing.syncStatus == SyncStatus.IMPORTED) {
+                SyncStatus.LOCAL_ACTIVE
+            } else {
+                existing.syncStatus
+            }
         )
 
-        val success = eventRepository.update(activated)
+        val success = eventRepository.update(event = activated)
         if (!success) {
-            val refreshed = eventRepository.findById(id)
+            val refreshed = eventRepository.findById(id = id)
             return ActivateEventResult.Conflict(
                 expected = expectedVersion,
                 actual = refreshed?.version ?: -1,
@@ -178,7 +183,7 @@ class EventService(
         }
 
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_ACTIVATED",
@@ -188,15 +193,15 @@ class EventService(
                 occurredAt = now,
             ),
         )
-        return ActivateEventResult.Success(activated)
+        return ActivateEventResult.Success(event = activated)
     }
 
     fun archive(id: UUID, actorId: UUID): ArchiveEventResult {
-        val existing = eventRepository.findById(id)
+        val existing = eventRepository.findById(id = id)
             ?: return ArchiveEventResult.NotFound
 
         if (existing.status != EventStatus.ACTIVE) {
-            return ArchiveEventResult.InvalidStatus(existing.status)
+            return ArchiveEventResult.InvalidStatus(current = existing.status)
         }
 
         val now = clock.now()
@@ -206,10 +211,10 @@ class EventService(
             updatedAt = now,
         )
 
-        eventRepository.update(archived)
+        eventRepository.update(event = archived)
 
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_ARCHIVED",
@@ -219,15 +224,15 @@ class EventService(
                 occurredAt = now,
             ),
         )
-        return ArchiveEventResult.Success(archived)
+        return ArchiveEventResult.Success(event = archived)
     }
 
     fun reactivate(id: UUID, actorId: UUID): ReactivateEventResult {
-        val existing = eventRepository.findById(id)
+        val existing = eventRepository.findById(id = id)
             ?: return ReactivateEventResult.NotFound
 
         if (existing.status != EventStatus.ARCHIVED) {
-            return ReactivateEventResult.InvalidStatus(existing.status)
+            return ReactivateEventResult.InvalidStatus(current = existing.status)
         }
 
         val now = clock.now()
@@ -237,10 +242,10 @@ class EventService(
             updatedAt = now,
         )
 
-        eventRepository.update(reactivated)
+        eventRepository.update(event = reactivated)
 
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_REACTIVATED",
@@ -250,15 +255,15 @@ class EventService(
                 occurredAt = now,
             ),
         )
-        return ReactivateEventResult.Success(reactivated)
+        return ReactivateEventResult.Success(event = reactivated)
     }
 
     fun completeEvent(eventId: UUID, actorId: UUID): CompleteEventResult {
-        val event = eventRepository.findById(eventId)
+        val event = eventRepository.findById(id = eventId)
             ?: return CompleteEventResult.NotFound
 
         if (event.status != EventStatus.ACTIVE) {
-            return CompleteEventResult.InvalidStatus(event.status)
+            return CompleteEventResult.InvalidStatus(status = event.status)
         }
 
         val now = clock.now()
@@ -267,10 +272,10 @@ class EventService(
             version = event.version + 1,
             updatedAt = now,
         )
-        eventRepository.update(completed)
+        eventRepository.update(event = completed)
 
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_COMPLETED",
@@ -280,15 +285,15 @@ class EventService(
                 occurredAt = now,
             ),
         )
-        return CompleteEventResult.Success(completed)
+        return CompleteEventResult.Success(event = completed)
     }
 
     fun reopenEvent(eventId: UUID, actorId: UUID): ReopenEventResult {
-        val event = eventRepository.findById(eventId)
+        val event = eventRepository.findById(id = eventId)
             ?: return ReopenEventResult.NotFound
 
         if (event.status != EventStatus.COMPLETED) {
-            return ReopenEventResult.InvalidStatus(event.status)
+            return ReopenEventResult.InvalidStatus(status = event.status)
         }
 
         val now = clock.now()
@@ -297,10 +302,10 @@ class EventService(
             version = event.version + 1,
             updatedAt = now,
         )
-        eventRepository.update(reopened)
+        eventRepository.update(event = reopened)
 
         auditRepository.insert(
-            AuditEntryEntity(
+            entry = AuditEntryEntity(
                 id = UUID.randomUUID(),
                 actorId = actorId,
                 action = "EVENT_REOPENED",
@@ -310,7 +315,7 @@ class EventService(
                 occurredAt = now,
             ),
         )
-        return ReopenEventResult.Success(reopened)
+        return ReopenEventResult.Success(event = reopened)
     }
 }
 

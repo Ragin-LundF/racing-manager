@@ -39,9 +39,17 @@ class MembershipRepository {
         }
     }
 
-    fun updateRoleAndStatus(userId: UUID, tenantId: UUID, role: UserRole, status: MembershipStatus, updatedAt: kotlin.time.Instant) {
+    fun updateRoleAndStatus(
+        userId: UUID,
+        tenantId: UUID,
+        role: UserRole,
+        status: MembershipStatus,
+        updatedAt: kotlin.time.Instant
+    ) {
         transaction {
-            MembershipTable.update(where = { (MembershipTable.userId eq userId) and (MembershipTable.tenantId eq tenantId) }) {
+            MembershipTable.update(
+                where = { (MembershipTable.userId eq userId) and (MembershipTable.tenantId eq tenantId) }
+            ) {
                 it[MembershipTable.role] = role.name
                 it[MembershipTable.status] = status.name
                 it[MembershipTable.updatedAt] = updatedAt

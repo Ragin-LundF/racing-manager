@@ -16,8 +16,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
-import kotlin.time.Instant
 import java.util.UUID
+import kotlin.time.Instant
 
 class HeatRepository {
 
@@ -92,7 +92,13 @@ class HeatRepository {
         }
     }
 
-    fun updateStatus(id: UUID, status: HeatStatus, armedAt: Instant? = null, startedAt: Instant? = null, finishedAt: Instant? = null) {
+    fun updateStatus(
+        id: UUID,
+        status: HeatStatus,
+        armedAt: Instant? = null,
+        startedAt: Instant? = null,
+        finishedAt: Instant? = null
+    ) {
         transaction {
             HeatTable.update(where = { HeatTable.id eq id }) {
                 it[HeatTable.status] = status.name

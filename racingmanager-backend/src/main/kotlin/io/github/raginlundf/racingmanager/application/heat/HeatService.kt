@@ -19,9 +19,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 import java.util.UUID
+import kotlin.time.Clock
 
+@Suppress("TooManyFunctions")
 class HeatService(
     private val heatRepository: HeatRepository,
     private val eventRepository: EventRepository,
@@ -316,7 +317,13 @@ class HeatService(
         return RepeatHeatResult.Success(heat = updated)
     }
 
-    suspend fun addMeasurement(heatId: UUID, lane: Int, durationNanos: Long, outcome: LaneOutcome, actorId: UUID): AddMeasurementResult {
+    suspend fun addMeasurement(
+        heatId: UUID,
+        lane: Int,
+        durationNanos: Long,
+        outcome: LaneOutcome,
+        actorId: UUID
+    ): AddMeasurementResult {
         val heat = heatRepository.findById(id = heatId)
             ?: return AddMeasurementResult.NotFound
 
@@ -359,6 +366,7 @@ class HeatService(
                 heatRepository.updateStatus(id = event.heatId, status = HeatStatus.STARTED, startedAt = clock.now())
                 emitStateChanged(heatId = event.heatId)
             }
+
             is MeasurementGatewayEvent.LaneFinished -> {
                 // Duplicate-finish guard: at most one accepted finish per lane and
                 // race (raspberry.md §7), even if a frame is redelivered.
@@ -377,14 +385,17 @@ class HeatService(
                 heatRepository.insertMeasurement(measurement = measurement)
                 emitStateChanged(heatId = event.heatId)
             }
+
             is MeasurementGatewayEvent.HeatFinished -> {
                 heatRepository.updateStatus(id = event.heatId, status = HeatStatus.FINISHED, finishedAt = clock.now())
                 emitStateChanged(heatId = event.heatId)
             }
+
             is MeasurementGatewayEvent.HeatTimeout -> {
                 heatRepository.updateStatus(id = event.heatId, status = HeatStatus.TIMEOUT, finishedAt = clock.now())
                 emitStateChanged(heatId = event.heatId)
             }
+
             is MeasurementGatewayEvent.Error -> {
                 heatRepository.updateStatus(id = event.heatId, status = HeatStatus.TECHNICAL_ERROR)
                 emitStateChanged(heatId = event.heatId)

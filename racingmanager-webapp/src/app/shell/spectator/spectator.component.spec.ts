@@ -2,15 +2,17 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SpectatorShellComponent } from './spectator.component';
 import { SpectatorClient } from '../../libs/clients/spectator/spectator.client';
 import { of, throwError } from 'rxjs';
-import { SpectatorExchangeResponse, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
+import { SpectatorExchangeResponse, SpectatorLaneModel, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
 import { provideRouter } from '@angular/router';
 import { provideTestTranslate } from '../../testing/translate.testing';
-import { WritableSignal } from '@angular/core';
+import { Signal, WritableSignal } from '@angular/core';
 
 interface TestComponent {
   formatNanos(nanos: number | undefined | null): string;
   getParticipantName(id: string | undefined | null): string;
   toggleReducedMotion(): void;
+  laneIsRunning(lane: SpectatorLaneModel | null): boolean;
+  singleLane: Signal<boolean>;
   fullscreen: WritableSignal<boolean>;
   reducedMotion: WritableSignal<boolean>;
   snapshot: WritableSignal<SpectatorSnapshotResponse | null>;
@@ -174,6 +176,47 @@ describe('SpectatorShellComponent', () => {
     c.snapshot.set(mockSnapshot);
     const name = c.getParticipantName('p1');
     expect(name).toContain('Alice');
+  });
+
+  it('reports singleLane true for a one-car heat and false for two cars', async () => {
+    window.location.hash = '#code=abc123';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
+
+    c.snapshot.set(mockSnapshot);
+    expect(c.singleLane()).toBe(false);
+
+    const oneCar: SpectatorSnapshotResponse = {
+      ...mockSnapshot,
+      currentHeat: { ...mockSnapshot.currentHeat!, lanes: [mockSnapshot.currentHeat!.lanes[0]] },
+    };
+    c.snapshot.set(oneCar);
+    expect(c.singleLane()).toBe(true);
+  });
+
+  it('laneIsRunning is true only while a STARTED lane has no measured time', async () => {
+    window.location.hash = '#code=abc123';
+    const spectatorClient = {
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    };
+    const fixture = await createComponent(spectatorClient);
+    const c = fixture.componentInstance as unknown as TestComponent;
+
+    // Heat STARTED, no measured time yet → show the animated placeholder.
+    c.snapshot.set(mockSnapshot);
+    const runningLane = mockSnapshot.currentHeat!.lanes[0];
+    expect(c.laneIsRunning(runningLane)).toBe(true);
+
+    // Real measurement present → no longer "running", the measured time is shown.
+    const finishedLane: SpectatorLaneModel = { ...runningLane, durationNanos: 1_234_000_000 };
+    expect(c.laneIsRunning(finishedLane)).toBe(false);
   });
 
   it('should return placeholder for unknown participant', async () => {

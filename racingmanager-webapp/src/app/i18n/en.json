@@ -672,6 +672,7 @@
     "runs": "Runs",
     "laneLabel": "Lane {{number}}",
     "seconds": "Seconds",
+    "running": "Running…",
     "vs": "VS",
     "difference": "Difference",
     "footerPhase": "Preliminary — best time counts",

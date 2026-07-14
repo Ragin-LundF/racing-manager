@@ -1,12 +1,13 @@
 package io.github.raginlundf.racingmanager.infrastructure.gateway.protocol
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import kotlin.time.Clock
 
 /** Encodes/decodes protocol v1 frames via serializable envelope objects. Both ends
-    use this codec: the adapter encodes commands and decodes events, the device does
-    the reverse. The polymorphic payload carries its own `type` discriminator. */
+use this codec: the adapter encodes commands and decodes events, the device does
+the reverse. The polymorphic payload carries its own `type` discriminator. */
 object MessageCodec {
     private val json = Json {
         classDiscriminator = "type"
@@ -46,10 +47,15 @@ object MessageCodec {
         return DecodedEvent(messageId = envelope.messageId, raceId = envelope.raceId, event = envelope.payload)
     }
 
-    private fun <T> decode(text: String, serializer: kotlinx.serialization.KSerializer<T>, kind: String): T {
+    private fun <T> decode(text: String, serializer: KSerializer<T>, kind: String): T {
         return runCatching { json.decodeFromString(deserializer = serializer, string = text) }
             .getOrElse { failure ->
-                val raceId = runCatching { json.decodeFromString(deserializer = EnvelopeMeta.serializer(), string = text).raceId }.getOrNull()
+                val raceId = runCatching {
+                    json.decodeFromString(
+                        deserializer = EnvelopeMeta.serializer(),
+                        string = text
+                    ).raceId
+                }.getOrNull()
                 throw DeviceProtocolException(raceId = raceId, message = "Undecodable $kind: ${failure.message}")
             }
     }

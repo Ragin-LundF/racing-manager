@@ -18,6 +18,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class KnockoutRepository {
 
     fun findByEventId(eventId: UUID): KnockoutTournamentEntity? {
@@ -54,7 +55,13 @@ class KnockoutRepository {
         }
     }
 
-    fun updateStatus(id: UUID, status: KnockoutStatus, updatedAt: kotlin.time.Instant, finalizedAt: kotlin.time.Instant? = null, finalizedBy: UUID? = null) {
+    fun updateStatus(
+        id: UUID,
+        status: KnockoutStatus,
+        updatedAt: kotlin.time.Instant,
+        finalizedAt: kotlin.time.Instant? = null,
+        finalizedBy: UUID? = null
+    ) {
         transaction {
             KnockoutTournamentTable.update(where = { KnockoutTournamentTable.id eq id }) {
                 it[KnockoutTournamentTable.status] = status.name
@@ -69,7 +76,10 @@ class KnockoutRepository {
         return transaction {
             KnockoutMatchTable.selectAll()
                 .where { KnockoutMatchTable.tournamentId eq tournamentId }
-                .orderBy(KnockoutMatchTable.roundNumber to SortOrder.ASC, KnockoutMatchTable.matchNumber to SortOrder.ASC)
+                .orderBy(
+                    KnockoutMatchTable.roundNumber to SortOrder.ASC,
+                    KnockoutMatchTable.matchNumber to SortOrder.ASC
+                )
                 .map { row -> mapMatchRow(row = row) }
         }
     }
@@ -77,8 +87,9 @@ class KnockoutRepository {
     fun findMatchesByRound(tournamentId: UUID, roundNumber: Int): List<KnockoutMatchEntity> {
         return transaction {
             KnockoutMatchTable.selectAll()
-                .where { KnockoutMatchTable.tournamentId eq tournamentId and (KnockoutMatchTable.roundNumber eq roundNumber) }
-                .orderBy(KnockoutMatchTable.matchNumber to SortOrder.ASC)
+                .where {
+                    KnockoutMatchTable.tournamentId eq tournamentId and (KnockoutMatchTable.roundNumber eq roundNumber)
+                }.orderBy(KnockoutMatchTable.matchNumber to SortOrder.ASC)
                 .map { row -> mapMatchRow(row = row) }
         }
     }

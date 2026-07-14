@@ -75,19 +75,25 @@
         </div>
 
         @if (currentHeat(); as heat) {
-          <div class="versus">
+          <div class="versus" [class.single]="singleLane()">
             @for (lane of [lane1(), lane2()]; track $index) {
               @if (lane) {
                 <div class="side"
                      [class.lane-1]="$index === 0"
                      [class.lane-2]="$index === 1"
-                     [class.dnf]="lane.outcome === 'DNF'">
+                     [class.dnf]="lane.outcome === 'DNF'"
+                     [class.running]="laneIsRunning(lane)">
                   <span class="spur">{{ 'spectator.laneLabel' | translate: { number: lane.lane } }}</span>
                   <span class="racer">{{ lane.participantFirstName }} {{ lane.participantLastName }}</span>
                   <span class="start-no">#{{ lane.participantStartNumber }}</span>
                   <img class="car" [src]="$index === 0 ? '/car-lane-1.svg' : '/car-lane-2.svg'" alt="" />
                   @if (lane.outcome === 'DNF') {
                     <span class="final dnf-text">{{ 'spectator.dnf' | translate }}</span>
+                  } @else if (laneIsRunning(lane)) {
+                    <span class="final waiting" aria-hidden="true">
+                      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    </span>
+                    <span class="unit">{{ 'spectator.running' | translate }}</span>
                   } @else {
                     <span class="final tnum">{{ formatSeconds(lane.durationNanos) }}</span>
                     <span class="unit">{{ 'spectator.seconds' | translate }}</span>
@@ -95,7 +101,9 @@
                 </div>
               }
             }
-            <div class="vs-badge">{{ 'spectator.vs' | translate }}</div>
+            @if (!singleLane()) {
+              <div class="vs-badge">{{ 'spectator.vs' | translate }}</div>
+            }
           </div>
 
           <div class="status-strip">

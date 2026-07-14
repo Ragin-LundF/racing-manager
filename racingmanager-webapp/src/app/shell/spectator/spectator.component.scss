@@ -259,6 +259,18 @@
 
 .side.dnf { filter: saturate(0.7); }
 
+/* Single-car heat: no head-to-head split or VS badge — just center the one car. */
+.versus.single {
+  background: none;
+  justify-content: center;
+}
+
+.versus.single .side {
+  flex: 0 1 60%;
+}
+
+.versus.single .side.lane-1 { padding-right: var(--space-4); }
+
 .spur {
   font-size: 15px;
   font-weight: 700;
@@ -292,6 +304,59 @@
   font-size: clamp(40px, 5vw, 68px);
   font-weight: 700;
   line-height: 1;
+}
+
+/* ---------- In-race motion (only while a lane is running) ---------- */
+@keyframes rev {
+  0%   { transform: translateX(-1.5px) rotate(-0.4deg); }
+  50%  { transform: translateX(1.5px) rotate(0.4deg); }
+  100% { transform: translateX(-1.5px) rotate(-0.4deg); }
+}
+
+@keyframes waitingBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+  40%           { transform: translateY(-0.4em); opacity: 1; }
+}
+
+.side.running .car {
+  animation: rev 0.28s ease-in-out infinite;
+}
+
+/* Animated "waiting for the measured time" placeholder — three bouncing dots
+   instead of a dead "—" while a lane is running. */
+.final.waiting {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.18em;
+  color: var(--color-warning);
+}
+
+.final.waiting .dot {
+  width: 0.28em;
+  height: 0.28em;
+  border-radius: 50%;
+  background: currentColor;
+  animation: waitingBounce 1.2s ease-in-out infinite;
+}
+
+.final.waiting .dot:nth-child(2) { animation-delay: 0.16s; }
+.final.waiting .dot:nth-child(3) { animation-delay: 0.32s; }
+
+/* The reduce-animations toggle sets .reduced-motion on <html>; honor it (and the
+   OS-level preference) by freezing the in-race motion. The dots stay visible,
+   just static. */
+:host-context(.reduced-motion) .side.running .car,
+:host-context(.reduced-motion) .final.waiting .dot {
+  animation: none;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side.running .car,
+  .final.waiting .dot {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 .final.dnf-text {

@@ -19,7 +19,7 @@ class QualificationRepository {
             QualificationTable.selectAll()
                 .where { QualificationTable.eventId eq eventId }
                 .singleOrNull()
-                ?.let { row -> mapRow(row) }
+                ?.let { row -> mapRow(row = row) }
         }
     }
 
@@ -28,7 +28,7 @@ class QualificationRepository {
             QualificationTable.selectAll()
                 .where { QualificationTable.id eq id }
                 .singleOrNull()
-                ?.let { row -> mapRow(row) }
+                ?.let { row -> mapRow(row = row) }
         }
     }
 
@@ -48,9 +48,15 @@ class QualificationRepository {
         }
     }
 
-    fun updateStatus(id: UUID, status: QualificationStatus, updatedAt: kotlin.time.Instant, finalizedAt: kotlin.time.Instant? = null, finalizedBy: UUID? = null) {
+    fun updateStatus(
+        id: UUID,
+        status: QualificationStatus,
+        updatedAt: kotlin.time.Instant,
+        finalizedAt: kotlin.time.Instant? = null,
+        finalizedBy: UUID? = null
+    ) {
         transaction {
-            QualificationTable.update({ QualificationTable.id eq id }) {
+            QualificationTable.update(where = { QualificationTable.id eq id }) {
                 it[QualificationTable.status] = status.name
                 it[QualificationTable.updatedAt] = updatedAt
                 if (finalizedAt != null) it[QualificationTable.finalizedAt] = finalizedAt

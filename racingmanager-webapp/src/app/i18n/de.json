@@ -672,6 +672,7 @@
     "runs": "Läufe",
     "laneLabel": "Spur {{number}}",
     "seconds": "Sekunden",
+    "running": "Läuft…",
     "vs": "VS",
     "difference": "Differenz",
     "footerPhase": "Vorrunde — beste Zeit wird gewertet",

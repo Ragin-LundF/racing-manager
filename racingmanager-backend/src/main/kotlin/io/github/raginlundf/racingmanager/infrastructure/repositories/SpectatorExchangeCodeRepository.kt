@@ -7,8 +7,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
-import kotlin.time.Instant
 import java.util.UUID
+import kotlin.time.Instant
 
 class SpectatorExchangeCodeRepository {
 
@@ -26,17 +26,20 @@ class SpectatorExchangeCodeRepository {
         }
     }
 
-    /** Atomically consumes the code if it exists, is unexpired and unused —
-        returns null otherwise so a code can never be traded for a token
-        twice, nor after its short exchange window has passed. */
+    /**
+     * Atomically consumes the code if it exists, is unexpired and unused —
+     * returns null otherwise so a code can never be traded for a token
+     * twice, nor after its short exchange window has passed.
+     */
     fun consume(id: UUID, now: Instant): SpectatorExchangeCodeEntity? {
         return transaction {
-            val row = SpectatorExchangeCodeTable.selectAll().where { SpectatorExchangeCodeTable.id eq id }.singleOrNull()
-                ?: return@transaction null
+            val row = SpectatorExchangeCodeTable.selectAll().where {
+                SpectatorExchangeCodeTable.id eq id
+            }.singleOrNull() ?: return@transaction null
             if (row[SpectatorExchangeCodeTable.consumed] || now > row[SpectatorExchangeCodeTable.expiresAt]) {
                 return@transaction null
             }
-            SpectatorExchangeCodeTable.update({ SpectatorExchangeCodeTable.id eq id }) {
+            SpectatorExchangeCodeTable.update(where = { SpectatorExchangeCodeTable.id eq id }) {
                 it[consumed] = true
             }
             SpectatorExchangeCodeEntity(

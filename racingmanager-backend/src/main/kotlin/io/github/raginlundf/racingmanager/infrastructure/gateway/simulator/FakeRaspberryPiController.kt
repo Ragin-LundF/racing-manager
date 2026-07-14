@@ -1,5 +1,6 @@
 package io.github.raginlundf.racingmanager.infrastructure.gateway.simulator
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.raginlundf.racingmanager.infrastructure.gateway.protocol.DeviceCommand
 import io.github.raginlundf.racingmanager.infrastructure.gateway.protocol.DeviceErrorCode
 import io.github.raginlundf.racingmanager.infrastructure.gateway.protocol.DeviceEvent
@@ -7,7 +8,6 @@ import io.github.raginlundf.racingmanager.infrastructure.gateway.protocol.Device
 import io.github.raginlundf.racingmanager.infrastructure.gateway.protocol.LaneResultPayload
 import io.github.raginlundf.racingmanager.infrastructure.gateway.protocol.MessageCodec
 import io.github.raginlundf.racingmanager.infrastructure.gateway.protocol.PROTOCOL_VERSION
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,12 +25,14 @@ import java.util.concurrent.atomic.AtomicInteger
 
 private val logger = KotlinLogging.logger {}
 
-/** In-process stand-in for the Raspberry Pi software. It speaks the same protocol
-    v1 the real controller will: it consumes command frames and emits event frames,
-    running a per-race state machine (PREPARED → RUNNING → FINISHED). On `startRace`
-    it generates a race deterministically per raceId — after [rampDelayMs] each lane
-    finishes between [raceMinMs] and [raceMaxMs], or (with [dnfProbability]) times out
-    after [dnfTimeoutMs] and is reported as a `timeout` lane in `raceFinished`. */
+/**
+ * In-process stand-in for the Raspberry Pi software. It speaks the same protocol
+ * v1 the real controller will: it consumes command frames and emits event frames,
+ * running a per-race state machine (PREPARED → RUNNING → FINISHED). On `startRace`
+ * it generates a race deterministically per raceId — after [rampDelayMs] each lane
+ * finishes between [raceMinMs] and [raceMaxMs], or (with [dnfProbability]) times out
+ * after [dnfTimeoutMs] and is reported as a `timeout` lane in `raceFinished`.
+ */
 class FakeRaspberryPiController(
     private val seed: Long = DEFAULT_SEED,
     private val rampDelayMs: Long = DEFAULT_RAMP_DELAY_MS,
@@ -55,7 +57,13 @@ class FakeRaspberryPiController(
         val decoded = runCatching { MessageCodec.decodeCommand(text = text) }.getOrElse { failure ->
             logger.warn { "Dropping undecodable command: ${failure.message}" }
             (failure as? DeviceProtocolException)?.raceId?.let { raceId ->
-                emit(raceId = raceId, event = DeviceEvent.DeviceError(code = DeviceErrorCode.INVALID_STATE, message = "undecodable command"))
+                emit(
+                    raceId = raceId,
+                    event = DeviceEvent.DeviceError(
+                        code = DeviceErrorCode.INVALID_STATE,
+                        message = "undecodable command"
+                    )
+                )
             }
             return
         }
@@ -85,19 +93,33 @@ class FakeRaspberryPiController(
         }
         when (states[raceId]) {
             null -> {
-                emit(raceId = raceId, event = DeviceEvent.DeviceError(code = DeviceErrorCode.INVALID_STATE, message = "race not prepared"))
+                emit(
+                    raceId = raceId,
+                    event = DeviceEvent.DeviceError(code = DeviceErrorCode.INVALID_STATE, message = "race not prepared")
+                )
                 return
             }
+
             RaceState.RUNNING, RaceState.FINISHED -> {
-                emit(raceId = raceId, event = DeviceEvent.DeviceError(code = DeviceErrorCode.DUPLICATE_COMMAND, message = "race already started"))
+                emit(
+                    raceId = raceId,
+                    event = DeviceEvent.DeviceError(
+                        code = DeviceErrorCode.DUPLICATE_COMMAND,
+                        message = "race already started"
+                    )
+                )
                 return
             }
+
             RaceState.PREPARED -> Unit
         }
 
         val lanes = lanesByRace[raceId].orEmpty()
         states[raceId] = RaceState.RUNNING
-        emit(raceId = raceId, event = DeviceEvent.RaceStarted(startedLanes = lanes, controllerMonotonicNs = System.nanoTime()))
+        emit(
+            raceId = raceId,
+            event = DeviceEvent.RaceStarted(startedLanes = lanes, controllerMonotonicNs = System.nanoTime())
+        )
 
         jobs[raceId] = scope.launch {
             runRace(raceId = raceId, lanes = lanes)

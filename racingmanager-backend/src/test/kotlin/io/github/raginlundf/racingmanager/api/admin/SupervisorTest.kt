@@ -39,6 +39,7 @@ import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
+import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -50,6 +51,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.application.Application
 import io.ktor.server.testing.testApplication
+import java.io.PrintWriter
+import java.sql.SQLException
+import java.util.logging.Logger
+import javax.sql.DataSource
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -64,46 +69,119 @@ class SupervisorTest {
     private val userRepository = UserRepository()
     private val tenantRepository = TenantRepository()
     private val membershipRepository = MembershipRepository()
-    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
-    private val jwtService = JwtService(jwtKeyProvider)
+    private val jwtKeyProvider = LocalJwtKeyProvider(repository = SigningKeyRepository())
+    private val jwtService = JwtService(keyProvider = jwtKeyProvider)
     private val auditRepository = AuditRepository()
     private val eventRepository = EventRepository()
     private val passwordHasher = PasswordHasher()
-    private val authService = AuthService(userRepository, tenantRepository, membershipRepository, RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
-    private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
+    private val authService = AuthService(
+        userRepository = userRepository,
+        tenantRepository = tenantRepository,
+        membershipRepository = membershipRepository,
+        refreshTokenRepository = RefreshTokenRepository(),
+        auditRepository = auditRepository,
+        passwordHasher = passwordHasher,
+        jwtService = jwtService
+    )
+    private val eventService = EventService(
+        eventRepository = eventRepository,
+        participantRepository = ParticipantRepository(),
+        auditRepository = auditRepository
+    )
     private val participantRepository = ParticipantRepository()
-    private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
+    private val participantService = ParticipantService(
+        participantRepository = participantRepository,
+        eventRepository = eventRepository,
+        auditRepository = auditRepository
+    )
     private val heatRepository = HeatRepository()
-    private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository)
+    private val heatService = HeatService(
+        heatRepository = heatRepository,
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        auditRepository = auditRepository
+    )
     private val qualificationRepository = QualificationRepository()
-    private val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
+    private val qualificationService = QualificationService(
+        qualificationRepository = qualificationRepository,
+        heatRepository = heatRepository,
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        auditRepository = auditRepository
+    )
     private val knockoutRepository = KnockoutRepository()
-    private val knockoutService = KnockoutService(knockoutRepository, heatRepository, eventRepository, participantRepository, qualificationRepository, auditRepository)
-    private val spectatorService = SpectatorService(eventRepository, heatRepository, participantRepository, qualificationRepository, knockoutRepository)
-    private val spectatorWebSocketService = SpectatorWebSocketService(spectatorService, heatRepository, heatService.events)
+    private val knockoutService = KnockoutService(
+        knockoutRepository = knockoutRepository,
+        heatRepository = heatRepository,
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        qualificationRepository = qualificationRepository,
+        auditRepository = auditRepository
+    )
+    private val spectatorService = SpectatorService(
+        eventRepository = eventRepository,
+        heatRepository = heatRepository,
+        participantRepository = participantRepository,
+        qualificationRepository = qualificationRepository,
+        knockoutRepository = knockoutRepository
+    )
+    private val spectatorWebSocketService = SpectatorWebSocketService(
+        spectatorService = spectatorService,
+        heatRepository = heatRepository,
+        heatServiceEvents = heatService.events
+    )
     private val spectatorExchangeCodeRepository = SpectatorExchangeCodeRepository()
     private val importedPackageRepository = ImportedPackageRepository()
     private val localInstanceRepository = LocalInstanceRepository()
-    private val localPackageService = LocalPackageService(eventRepository, participantRepository, tenantRepository, importedPackageRepository, localInstanceRepository, jwtKeyProvider)
+    private val localPackageService = LocalPackageService(
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        tenantRepository = tenantRepository,
+        importedPackageRepository = importedPackageRepository,
+        localInstanceRepository = localInstanceRepository,
+        jwtKeyProvider = jwtKeyProvider
+    )
     private val pairingCodeRepository = PairingCodeRepository()
     private val pairedInstanceRepository = PairedInstanceRepository()
     private val syncedResultRepository = SyncedResultRepository()
-    private val syncService = SyncService(pairingCodeRepository, pairedInstanceRepository, syncedResultRepository, eventRepository, auditRepository)
-    private val resultsService = ResultsService(eventRepository, participantRepository, heatRepository, qualificationRepository, knockoutRepository, auditRepository)
-    private val auditService = AuditService(auditRepository)
+    private val syncService = SyncService(
+        pairingCodeRepository = pairingCodeRepository,
+        pairedInstanceRepository = pairedInstanceRepository,
+        syncedResultRepository = syncedResultRepository,
+        eventRepository = eventRepository,
+        auditRepository = auditRepository
+    )
+    private val resultsService = ResultsService(
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        heatRepository = heatRepository,
+        qualificationRepository = qualificationRepository,
+        knockoutRepository = knockoutRepository,
+        auditRepository = auditRepository
+    )
+    private val auditService = AuditService(auditRepository = auditRepository)
     private val diagnosticsService = DiagnosticsService(
-        object : javax.sql.DataSource {
-            override fun getConnection() = throw java.sql.SQLException("not used in supervisor test")
-            override fun getConnection(username: String?, password: String?) = throw java.sql.SQLException("not used in supervisor test")
+        dataSource = object : DataSource {
+            override fun getConnection() = throw SQLException("not used in supervisor test")
+            override fun getConnection(username: String?, password: String?) = throw SQLException(
+                "not used in supervisor test"
+            )
+
             override fun getLogWriter() = null
-            override fun setLogWriter(out: java.io.PrintWriter?) {}
+
+            @Suppress("EmptyFunctionBlock")
+            override fun setLogWriter(out: PrintWriter?) {}
+
+            @Suppress("EmptyFunctionBlock")
             override fun setLoginTimeout(seconds: Int) {}
             override fun getLoginTimeout() = 0
-            override fun <T> unwrap(iface: Class<T>?) = throw java.sql.SQLException("not a wrapper")
+            override fun <T> unwrap(iface: Class<T>?) = throw SQLException("not a wrapper")
             override fun isWrapperFor(iface: Class<*>?) = false
-            override fun getParentLogger() = java.util.logging.Logger.getLogger("")
+            override fun getParentLogger() = Logger.getLogger("")
         },
-        eventRepository, participantRepository, heatRepository,
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        heatRepository = heatRepository,
     )
 
     @BeforeTest
@@ -121,39 +199,59 @@ class SupervisorTest {
         configureSerialization()
         configureStatusPages()
         configureWebSockets()
-        configureRouting(authService, jwtService, eventService, participantService, heatService, qualificationService, knockoutService, resultsService, spectatorService, eventRepository, spectatorWebSocketService, auditService, diagnosticsService, mode, spectatorExchangeCodeRepository, localPackageService, syncService, io.github.raginlundf.racingmanager.api.testRaceDeviceGateway(), io.github.raginlundf.racingmanager.api.testRaceDeviceSettingsRepository())
+        configureRouting(
+            authService = authService,
+            jwtService = jwtService,
+            eventService = eventService,
+            participantService = participantService,
+            heatService = heatService,
+            qualificationService = qualificationService,
+            knockoutService = knockoutService,
+            resultsService = resultsService,
+            spectatorService = spectatorService,
+            eventRepository = eventRepository,
+            webSocketService = spectatorWebSocketService,
+            auditService = auditService,
+            diagnosticsService = diagnosticsService,
+            deploymentMode = mode,
+            spectatorExchangeCodeRepository = spectatorExchangeCodeRepository,
+            localPackageService = localPackageService,
+            syncService = syncService,
+            raceDeviceGateway = io.github.raginlundf.racingmanager.api.testRaceDeviceGateway(),
+            raceDeviceSettingsRepository = io.github.raginlundf.racingmanager.api.testRaceDeviceSettingsRepository()
+        )
     }
 
     @Test
     fun `supervisor setup is forbidden in local mode`() = testApplication {
-        application { configureTestApp(DeploymentMode.LOCAL) }
+        application { configureTestApp(mode = DeploymentMode.LOCAL) }
 
         val response = client.post("/api/v1/admin/setup") {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"root","password":"password123","displayName":"Root"}""")
         }
 
-        assertEquals(HttpStatusCode.Forbidden, response.status)
+        assertEquals(expected = HttpStatusCode.Forbidden, actual = response.status)
     }
 
     @Test
     fun `supervisor setup succeeds once in hosted mode and rejects a second attempt`() = testApplication {
-        application { configureTestApp(DeploymentMode.HOSTED) }
+        application { configureTestApp(mode = DeploymentMode.HOSTED) }
 
         val first = client.post("/api/v1/admin/setup") {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"root","password":"password123","displayName":"Root"}""")
         }
-        assertEquals(HttpStatusCode.Created, first.status)
+        assertEquals(expected = HttpStatusCode.Created, actual = first.status)
 
         val second = client.post("/api/v1/admin/setup") {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"root2","password":"password123","displayName":"Root2"}""")
         }
-        assertEquals(HttpStatusCode.Conflict, second.status)
+        assertEquals(expected = HttpStatusCode.Conflict, actual = second.status)
     }
 
-    private suspend fun io.ktor.client.HttpClient.supervisorToken(): String {
+    private suspend fun HttpClient.supervisorToken(): String {
         post("/api/v1/admin/setup") {
             contentType(ContentType.Application.Json)
             setBody("""{"username":"root","password":"password123","displayName":"Root"}""")
@@ -167,62 +265,80 @@ class SupervisorTest {
 
     @Test
     fun `supervisor lists tenant metadata across tenants without seeing the platform tenant`() = testApplication {
-        application { configureTestApp(DeploymentMode.HOSTED) }
+        application { configureTestApp(mode = DeploymentMode.HOSTED) }
         val supervisorToken = client.supervisorToken()
         client.post("/api/v1/register") {
             contentType(ContentType.Application.Json)
-            setBody("""{"tenantName":"Acme Racing","tenantSlug":"acme","username":"admin","password":"password123","displayName":"Admin"}""")
+            setBody("""{
+                |"tenantName":"Acme Racing",
+                |"tenantSlug":"acme",
+                |"username":"admin",
+                |"password":"password123",
+                |"displayName":"Admin"
+                |}""".trimMargin())
         }
 
         val response = client.get("/api/v1/admin/tenants") {
             header("Authorization", "Bearer $supervisorToken")
         }
 
-        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
         val body = response.bodyAsText()
-        assertTrue(body.contains("\"slug\":\"acme\""))
-        assertFalse(body.contains("\"slug\":\"platform\""))
+        assertTrue(actual = body.contains("\"slug\":\"acme\""))
+        assertFalse(actual = body.contains("\"slug\":\"platform\""))
     }
 
     @Test
     fun `supervisor can deactivate and request deletion of a tenant`() = testApplication {
-        application { configureTestApp(DeploymentMode.HOSTED) }
+        application { configureTestApp(mode = DeploymentMode.HOSTED) }
         val supervisorToken = client.supervisorToken()
         val registerBody = client.post("/api/v1/register") {
             contentType(ContentType.Application.Json)
-            setBody("""{"tenantName":"Acme Racing","tenantSlug":"acme","username":"admin","password":"password123","displayName":"Admin"}""")
+            setBody("""{
+                |"tenantName":"Acme Racing",
+                |"tenantSlug":"acme",
+                |"username":"admin",
+                |"password":"password123",
+                |"displayName":"Admin"
+                |}""".trimMargin())
         }.bodyAsText()
         val tenantId = """"tenantId":"([^"]+)"""".toRegex().find(registerBody)!!.groupValues[1]
 
         val deactivateResponse = client.post("/api/v1/admin/tenants/$tenantId/deactivate") {
             header("Authorization", "Bearer $supervisorToken")
         }
-        assertEquals(HttpStatusCode.OK, deactivateResponse.status)
-        assertTrue(deactivateResponse.bodyAsText().contains("\"status\":\"DISABLED\""))
+        assertEquals(expected = HttpStatusCode.OK, actual = deactivateResponse.status)
+        assertTrue(actual = deactivateResponse.bodyAsText().contains("\"status\":\"DISABLED\""))
 
         val wrongConfirm = client.delete("/api/v1/admin/tenants/$tenantId") {
             header("Authorization", "Bearer $supervisorToken")
             contentType(ContentType.Application.Json)
             setBody("""{"confirmSlug":"wrong-slug"}""")
         }
-        assertEquals(HttpStatusCode.BadRequest, wrongConfirm.status)
+        assertEquals(expected = HttpStatusCode.BadRequest, actual = wrongConfirm.status)
 
         val deleteResponse = client.delete("/api/v1/admin/tenants/$tenantId") {
             header("Authorization", "Bearer $supervisorToken")
             contentType(ContentType.Application.Json)
             setBody("""{"confirmSlug":"acme"}""")
         }
-        assertEquals(HttpStatusCode.OK, deleteResponse.status)
-        assertTrue(deleteResponse.bodyAsText().contains("\"status\":\"PENDING_DELETION\""))
+        assertEquals(expected = HttpStatusCode.OK, actual = deleteResponse.status)
+        assertTrue(actual = deleteResponse.bodyAsText().contains("\"status\":\"PENDING_DELETION\""))
     }
 
     @Test
     fun `a tenant admin token is forbidden from supervisor routes`() = testApplication {
-        application { configureTestApp(DeploymentMode.HOSTED) }
+        application { configureTestApp(mode = DeploymentMode.HOSTED) }
         client.supervisorToken()
         val registerBody = client.post("/api/v1/register") {
             contentType(ContentType.Application.Json)
-            setBody("""{"tenantName":"Acme Racing","tenantSlug":"acme","username":"admin","password":"password123","displayName":"Admin"}""")
+            setBody("""{
+                |"tenantName":"Acme Racing",
+                |"tenantSlug":"acme",
+                |"username":"admin",
+                |"password":"password123",
+                |"displayName":"Admin"
+                |}""".trimMargin())
         }.bodyAsText()
         val adminAccessToken = """"accessToken":"([^"]+)"""".toRegex().find(registerBody)!!.groupValues[1]
 
@@ -230,18 +346,18 @@ class SupervisorTest {
             header("Authorization", "Bearer $adminAccessToken")
         }
 
-        assertEquals(HttpStatusCode.Forbidden, response.status)
+        assertEquals(expected = HttpStatusCode.Forbidden, actual = response.status)
     }
 
     @Test
     fun `a supervisor token cannot access ordinary race-data routes`() = testApplication {
-        application { configureTestApp(DeploymentMode.HOSTED) }
+        application { configureTestApp(mode = DeploymentMode.HOSTED) }
         val supervisorToken = client.supervisorToken()
 
         val response = client.get("/api/v1/events") {
             header("Authorization", "Bearer $supervisorToken")
         }
 
-        assertEquals(HttpStatusCode.Forbidden, response.status)
+        assertEquals(expected = HttpStatusCode.Forbidden, actual = response.status)
     }
 }
