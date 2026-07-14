@@ -49,10 +49,11 @@ import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyPro
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebSocketService
 import io.ktor.server.application.Application
+import io.ktor.server.netty.EngineMain
 
 private val logger = KotlinLogging.logger {}
 
-fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 /** In the "demo" profile, seed a default admin (admin/admin) on first run so the
 app is usable out of the box. No-op once any user exists. Switch the profile
@@ -61,7 +62,7 @@ to disable. Only applies in [DeploymentMode.LOCAL] — a hosted deployment must
 never silently create a shared cloud-wide administrator. */
 private fun Application.seedDemoAdmin(authService: AuthService, deploymentMode: DeploymentMode) {
     if (deploymentMode != DeploymentMode.LOCAL) return
-    val profile = environment.config.propertyOrNull("racingmanager.profile")?.getString() ?: "demo"
+    val profile = environment.config.propertyOrNull(path = "racingmanager.profile")?.getString() ?: "demo"
     if (profile != "demo") return
     val setupResult = authService.setupAdmin(username = "admin", password = "admin", displayName = "Administrator")
     if (setupResult is SetupResult.Success) {
@@ -72,17 +73,18 @@ private fun Application.seedDemoAdmin(authService: AuthService, deploymentMode: 
 /** Resolves the JWT signing key source for [deploymentMode]. In [DeploymentMode.LOCAL]
 a key is generated and persisted on first run; in [DeploymentMode.HOSTED] keys are
 read from `racingmanager.jwt.keys` deployment configuration. Never logs key material. */
-private fun Application.configureJwtKeyProvider(deploymentMode: DeploymentMode): JwtKeyProvider =
-    when (deploymentMode) {
+private fun Application.configureJwtKeyProvider(deploymentMode: DeploymentMode): JwtKeyProvider {
+    return when (deploymentMode) {
         DeploymentMode.LOCAL -> {
-            val provider = LocalJwtKeyProvider(SigningKeyRepository())
+            val provider = LocalJwtKeyProvider(repository = SigningKeyRepository())
             val key = provider.ensureKeyExists()
             logger.info { "JWT signing key ready (kid=${key.kid})" }
             provider
         }
 
-        DeploymentMode.HOSTED -> HostedJwtKeyProvider.fromConfig(environment.config)
+        DeploymentMode.HOSTED -> HostedJwtKeyProvider.fromConfig(config = environment.config)
     }
+}
 
 fun Application.module() {
     // Connect the database first: the race-device gateway reads its persisted
