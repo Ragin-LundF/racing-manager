@@ -170,7 +170,9 @@ class TenantSelfServiceTest {
             )
 
             override fun getLogWriter() = null
+            @Suppress("EmptyFunctionBlock")
             override fun setLogWriter(out: PrintWriter?) {}
+            @Suppress("EmptyFunctionBlock")
             override fun setLoginTimeout(seconds: Int) {}
             override fun getLoginTimeout() = 0
             override fun <T> unwrap(iface: Class<T>?) = throw SQLException("not a wrapper")

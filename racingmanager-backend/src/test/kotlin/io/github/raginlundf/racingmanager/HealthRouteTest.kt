@@ -21,8 +21,8 @@ class HealthRouteTest {
 
         val response = client.get("/api/v1/health")
 
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.bodyAsText().contains("\"status\":\"UP\""))
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
+        assertTrue(actual = response.bodyAsText().contains(other = "\"status\":\"UP\""))
     }
 
     @Test
@@ -31,8 +31,8 @@ class HealthRouteTest {
 
         val response = client.get("/api/v1/readiness")
 
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.bodyAsText().contains("\"status\":\"UP\""))
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
+        assertTrue(actual = response.bodyAsText().contains(other = "\"status\":\"UP\""))
     }
 
     @Test
@@ -41,7 +41,7 @@ class HealthRouteTest {
 
         val response = client.get("/api/v1/diagnostics")
 
-        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertEquals(expected = HttpStatusCode.Unauthorized, actual = response.status)
     }
 
     @Test
@@ -52,20 +52,20 @@ class HealthRouteTest {
         // class's shared real DB (see other tests in this file) — log in with
         // those credentials rather than attempting a second, redundant setup.
         val loginBody = client.post("/api/v1/auth/login") {
-            contentType(ContentType.Application.Json)
-            setBody("""{"username":"admin","password":"admin"}""")
+            contentType(type = ContentType.Application.Json)
+            setBody(body = """{"username":"admin","password":"admin"}""")
         }.bodyAsText()
-        val accessToken = """"accessToken":"([^"]+)"""".toRegex().find(loginBody)!!.groupValues[1]
+        val accessToken = """"accessToken":"([^"]+)"""".toRegex().find(input = loginBody)!!.groupValues[1]
 
         val response = client.get("/api/v1/diagnostics") {
-            header("Authorization", "Bearer $accessToken")
+            header(key = "Authorization", value = "Bearer $accessToken")
         }
 
-        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
         val body = response.bodyAsText()
-        assertTrue(body.contains("\"database\""))
-        assertTrue(body.contains("\"events\""))
-        assertTrue(body.contains("\"unfinishedHeats\""))
+        assertTrue(actual = body.contains(other = "\"database\""))
+        assertTrue(actual = body.contains(other = "\"events\""))
+        assertTrue(actual = body.contains(other = "\"unfinishedHeats\""))
     }
 
     @Test
@@ -74,9 +74,9 @@ class HealthRouteTest {
 
         val response = client.get("/api/v1/build-info")
 
-        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
         val body = response.bodyAsText()
-        assertTrue(body.contains("\"name\":\"racingmanager\""))
-        assertTrue(body.contains("\"version\":\"1.0-SNAPSHOT\""))
+        assertTrue(actual = body.contains(other = "\"name\":\"racingmanager\""))
+        assertTrue(actual = body.contains(other = "\"version\":\"1.0-SNAPSHOT\""))
     }
 }

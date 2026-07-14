@@ -8,10 +8,14 @@ class PasswordHasher {
     private val verifier = BCrypt.verifyer()
 
     fun hash(password: String): String {
-        return hasher.hashToString(12, password.toCharArray())
+        return hasher.hashToString(HASH_ITERATIONS, password.toCharArray())
     }
 
     fun verify(password: String, hash: String): Boolean {
         return verifier.verify(password.toCharArray(), hash).verified
+    }
+
+    companion object {
+        private const val HASH_ITERATIONS = 12
     }
 }

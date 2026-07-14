@@ -2,22 +2,21 @@ package io.github.raginlundf.racingmanager.infrastructure.security
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.auth0.jwt.exceptions.JWTVerificationException
 import io.github.raginlundf.racingmanager.application.auth.RequestPrincipal
+import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
-import java.util.UUID
 
 private const val CLAIM_TENANT_ID = "tenant_id"
 private const val CLAIM_SCOPE = "scope"
 private const val CLAIM_EVENT_ID = "event_id"
 
 /** Issues and verifies JWT access tokens signed with the deployment's
-    [JwtKeyProvider]. Access tokens are stateless — verification never touches
-    the database; only the signing key lookup by `kid` does. Never logs a raw
-    token or its claims. */
+[JwtKeyProvider]. Access tokens are stateless — verification never touches
+the database; only the signing key lookup by `kid` does. Never logs a raw
+token or its claims. */
 class JwtService(
     private val keyProvider: JwtKeyProvider,
     private val issuer: String? = null,
@@ -51,18 +50,17 @@ class JwtService(
     }
 
     /** Returns null for any invalid, expired, tampered, or unknown-key token —
-        callers treat that uniformly as "unauthenticated". */
+    callers treat that uniformly as "unauthenticated". */
     fun verifyAccessToken(token: String): RequestPrincipal? {
         val kid = runCatching { JWT.decode(token).keyId }.getOrNull() ?: return null
-        val key = keyProvider.verificationKey(kid) ?: return null
-        val algorithm = verificationAlgorithm(key)
+        val key = keyProvider.verificationKey(kid = kid) ?: return null
+        val algorithm = verificationAlgorithm(key = key)
 
         val verification = JWT.require(algorithm)
         issuer?.let { verification.withIssuer(it) }
         audience?.let { verification.withAudience(it) }
 
-        val decoded = runCatching { verification.build().verify(token) }
-            .getOrNull() ?: return null
+        val decoded = runCatching { verification.build().verify(token) }.getOrNull() ?: return null
 
         val tenantId = decoded.getClaim(CLAIM_TENANT_ID).asString() ?: return null
         val scopeClaim = decoded.getClaim(CLAIM_SCOPE).asString() ?: return null
@@ -81,9 +79,12 @@ class JwtService(
     private fun signingAlgorithm(key: SigningKey): Algorithm {
         return when (key) {
             is SigningKey.Rsa -> {
-                val privateKey = requireNotNull(key.privateKey) { "Signing key '${key.kid}' has no private key material" }
+                val privateKey = requireNotNull(
+                    value = key.privateKey
+                ) { "Signing key '${key.kid}' has no private key material" }
                 Algorithm.RSA256(key.publicKey, privateKey)
             }
+
             is SigningKey.Secret -> Algorithm.HMAC256(key.secret)
         }
     }
