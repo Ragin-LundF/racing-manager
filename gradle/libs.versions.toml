@@ -12,6 +12,7 @@ log4j = "2.26.1"
 hikaricp = "7.1.0"
 bcrypt = "0.10.2"
 node = "24.18.0"
+detekt = "2.0.0-alpha.5"
 
 [libraries]
 # Ktor
@@ -63,3 +64,4 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

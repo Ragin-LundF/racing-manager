@@ -4,7 +4,6 @@ import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.SetupResult
 import io.github.raginlundf.racingmanager.application.event.CreateEventResult
 import io.github.raginlundf.racingmanager.application.event.EventService
-import io.github.raginlundf.racingmanager.application.heat.CreateHeatResult
 import io.github.raginlundf.racingmanager.application.heat.HeatService
 import io.github.raginlundf.racingmanager.application.participant.CreateParticipantResult
 import io.github.raginlundf.racingmanager.application.participant.ParticipantService
@@ -14,17 +13,18 @@ import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.HeatRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.QualificationRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
-import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
 import kotlinx.coroutines.runBlocking
+import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -33,7 +33,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import java.util.UUID
 
 class QualificationServiceTest {
 
@@ -41,16 +40,43 @@ class QualificationServiceTest {
     private val auditRepository = AuditRepository()
     private val userRepository = UserRepository()
     private val passwordHasher = PasswordHasher()
-    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
-    private val jwtService = JwtService(jwtKeyProvider)
+    private val jwtKeyProvider = LocalJwtKeyProvider(repository = SigningKeyRepository())
+    private val jwtService = JwtService(keyProvider = jwtKeyProvider)
     private val participantRepository = ParticipantRepository()
     private val heatRepository = HeatRepository()
     private val qualificationRepository = QualificationRepository()
-    private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
-    private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
-    private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
-    private val heatService = HeatService(heatRepository, eventRepository, participantRepository, auditRepository)
-    private val qualificationService = QualificationService(qualificationRepository, heatRepository, eventRepository, participantRepository, auditRepository)
+    private val authService = AuthService(
+        userRepository = userRepository,
+        tenantRepository = TenantRepository(),
+        membershipRepository = MembershipRepository(),
+        refreshTokenRepository = RefreshTokenRepository(),
+        auditRepository = auditRepository,
+        passwordHasher = passwordHasher,
+        jwtService = jwtService
+    )
+    private val eventService = EventService(
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        auditRepository = auditRepository
+    )
+    private val participantService = ParticipantService(
+        participantRepository = participantRepository,
+        eventRepository = eventRepository,
+        auditRepository = auditRepository
+    )
+    private val heatService = HeatService(
+        heatRepository = heatRepository,
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        auditRepository = auditRepository
+    )
+    private val qualificationService = QualificationService(
+        qualificationRepository = qualificationRepository,
+        heatRepository = heatRepository,
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        auditRepository = auditRepository
+    )
 
     private lateinit var actorId: UUID
     private lateinit var tenantId: UUID
@@ -62,18 +88,42 @@ class QualificationServiceTest {
     fun setUp() {
         DatabaseTestHelper.setUp()
         jwtKeyProvider.ensureKeyExists()
-        val result = authService.setupAdmin("admin", "password123", "Admin User")
+        val result = authService.setupAdmin(username = "admin", password = "password123", displayName = "Admin User")
         actorId = (result as SetupResult.Success).user.id
-        tenantId = (result as SetupResult.Success).user.tenantId
+        tenantId = result.user.tenantId
 
-        val created = eventService.create("Test Event", null, EventSettings(), actorId, tenantId)
+        val created = eventService.create(
+            name = "Test Event",
+            description = null,
+            settings = EventSettings(),
+            actorId = actorId,
+            tenantId = tenantId
+        )
         val event = (created as CreateEventResult.Success).event
-        eventService.activate(event.id, event.version, actorId)
+        eventService.activate(id = event.id, expectedVersion = event.version, actorId = actorId)
         eventId = event.id
 
-        val p1 = participantService.create(eventId, 1, "Alice", "Smith", null, null, null, actorId)
+        val p1 = participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "Alice",
+            lastName = "Smith",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
         participantId1 = (p1 as CreateParticipantResult.Success).participant.id
-        val p2 = participantService.create(eventId, 2, "Bob", "Jones", null, null, null, actorId)
+        val p2 = participantService.create(
+            eventId = eventId,
+            startNumber = 2,
+            firstName = "Bob",
+            lastName = "Jones",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
         participantId2 = (p2 as CreateParticipantResult.Success).participant.id
     }
 
@@ -84,178 +134,190 @@ class QualificationServiceTest {
 
     @Test
     fun `setup creates qualification with PENDING status`() {
-        val result = qualificationService.setup(eventId, 2, actorId)
+        val result = qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
 
-        val success = assertIs<SetupQualificationResult.Success>(result)
-        assertEquals(QualificationStatus.PENDING, success.qualification.status)
-        assertEquals(2, success.qualification.numberOfRuns)
-        assertEquals(eventId, success.qualification.eventId)
+        val success = assertIs<SetupQualificationResult.Success>(value = result)
+        assertEquals(expected = QualificationStatus.PENDING, actual = success.qualification.status)
+        assertEquals(expected = 2, actual = success.qualification.numberOfRuns)
+        assertEquals(expected = eventId, actual = success.qualification.eventId)
     }
 
     @Test
     fun `setup returns EventNotFound for unknown event`() {
-        val result = qualificationService.setup(UUID.randomUUID(), 2, actorId)
+        val result = qualificationService.setup(eventId = UUID.randomUUID(), numberOfRuns = 2, actorId = actorId)
 
-        assertIs<SetupQualificationResult.EventNotFound>(result)
+        assertIs<SetupQualificationResult.EventNotFound>(value = result)
     }
 
     @Test
     fun `setup returns EventNotActive for draft event`() {
-        val draftEvent = eventService.create("Draft", null, EventSettings(), actorId, tenantId)
+        val draftEvent = eventService.create(
+            name = "Draft",
+            description = null,
+            settings = EventSettings(),
+            actorId = actorId,
+            tenantId = tenantId
+        )
         val draftId = (draftEvent as CreateEventResult.Success).event.id
 
-        val result = qualificationService.setup(draftId, 2, actorId)
+        val result = qualificationService.setup(eventId = draftId, numberOfRuns = 2, actorId = actorId)
 
-        assertIs<SetupQualificationResult.EventNotActive>(result)
+        assertIs<SetupQualificationResult.EventNotActive>(value = result)
     }
 
     @Test
     fun `setup returns AlreadyExists if already set up`() {
-        qualificationService.setup(eventId, 2, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
 
-        val result = qualificationService.setup(eventId, 2, actorId)
+        val result = qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
 
-        assertIs<SetupQualificationResult.AlreadyExists>(result)
+        assertIs<SetupQualificationResult.AlreadyExists>(value = result)
     }
 
     @Test
     fun `setup returns NotEnoughParticipants with fewer than 2 participants`() {
-        val event2 = eventService.create("Empty Event", null, EventSettings(), actorId, tenantId)
+        val event2 = eventService.create(
+            name = "Empty Event",
+            description = null,
+            settings = EventSettings(),
+            actorId = actorId,
+            tenantId = tenantId
+        )
         val e2 = (event2 as CreateEventResult.Success).event
-        eventService.activate(e2.id, e2.version, actorId)
+        eventService.activate(id = e2.id, expectedVersion = e2.version, actorId = actorId)
 
-        val result = qualificationService.setup(e2.id, 2, actorId)
+        val result = qualificationService.setup(eventId = e2.id, numberOfRuns = 2, actorId = actorId)
 
-        assertIs<SetupQualificationResult.NotEnoughParticipants>(result)
+        assertIs<SetupQualificationResult.NotEnoughParticipants>(value = result)
     }
 
     @Test
     fun `generateSchedule creates heats for all participants`() {
-        qualificationService.setup(eventId, 2, actorId)
-        qualificationService.generateSchedule(eventId, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
 
-        val heats = heatRepository.findByEventId(eventId)
-        assertTrue(heats.isNotEmpty())
-        assertEquals(2, heats.size) // 2 participants, 2 runs = 2 heats
+        val heats = heatRepository.findByEventId(eventId = eventId)
+        assertTrue(actual = heats.isNotEmpty())
+        assertEquals(expected = 2, actual = heats.size) // 2 participants, 2 runs = 2 heats
     }
 
     @Test
     fun `generateSchedule returns QualificationNotFound`() {
         val result = qualificationService.generateSchedule(eventId, actorId)
 
-        assertIs<GenerateScheduleResult.QualificationNotFound>(result)
+        assertIs<GenerateScheduleResult.QualificationNotFound>(value = result)
     }
 
     @Test
     fun `generateSchedule returns InvalidStatus if not PENDING`() {
-        qualificationService.setup(eventId, 2, actorId)
-        qualificationService.generateSchedule(eventId, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
 
-        val result = qualificationService.generateSchedule(eventId, actorId)
+        val result = qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
 
-        assertIs<GenerateScheduleResult.InvalidStatus>(result)
+        assertIs<GenerateScheduleResult.InvalidStatus>(value = result)
     }
 
     @Test
     fun `getRankings returns empty list when no qualification`() {
-        val rankings = qualificationService.getRankings(eventId)
+        val rankings = qualificationService.getRankings(eventId = eventId)
 
-        assertTrue(rankings.isEmpty())
+        assertTrue(actual = rankings.isEmpty())
     }
 
     @Test
     fun `getProgress returns progress data`() {
-        qualificationService.setup(eventId, 2, actorId)
-        qualificationService.generateSchedule(eventId, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
 
-        val progress = qualificationService.getProgress(eventId)
+        val progress = qualificationService.getProgress(eventId = eventId)
 
-        assertEquals(2, progress.totalHeats)
-        assertEquals(0, progress.completedHeats)
-        assertEquals(2, progress.totalParticipants)
+        assertEquals(expected = 2, actual = progress.totalHeats)
+        assertEquals(expected = 0, actual = progress.completedHeats)
+        assertEquals(expected = 2, actual = progress.totalParticipants)
     }
 
     @Test
     fun `finalize returns Success when all heats completed`() = runBlocking {
-        qualificationService.setup(eventId, 2, actorId)
-        qualificationService.generateSchedule(eventId, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
 
-        val heats = heatRepository.findByEventId(eventId)
+        val heats = heatRepository.findByEventId(eventId = eventId)
         for (heat in heats) {
-            heatService.arm(heat.id, actorId)
-            heatService.start(heat.id, actorId)
-            heatService.finish(heat.id, actorId)
+            heatService.arm(id = heat.id, actorId = actorId)
+            heatService.start(id = heat.id, actorId = actorId)
+            heatService.finish(id = heat.id, actorId = actorId)
         }
 
-        val result = qualificationService.finalize(eventId, actorId)
-        assertIs<FinalizeResult.Success>(result)
+        val result = qualificationService.finalize(eventId = eventId, actorId = actorId)
+        assertIs<FinalizeResult.Success>(value = result)
 
-        val q = qualificationService.findByEventId(eventId)
-        assertNotNull(q)
-        assertEquals(QualificationStatus.FINALIZED, q.status)
+        val q = qualificationService.findByEventId(eventId = eventId)
+        assertNotNull(actual = q)
+        assertEquals(expected = QualificationStatus.FINALIZED, actual = q.status)
     }
 
     @Test
     fun `finalize returns InvalidStatus when PENDING`() {
-        qualificationService.setup(eventId, 2, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
 
-        val result = qualificationService.finalize(eventId, actorId)
+        val result = qualificationService.finalize(eventId = eventId, actorId = actorId)
 
-        assertIs<FinalizeResult.InvalidStatus>(result)
+        assertIs<FinalizeResult.InvalidStatus>(value = result)
     }
 
     @Test
     fun `finalize returns IncompleteHeats when heats not all done`() {
-        qualificationService.setup(eventId, 2, actorId)
-        qualificationService.generateSchedule(eventId, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
 
-        val result = qualificationService.finalize(eventId, actorId)
+        val result = qualificationService.finalize(eventId = eventId, actorId = actorId)
 
-        assertIs<FinalizeResult.IncompleteHeats>(result)
+        assertIs<FinalizeResult.IncompleteHeats>(value = result)
     }
 
     @Test
     fun `reopen returns Success`() = runBlocking {
-        qualificationService.setup(eventId, 2, actorId)
-        qualificationService.generateSchedule(eventId, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
+        qualificationService.generateSchedule(eventId = eventId, actorId = actorId)
 
-        val heats = heatRepository.findByEventId(eventId)
+        val heats = heatRepository.findByEventId(eventId = eventId)
         for (heat in heats) {
-            heatService.arm(heat.id, actorId)
-            heatService.start(heat.id, actorId)
-            heatService.finish(heat.id, actorId)
+            heatService.arm(id = heat.id, actorId = actorId)
+            heatService.start(id = heat.id, actorId = actorId)
+            heatService.finish(id = heat.id, actorId = actorId)
         }
-        qualificationService.finalize(eventId, actorId)
+        qualificationService.finalize(eventId = eventId, actorId = actorId)
 
-        val result = qualificationService.reopen(eventId, actorId)
-        assertIs<ReopenResult.Success>(result)
+        val result = qualificationService.reopen(eventId = eventId, actorId = actorId)
+        assertIs<ReopenResult.Success>(value = result)
 
-        val q = qualificationService.findByEventId(eventId)
-        assertNotNull(q)
-        assertEquals(QualificationStatus.IN_PROGRESS, q.status)
+        val q = qualificationService.findByEventId(eventId = eventId)
+        assertNotNull(actual = q)
+        assertEquals(expected = QualificationStatus.IN_PROGRESS, actual = q.status)
     }
 
     @Test
     fun `reopen returns InvalidStatus when not FINALIZED`() {
-        qualificationService.setup(eventId, 2, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
 
-        val result = qualificationService.reopen(eventId, actorId)
+        val result = qualificationService.reopen(eventId = eventId, actorId = actorId)
 
-        assertIs<ReopenResult.InvalidStatus>(result)
+        assertIs<ReopenResult.InvalidStatus>(value = result)
     }
 
     @Test
     fun `findByEventId returns null when not set up`() {
-        val q = qualificationService.findByEventId(eventId)
-        assertNull(q)
+        val q = qualificationService.findByEventId(eventId = eventId)
+        assertNull(actual = q)
     }
 
     @Test
     fun `findByEventId returns qualification after setup`() {
-        qualificationService.setup(eventId, 2, actorId)
+        qualificationService.setup(eventId = eventId, numberOfRuns = 2, actorId = actorId)
 
-        val q = qualificationService.findByEventId(eventId)
-        assertNotNull(q)
-        assertEquals(eventId, q.eventId)
+        val q = qualificationService.findByEventId(eventId = eventId)
+        assertNotNull(actual = q)
+        assertEquals(expected = eventId, actual = q.eventId)
     }
 }

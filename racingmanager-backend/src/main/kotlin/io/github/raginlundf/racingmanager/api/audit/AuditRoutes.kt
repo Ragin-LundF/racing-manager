@@ -9,28 +9,31 @@ import io.github.raginlundf.racingmanager.application.auth.Scopes
 import io.github.raginlundf.racingmanager.domain.audit.AuditEntryEntity
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
-import io.ktor.server.application.call
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import java.util.UUID
 
 /** Audit review is admin-only, not the general `rm:user` operational bar —
-    it exposes actor-level history across the tenant. `/api/v1/audit` (global,
-    no event scoping) is filtered to the caller's tenant via a join through
-    the audited action's actor (design Q12/§7, Slice E). */
+it exposes actor-level history across the tenant. `/api/v1/audit` (global,
+no event scoping) is filtered to the caller's tenant via a join through
+the audited action's actor (design Q12/§7, Slice E). */
 fun Route.auditRoutes(jwtService: JwtService, auditService: AuditService, eventRepository: EventRepository) {
     get("/api/v1/events/{eventId}/audit") {
-        val principal = call.authenticateRequest(jwtService) ?: return@get
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
         val eventId = UUID.fromString(call.parameters["eventId"])
-        call.requireTenantEvent(principal, eventId, eventRepository) ?: return@get
-        val entries = auditService.findByEventId(eventId)
+        call.requireTenantEvent(
+            principal = principal,
+            eventId = eventId,
+            eventRepository = eventRepository
+        ) ?: return@get
+        val entries = auditService.findByEventId(eventId = eventId)
         call.respond(entries.map { it.toResponseModel() })
     }
 
     get("/api/v1/audit") {
-        val principal = call.authenticateRequest(jwtService) ?: return@get
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
         val action = call.request.queryParameters["action"]
         val targetType = call.request.queryParameters["targetType"]
@@ -38,7 +41,15 @@ fun Route.auditRoutes(jwtService: JwtService, auditService: AuditService, eventR
         val actorId = call.request.queryParameters["actorId"]?.let { UUID.fromString(it) }
         val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 100
         val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
-        val entries = auditService.query(action, targetType, targetId, actorId, principal.tenantId, limit, offset)
+        val entries = auditService.query(
+            action = action,
+            targetType = targetType,
+            targetId = targetId,
+            actorId = actorId,
+            tenantId = principal.tenantId,
+            limit = limit,
+            offset = offset
+        )
         call.respond(entries.map { it.toResponseModel() })
     }
 }

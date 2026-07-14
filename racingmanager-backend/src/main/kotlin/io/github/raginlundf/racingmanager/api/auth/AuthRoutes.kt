@@ -1,6 +1,5 @@
 package io.github.raginlundf.racingmanager.api.auth
 
-import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
 import io.github.raginlundf.racingmanager.api.auth.models.LoginRequestModel
 import io.github.raginlundf.racingmanager.api.auth.models.LoginResponseModel
@@ -13,6 +12,7 @@ import io.github.raginlundf.racingmanager.api.auth.models.SessionResponseModel
 import io.github.raginlundf.racingmanager.api.auth.models.SetupRequestModel
 import io.github.raginlundf.racingmanager.api.auth.models.SetupResponseModel
 import io.github.raginlundf.racingmanager.api.auth.models.SetupStatusResponseModel
+import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.LoginResult
 import io.github.raginlundf.racingmanager.application.auth.RefreshResult
@@ -21,7 +21,6 @@ import io.github.raginlundf.racingmanager.application.auth.SetupResult
 import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -33,12 +32,21 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
         if (deploymentMode != DeploymentMode.HOSTED) {
             call.respond(
                 status = HttpStatusCode.Forbidden,
-                message = ErrorResponseModel(code = "NOT_HOSTED", message = "Tenant registration is only available in hosted mode"),
+                message = ErrorResponseModel(
+                    code = "NOT_HOSTED",
+                    message = "Tenant registration is only available in hosted mode"
+                ),
             )
             return@post
         }
         val request = call.receive<RegisterRequestModel>()
-        when (val result = authService.register(request.tenantName, request.tenantSlug, request.username, request.password, request.displayName)) {
+        when (val result = authService.register(
+            tenantDisplayName = request.tenantName,
+            tenantSlug = request.tenantSlug,
+            username = request.username,
+            password = request.password,
+            displayName = request.displayName
+        )) {
             is RegisterResult.Success -> {
                 call.respond(
                     status = HttpStatusCode.Created,
@@ -56,10 +64,14 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
                     ),
                 )
             }
+
             is RegisterResult.SlugTaken -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
-                    message = ErrorResponseModel(code = "TENANT_SLUG_TAKEN", message = "A tenant with this slug already exists"),
+                    message = ErrorResponseModel(
+                        code = "TENANT_SLUG_TAKEN",
+                        message = "A tenant with this slug already exists"
+                    ),
                 )
             }
         }
@@ -73,12 +85,19 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
         if (deploymentMode != DeploymentMode.LOCAL) {
             call.respond(
                 status = HttpStatusCode.Forbidden,
-                message = ErrorResponseModel(code = "NOT_LOCAL_MODE", message = "Admin setup is only available in local mode"),
+                message = ErrorResponseModel(
+                    code = "NOT_LOCAL_MODE",
+                    message = "Admin setup is only available in local mode"
+                ),
             )
             return@post
         }
         val request = call.receive<SetupRequestModel>()
-        when (val result = authService.setupAdmin(request.username, request.password, request.displayName)) {
+        when (val result = authService.setupAdmin(
+            username = request.username,
+            password = request.password,
+            displayName = request.displayName
+        )) {
             is SetupResult.Success -> {
                 call.respond(
                     status = HttpStatusCode.Created,
@@ -89,6 +108,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
                     ),
                 )
             }
+
             is SetupResult.AlreadySetup -> {
                 call.respond(
                     status = HttpStatusCode.Conflict,
@@ -104,7 +124,12 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
     post("/api/v1/auth/login") {
         val request = call.receive<LoginRequestModel>()
         val correlationId = call.request.headers["X-Correlation-Id"]
-        when (val result = authService.login(request.username, request.password, request.tenantSlug, correlationId)) {
+        when (val result = authService.login(
+            username = request.username,
+            password = request.password,
+            tenantSlug = request.tenantSlug,
+            correlationId = correlationId
+        )) {
             is LoginResult.Success -> {
                 call.respond(
                     LoginResponseModel(
@@ -120,6 +145,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
                     ),
                 )
             }
+
             is LoginResult.InvalidCredentials -> {
                 call.respond(
                     status = HttpStatusCode.Unauthorized,
@@ -129,6 +155,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
                     ),
                 )
             }
+
             is LoginResult.TenantDisabled -> {
                 call.respond(
                     status = HttpStatusCode.Unauthorized,
@@ -143,14 +170,23 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
 
     post("/api/v1/auth/refresh") {
         val request = call.receive<RefreshRequestModel>()
-        when (val result = authService.refresh(request.refreshToken)) {
+        when (val result = authService.refresh(refreshToken = request.refreshToken)) {
             is RefreshResult.Success -> {
-                call.respond(RefreshResponseModel(accessToken = result.accessToken, expiresIn = result.expiresInSeconds))
+                call.respond(
+                    RefreshResponseModel(
+                        accessToken = result.accessToken,
+                        expiresIn = result.expiresInSeconds
+                    )
+                )
             }
+
             is RefreshResult.Invalid -> {
                 call.respond(
                     status = HttpStatusCode.Unauthorized,
-                    message = ErrorResponseModel(code = "INVALID_REFRESH_TOKEN", message = "Refresh token is invalid, expired, or revoked"),
+                    message = ErrorResponseModel(
+                        code = "INVALID_REFRESH_TOKEN",
+                        message = "Refresh token is invalid, expired, or revoked"
+                    ),
                 )
             }
         }
@@ -158,7 +194,7 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
 
     get("/api/v1/auth/session") {
         val principal = call.authenticateRequest(jwtService) ?: return@get
-        val user = authService.currentUser(principal.userId)
+        val user = authService.currentUser(userId = principal.userId)
             ?: return@get call.respond(
                 status = HttpStatusCode.Unauthorized,
                 message = ErrorResponseModel(code = "USER_NOT_FOUND", message = "User no longer exists"),
@@ -174,9 +210,11 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
     }
 
     post("/api/v1/auth/logout") {
-        val request = runCatching { call.receive<LogoutRequestModel>() }.getOrDefault(LogoutRequestModel())
+        val request = runCatching {
+            call.receive<LogoutRequestModel>()
+        }.getOrDefault(defaultValue = LogoutRequestModel())
         val correlationId = call.request.headers["X-Correlation-Id"]
-        authService.logout(request.refreshToken, correlationId)
+        authService.logout(refreshToken = request.refreshToken, correlationId = correlationId)
         call.respond(status = HttpStatusCode.NoContent, message = Unit)
     }
 }

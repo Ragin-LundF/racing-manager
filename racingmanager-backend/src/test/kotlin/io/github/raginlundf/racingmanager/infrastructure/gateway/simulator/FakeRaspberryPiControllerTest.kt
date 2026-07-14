@@ -31,7 +31,7 @@ class FakeRaspberryPiControllerTest {
     }
 
     /** Subscribes to the controller's frames, runs [issue], and collects decoded
-        events until [stopOn] matches or the timeout elapses. */
+    events until [stopOn] matches or the timeout elapses. */
     private suspend fun collect(
         controller: FakeRaspberryPiController,
         stopOn: (DeviceEvent) -> Boolean,
@@ -76,26 +76,32 @@ class FakeRaspberryPiControllerTest {
             controller.onCommand(text = start())
         }
 
-        assertTrue(events.any { it is DeviceEvent.RaceStarted })
+        assertTrue(actual = events.any { it is DeviceEvent.RaceStarted })
         val finishes = events.filterIsInstance<DeviceEvent.FinishDetected>()
         assertEquals(expected = setOf(1, 2), actual = finishes.map { it.lane }.toSet())
-        assertTrue(finishes.all { it.elapsedNs in 2_000_000L..4_000_000L })
+        assertTrue(actual = finishes.all { it.elapsedNs in 2_000_000L..4_000_000L })
         val finished = events.filterIsInstance<DeviceEvent.RaceFinished>().single()
-        assertTrue(finished.results.all { it.status == "finished" })
+        assertTrue(actual = finished.results.all { it.status == "finished" })
     }
 
     @Test
     fun `a certain-DNF race reports every lane as timeout with no finishDetected`() = runBlocking {
-        val controller = FakeRaspberryPiController(rampDelayMs = 1, raceMinMs = 1, raceMaxMs = 2, dnfTimeoutMs = 3, dnfProbability = 1.0)
+        val controller = FakeRaspberryPiController(
+            rampDelayMs = 1,
+            raceMinMs = 1,
+            raceMaxMs = 2,
+            dnfTimeoutMs = 3,
+            dnfProbability = 1.0
+        )
 
         val events = collect(controller = controller, stopOn = { it is DeviceEvent.RaceFinished }) {
             controller.onCommand(text = prepare(lanes = listOf(1, 2)))
             controller.onCommand(text = start())
         }
 
-        assertFalse(events.any { it is DeviceEvent.FinishDetected })
+        assertFalse(actual = events.any { it is DeviceEvent.FinishDetected })
         val finished = events.filterIsInstance<DeviceEvent.RaceFinished>().single()
-        assertTrue(finished.results.all { it.status == "timeout" })
+        assertTrue(actual = finished.results.all { it.status == "timeout" })
     }
 
     @Test
@@ -135,7 +141,7 @@ class FakeRaspberryPiControllerTest {
             controller.onCommand(text = MessageCodec.encodeCommand(raceId = raceId, command = DeviceCommand.AbortRace))
         }
 
-        assertFalse(events.any { it is DeviceEvent.RaceFinished })
-        assertFalse(events.any { it is DeviceEvent.FinishDetected })
+        assertFalse(actual = events.any { it is DeviceEvent.RaceFinished })
+        assertFalse(actual = events.any { it is DeviceEvent.FinishDetected })
     }
 }

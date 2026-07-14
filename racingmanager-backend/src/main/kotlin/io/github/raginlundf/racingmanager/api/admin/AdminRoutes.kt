@@ -17,7 +17,6 @@ import io.github.raginlundf.racingmanager.domain.tenant.TenantEntity
 import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -28,21 +27,36 @@ import io.ktor.server.routing.put
 import java.util.UUID
 
 /** Hosted-platform supervisor APIs (design §3/§7): `rm:supervisor` is a
-    platform-level scope, never a tenant role, and these routes only ever
-    touch tenant **metadata** — never race data. `/api/v1/admin/setup*` is the
-    one-time supervisor bootstrap, gated to hosted mode like `/api/v1/register`. */
+platform-level scope, never a tenant role, and these routes only ever
+touch tenant **metadata** — never race data. `/api/v1/admin/setup*` is the
+one-time supervisor bootstrap, gated to hosted mode like `/api/v1/register`. */
 fun Route.adminRoutes(jwtService: JwtService, authService: AuthService, deploymentMode: DeploymentMode) {
     get("/api/v1/admin/setup-status") {
-        call.respond(SetupStatusResponseModel(firstRun = authService.isFirstSupervisorRun(), mode = deploymentMode.name))
+        call.respond(
+            message = SetupStatusResponseModel(
+                firstRun = authService.isFirstSupervisorRun(),
+                mode = deploymentMode.name
+            )
+        )
     }
 
     post("/api/v1/admin/setup") {
         if (deploymentMode != DeploymentMode.HOSTED) {
-            call.respond(status = HttpStatusCode.Forbidden, message = ErrorResponseModel(code = "NOT_HOSTED", message = "Supervisor setup is only available in hosted mode"))
+            call.respond(
+                status = HttpStatusCode.Forbidden,
+                message = ErrorResponseModel(
+                    code = "NOT_HOSTED",
+                    message = "Supervisor setup is only available in hosted mode"
+                )
+            )
             return@post
         }
         val request = call.receive<SetupRequestModel>()
-        when (val result = authService.setupSupervisor(request.username, request.password, request.displayName)) {
+        when (val result = authService.setupSupervisor(
+            username = request.username,
+            password = request.password,
+            displayName = request.displayName
+        )) {
             is SetupResult.Success -> {
                 call.respond(
                     status = HttpStatusCode.Created,
@@ -53,49 +67,76 @@ fun Route.adminRoutes(jwtService: JwtService, authService: AuthService, deployme
                     ),
                 )
             }
+
             is SetupResult.AlreadySetup -> {
-                call.respond(status = HttpStatusCode.Conflict, message = ErrorResponseModel(code = "ALREADY_SETUP", message = "A supervisor has already been set up"))
+                call.respond(
+                    status = HttpStatusCode.Conflict,
+                    message = ErrorResponseModel(
+                        code = "ALREADY_SETUP",
+                        message = "A supervisor has already been set up"
+                    )
+                )
             }
         }
     }
 
     get("/api/v1/admin/tenants") {
-        val principal = call.authenticateRequest(jwtService) ?: return@get
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.SUPERVISOR)) return@get
-        call.respond(authService.listAllTenants().map { it.toResponseModel() })
+        call.respond(message = authService.listAllTenants().map { it.toResponseModel() })
     }
 
     put("/api/v1/admin/tenants/{id}") {
-        val principal = call.authenticateRequest(jwtService) ?: return@put
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@put
         if (!call.requireScope(principal, Scopes.SUPERVISOR)) return@put
         val tenantId = UUID.fromString(call.parameters["id"])
         val request = call.receive<UpdateTenantRequestModel>()
-        val tenant = authService.updateTenant(tenantId, request.displayName, request.settings)
-            ?: return@put call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"))
+        val tenant = authService.updateTenant(
+            tenantId = tenantId,
+            displayName = request.displayName,
+            settings = request.settings
+        ) ?: return@put call.respond(
+            status = HttpStatusCode.NotFound,
+            message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found")
+        )
         call.respond(tenant.toResponseModel())
     }
 
     post("/api/v1/admin/tenants/{id}/deactivate") {
-        val principal = call.authenticateRequest(jwtService) ?: return@post
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.SUPERVISOR)) return@post
         val tenantId = UUID.fromString(call.parameters["id"])
-        val tenant = authService.deactivateTenant(tenantId, principal.userId)
-            ?: return@post call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"))
+        val tenant = authService.deactivateTenant(tenantId = tenantId, supervisorId = principal.userId)
+            ?: return@post call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found")
+            )
         call.respond(tenant.toResponseModel())
     }
 
     delete("/api/v1/admin/tenants/{id}") {
-        val principal = call.authenticateRequest(jwtService) ?: return@delete
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@delete
         if (!call.requireScope(principal, Scopes.SUPERVISOR)) return@delete
         val tenantId = UUID.fromString(call.parameters["id"])
         val request = call.receive<DeleteTenantRequestModel>()
 
-        when (val result = authService.requestTenantDeletion(tenantId, request.confirmSlug, principal.userId)) {
+        when (val result = authService.requestTenantDeletion(
+            tenantId = tenantId,
+            confirmSlug = request.confirmSlug,
+            supervisorId = principal.userId
+        )) {
             is DeleteTenantResult.Success -> call.respond(result.tenant.toResponseModel())
-            is DeleteTenantResult.NotFound -> call.respond(status = HttpStatusCode.NotFound, message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found"))
+            is DeleteTenantResult.NotFound -> call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found")
+            )
+
             is DeleteTenantResult.ConfirmationMismatch -> call.respond(
                 status = HttpStatusCode.BadRequest,
-                message = ErrorResponseModel(code = "CONFIRMATION_MISMATCH", message = "confirmSlug does not match this tenant"),
+                message = ErrorResponseModel(
+                    code = "CONFIRMATION_MISMATCH",
+                    message = "confirmSlug does not match this tenant"
+                ),
             )
         }
     }

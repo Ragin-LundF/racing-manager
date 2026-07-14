@@ -15,7 +15,6 @@ import io.github.raginlundf.racingmanager.application.auth.Scopes
 import io.github.raginlundf.racingmanager.application.diagnostics.DiagnosticsService
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -23,13 +22,13 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
 /** `/health`, `/readiness`, `/build-info` are liveness/build metadata and stay
-    public — standard liveness-probe convention, and they carry no tenant or
-    operational data. `/diagnostics` and `/diagnostics/recover` expose
-    cross-event operational internals and are gated to `rm:admin` (design §7:
-    "operational diagnostics should not accidentally become available to every
-    authenticated user") **and** scoped to `principal.tenantId` (design §J.1)
-    — an admin in a hosted multi-tenant deployment sees and can only recover
-    their own tenant's events/heats, never another tenant's. */
+public — standard liveness-probe convention, and they carry no tenant or
+operational data. `/diagnostics` and `/diagnostics/recover` expose
+cross-event operational internals and are gated to `rm:admin` (design §7:
+"operational diagnostics should not accidentally become available to every
+authenticated user") **and** scoped to `principal.tenantId` (design §J.1)
+— an admin in a hosted multi-tenant deployment sees and can only recover
+their own tenant's events/heats, never another tenant's. */
 fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtService) {
     get("/api/v1/health") {
         val db = diagnosticsService.checkDatabase()
@@ -52,13 +51,13 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtSe
             ),
         )
         val overall = if (checks.all { it.status == "UP" }) "UP" else "DOWN"
-        call.respond(ReadinessResponseModel(status = overall, checks = checks))
+        call.respond(message = ReadinessResponseModel(status = overall, checks = checks))
     }
 
     get("/api/v1/diagnostics") {
-        val principal = call.authenticateRequest(jwtService) ?: return@get
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@get
         if (!call.requireScope(principal, Scopes.ADMIN)) return@get
-        val bundle = diagnosticsService.getBundle(principal.tenantId)
+        val bundle = diagnosticsService.getBundle(tenantId = principal.tenantId)
         call.respond(
             DiagnosticsResponseModel(
                 database = DatabaseHealthModel(connected = bundle.database.connected, pingMs = bundle.database.pingMs),
@@ -87,16 +86,22 @@ fun Route.healthRoutes(diagnosticsService: DiagnosticsService, jwtService: JwtSe
     }
 
     post("/api/v1/diagnostics/recover") {
-        val principal = call.authenticateRequest(jwtService) ?: return@post
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN)) return@post
         val params = call.receiveParameters()
-        val heatId = params["heatId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing heatId")
-        val action = params["action"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing action")
+        val heatId = params["heatId"] ?: return@post call.respond(
+            status = HttpStatusCode.BadRequest,
+            message = "Missing heatId"
+        )
+        val action = params["action"] ?: return@post call.respond(
+            status = HttpStatusCode.BadRequest,
+            message = "Missing action"
+        )
         val parsedId = runCatching { java.util.UUID.fromString(heatId) }.getOrElse {
-            return@post call.respond(HttpStatusCode.BadRequest, "Invalid heatId")
+            return@post call.respond(status = HttpStatusCode.BadRequest, message = "Invalid heatId")
         }
-        val result = diagnosticsService.recoverHeat(parsedId, action, principal.tenantId)
-            ?: return@post call.respond(HttpStatusCode.NotFound, "Heat not found")
+        val result = diagnosticsService.recoverHeat(heatId = parsedId, action = action, tenantId = principal.tenantId)
+            ?: return@post call.respond(status = HttpStatusCode.NotFound, message = "Heat not found")
         call.respond(RecoveryActionResponseModel(heatId = result.heatId.toString(), action = result.action))
     }
 

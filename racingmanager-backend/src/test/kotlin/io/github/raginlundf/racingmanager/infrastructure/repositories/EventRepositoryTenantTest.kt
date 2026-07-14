@@ -7,18 +7,18 @@ import io.github.raginlundf.racingmanager.domain.tenant.TenantEntity
 import io.github.raginlundf.racingmanager.domain.user.UserEntity
 import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
+import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Clock
-import java.util.UUID
 
 /** Verifies the defense-in-depth guarantee from the tenant design doc: a
-    repository-level tenant filter must refuse to return another tenant's
-    event even when the caller supplies a valid event id — a missed
-    route-level authorization check must not be enough to leak data. */
+repository-level tenant filter must refuse to return another tenant's
+event even when the caller supplies a valid event id — a missed
+route-level authorization check must not be enough to leak data. */
 class EventRepositoryTenantTest {
 
     private val eventRepository = EventRepository()
@@ -36,8 +36,13 @@ class EventRepositoryTenantTest {
     }
 
     private fun createTenant(slug: String): TenantEntity {
-        val tenant = TenantEntity(id = UUID.randomUUID(), slug = slug, displayName = slug, createdAt = Clock.System.now())
-        tenantRepository.insert(tenant)
+        val tenant = TenantEntity(
+            id = UUID.randomUUID(),
+            slug = slug,
+            displayName = slug,
+            createdAt = Clock.System.now()
+        )
+        tenantRepository.insert(tenant = tenant)
         return tenant
     }
 
@@ -51,7 +56,7 @@ class EventRepositoryTenantTest {
             role = UserRole.ADMIN,
             createdAt = Clock.System.now(),
         )
-        userRepository.insert(creator)
+        userRepository.insert(user = creator)
         val event = EventEntity(
             id = UUID.randomUUID(),
             tenantId = tenantId,
@@ -61,40 +66,40 @@ class EventRepositoryTenantTest {
             createdBy = creator.id,
             createdAt = Clock.System.now(),
         )
-        eventRepository.insert(event)
+        eventRepository.insert(event = event)
         return event
     }
 
     @Test
     fun `findByIdForTenant returns the event when it belongs to the tenant`() {
-        val tenantA = createTenant("tenant-a")
-        val event = createEventForTenant(tenantA.id)
+        val tenantA = createTenant(slug = "tenant-a")
+        val event = createEventForTenant(tenantId = tenantA.id)
 
-        val found = eventRepository.findByIdForTenant(event.id, tenantA.id)
+        val found = eventRepository.findByIdForTenant(id = event.id, tenantId = tenantA.id)
 
         assertEquals(expected = event.id, actual = found?.id)
     }
 
     @Test
     fun `findByIdForTenant refuses to return another tenant's event`() {
-        val tenantA = createTenant("tenant-a")
-        val tenantB = createTenant("tenant-b")
-        val eventOfA = createEventForTenant(tenantA.id)
+        val tenantA = createTenant(slug = "tenant-a")
+        val tenantB = createTenant(slug = "tenant-b")
+        val eventOfA = createEventForTenant(tenantId = tenantA.id)
 
-        val leaked = eventRepository.findByIdForTenant(eventOfA.id, tenantB.id)
+        val leaked = eventRepository.findByIdForTenant(id = eventOfA.id, tenantId = tenantB.id)
 
-        assertNull(leaked)
+        assertNull(actual = leaked)
     }
 
     @Test
     fun `findAllForTenant only returns events owned by that tenant`() {
-        val tenantA = createTenant("tenant-a")
-        val tenantB = createTenant("tenant-b")
-        createEventForTenant(tenantA.id)
-        createEventForTenant(tenantA.id)
-        createEventForTenant(tenantB.id)
+        val tenantA = createTenant(slug = "tenant-a")
+        val tenantB = createTenant(slug = "tenant-b")
+        createEventForTenant(tenantId = tenantA.id)
+        createEventForTenant(tenantId = tenantA.id)
+        createEventForTenant(tenantId = tenantB.id)
 
-        val eventsOfA = eventRepository.findAllForTenant(tenantA.id)
+        val eventsOfA = eventRepository.findAllForTenant(tenantId = tenantA.id)
 
         assertEquals(expected = 2, actual = eventsOfA.size)
     }

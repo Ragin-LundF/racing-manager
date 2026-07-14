@@ -26,7 +26,7 @@ class RaceDeviceSettingsRepositoryTest {
 
     @Test
     fun `find returns null when nothing has been saved`() {
-        assertNull(repository.find())
+        assertNull(actual = repository.find())
     }
 
     @Test
@@ -40,16 +40,24 @@ class RaceDeviceSettingsRepositoryTest {
         repository.save(settings = settings)
 
         val found = repository.find()
-        assertNotNull(found)
+        assertNotNull(actual = found)
         assertEquals(expected = settings, actual = found)
     }
 
     @Test
     fun `save replaces the single row rather than appending`() {
         repository.save(
-            settings = RaceDeviceSettings(mode = RaceDeviceMode.SIMULATED, endpoint = "ws://old", finishTimeoutMs = 30_000),
+            settings = RaceDeviceSettings(
+                mode = RaceDeviceMode.SIMULATED,
+                endpoint = "ws://old",
+                finishTimeoutMs = 30_000
+            ),
         )
-        val updated = RaceDeviceSettings(mode = RaceDeviceMode.HARDWARE, endpoint = "ws://new:8080/race", finishTimeoutMs = 20_000)
+        val updated = RaceDeviceSettings(
+            mode = RaceDeviceMode.HARDWARE,
+            endpoint = "ws://new:8080/race",
+            finishTimeoutMs = 20_000
+        )
 
         repository.save(settings = updated)
 

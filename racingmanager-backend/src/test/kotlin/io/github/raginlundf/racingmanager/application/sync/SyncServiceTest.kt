@@ -1,6 +1,5 @@
 package io.github.raginlundf.racingmanager.application.sync
 
-import io.github.raginlundf.racingmanager.application.bootstrap.IssueResult
 import io.github.raginlundf.racingmanager.application.bootstrap.LocalPackageService
 import io.github.raginlundf.racingmanager.domain.event.EventEntity
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
@@ -20,6 +19,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKey
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SyncedResultRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
+import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -27,11 +27,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
-import java.util.UUID
 
 /** Slice I.6: pairing round trip, invalid/expired pairing codes, revoke, and
-    results upload-back — including the precondition that an event must have
-    been checked out (locked) before results can be synced for it. */
+results upload-back — including the precondition that an event must have
+been checked out (locked) before results can be synced for it. */
 class SyncServiceTest {
 
     private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
@@ -45,9 +44,20 @@ class SyncServiceTest {
     private val clock = Clock.System
 
     private val localPackageService = LocalPackageService(
-        eventRepository, participantRepository, tenantRepository, ImportedPackageRepository(), LocalInstanceRepository(), jwtKeyProvider,
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        tenantRepository = tenantRepository,
+        importedPackageRepository = ImportedPackageRepository(),
+        localInstanceRepository = LocalInstanceRepository(),
+        jwtKeyProvider = jwtKeyProvider,
     )
-    private val service = SyncService(pairingCodeRepository, pairedInstanceRepository, syncedResultRepository, eventRepository, auditRepository)
+    private val service = SyncService(
+        pairingCodeRepository = pairingCodeRepository,
+        pairedInstanceRepository = pairedInstanceRepository,
+        syncedResultRepository = syncedResultRepository,
+        eventRepository = eventRepository,
+        auditRepository = auditRepository
+    )
 
     @BeforeTest
     fun setUp() {
@@ -62,7 +72,14 @@ class SyncServiceTest {
 
     private fun seedTenant(): UUID {
         val tenantId = UUID.randomUUID()
-        tenantRepository.insert(TenantEntity(id = tenantId, slug = "acme", displayName = "Acme Racing", createdAt = clock.now()))
+        tenantRepository.insert(
+            tenant = TenantEntity(
+                id = tenantId,
+                slug = "acme",
+                displayName = "Acme Racing",
+                createdAt = clock.now()
+            )
+        )
         return tenantId
     }
 
@@ -80,89 +97,114 @@ class SyncServiceTest {
     @Test
     fun `pairing a fresh local instance registers it as active`() {
         val tenantId = seedTenant()
-        val code = (service.issuePairingToken(tenantId) as PairingTokenResult.Success).code
+        val code = (service.issuePairingToken(tenantId = tenantId) as PairingTokenResult.Success).code
         val instanceId = UUID.randomUUID()
 
-        val result = service.pair(code, instanceId) as PairResult.Success
-        assertEquals(tenantId, result.instance.tenantId)
-        assertEquals(PairedInstanceStatus.ACTIVE, result.instance.status)
-        assertEquals(1, service.listInstances(tenantId).size)
+        val result = service.pair(pairingCode = code, localInstanceId = instanceId) as PairResult.Success
+        assertEquals(expected = tenantId, actual = result.instance.tenantId)
+        assertEquals(expected = PairedInstanceStatus.ACTIVE, actual = result.instance.status)
+        assertEquals(expected = 1, actual = service.listInstances(tenantId = tenantId).size)
     }
 
     @Test
     fun `a pairing code can only be used once`() {
         val tenantId = seedTenant()
-        val code = (service.issuePairingToken(tenantId) as PairingTokenResult.Success).code
+        val code = (service.issuePairingToken(tenantId = tenantId) as PairingTokenResult.Success).code
 
-        service.pair(code, UUID.randomUUID())
-        val second = service.pair(code, UUID.randomUUID())
-        assertEquals(PairResult.InvalidOrExpiredCode, second)
+        service.pair(pairingCode = code, localInstanceId = UUID.randomUUID())
+        val second = service.pair(pairingCode = code, localInstanceId = UUID.randomUUID())
+        assertEquals(expected = PairResult.InvalidOrExpiredCode, actual = second)
     }
 
     @Test
     fun `an unknown pairing code is rejected`() {
-        val result = service.pair(UUID.randomUUID(), UUID.randomUUID())
-        assertEquals(PairResult.InvalidOrExpiredCode, result)
+        val result = service.pair(pairingCode = UUID.randomUUID(), localInstanceId = UUID.randomUUID())
+        assertEquals(expected = PairResult.InvalidOrExpiredCode, actual = result)
     }
 
     @Test
     fun `a revoked instance cannot sync results`() {
         val tenantId = seedTenant()
-        val eventId = seedEvent(tenantId)
-        val code = (service.issuePairingToken(tenantId) as PairingTokenResult.Success).code
+        val eventId = seedEvent(tenantId = tenantId)
+        val code = (service.issuePairingToken(tenantId = tenantId) as PairingTokenResult.Success).code
         val instanceId = UUID.randomUUID()
-        service.pair(code, instanceId)
-        service.revoke(tenantId, instanceId)
+        service.pair(pairingCode = code, localInstanceId = instanceId)
+        service.revoke(tenantId = tenantId, instanceId = instanceId)
 
-        localPackageService.issue(tenantId, listOf(eventId))
-        val result = service.syncResults(tenantId, instanceId, eventId, """{"ok":true}""", UUID.randomUUID())
-        assertEquals(SyncResultsResult.InstanceRevoked, result)
+        localPackageService.issue(tenantId = tenantId, listOf(eventId))
+        val result = service.syncResults(
+            tenantId = tenantId,
+            instanceId = instanceId,
+            eventId = eventId,
+            resultsJson = """{"ok":true}""",
+            actorId = UUID.randomUUID()
+        )
+        assertEquals(expected = SyncResultsResult.InstanceRevoked, actual = result)
     }
 
     @Test
     fun `syncing results for an event that was never checked out is rejected`() {
         val tenantId = seedTenant()
-        val eventId = seedEvent(tenantId)
-        val code = (service.issuePairingToken(tenantId) as PairingTokenResult.Success).code
+        val eventId = seedEvent(tenantId = tenantId)
+        val code = (service.issuePairingToken(tenantId = tenantId) as PairingTokenResult.Success).code
         val instanceId = UUID.randomUUID()
-        service.pair(code, instanceId)
+        service.pair(pairingCode = code, localInstanceId = instanceId)
 
-        val result = service.syncResults(tenantId, instanceId, eventId, """{"ok":true}""", UUID.randomUUID())
-        assertEquals(SyncResultsResult.EventNotLocked, result)
+        val result = service.syncResults(
+            tenantId = tenantId,
+            instanceId = instanceId,
+            eventId = eventId,
+            resultsJson = """{"ok":true}""",
+            actorId = UUID.randomUUID()
+        )
+        assertEquals(expected = SyncResultsResult.EventNotLocked, actual = result)
     }
 
     @Test
     fun `syncing results unlocks the event, marks it synced, and records the instance's last sync time`() {
         val tenantId = seedTenant()
-        val eventId = seedEvent(tenantId)
-        val code = (service.issuePairingToken(tenantId) as PairingTokenResult.Success).code
+        val eventId = seedEvent(tenantId = tenantId)
+        val code = (service.issuePairingToken(tenantId = tenantId) as PairingTokenResult.Success).code
         val instanceId = UUID.randomUUID()
-        service.pair(code, instanceId)
+        service.pair(pairingCode = code, localInstanceId = instanceId)
 
-        localPackageService.issue(tenantId, listOf(eventId))
+        localPackageService.issue(tenantId = tenantId, eventIds = listOf(eventId))
         val lockedEvent = eventRepository.findByIdForTenant(eventId, tenantId)!!
-        assertEquals(true, lockedEvent.lockedForSync)
-        assertEquals(SyncStatus.SYNC_PENDING, lockedEvent.syncStatus)
+        assertEquals(expected = true, actual = lockedEvent.lockedForSync)
+        assertEquals(expected = SyncStatus.SYNC_PENDING, actual = lockedEvent.syncStatus)
 
         val actorId = UUID.randomUUID()
-        val result = service.syncResults(tenantId, instanceId, eventId, """{"heats":[]}""", actorId) as SyncResultsResult.Success
-        assertNotNull(result.syncedResultId)
+        val result = service.syncResults(
+            tenantId = tenantId,
+            instanceId = instanceId,
+            eventId = eventId,
+            resultsJson = """{"heats":[]}""",
+            actorId = actorId
+        ) as SyncResultsResult.Success
+        assertNotNull(actual = result.syncedResultId)
 
-        val syncedEvent = eventRepository.findByIdForTenant(eventId, tenantId)!!
-        assertEquals(false, syncedEvent.lockedForSync)
-        assertEquals(SyncStatus.SYNCED, syncedEvent.syncStatus)
+        val syncedEvent = eventRepository.findByIdForTenant(id = eventId, tenantId = tenantId)!!
+        assertEquals(expected = false, actual = syncedEvent.lockedForSync)
+        assertEquals(expected = SyncStatus.SYNCED, actual = syncedEvent.syncStatus)
 
-        val instance = pairedInstanceRepository.findById(instanceId)!!
-        assertNotNull(instance.lastSyncAt)
+        val instance = pairedInstanceRepository.findById(id = instanceId)!!
+        assertNotNull(actual = instance.lastSyncAt)
     }
 
     @Test
     fun `pairing code is rejected once expired`() {
         val tenantId = seedTenant()
-        val expiredService = SyncService(pairingCodeRepository, pairedInstanceRepository, syncedResultRepository, eventRepository, auditRepository, pairingCodeTtl = (-1).seconds)
-        val code = (expiredService.issuePairingToken(tenantId) as PairingTokenResult.Success).code
+        val expiredService = SyncService(
+            pairingCodeRepository,
+            pairedInstanceRepository,
+            syncedResultRepository,
+            eventRepository,
+            auditRepository,
+            pairingCodeTtl = (-1).seconds
+        )
+        val code = (expiredService.issuePairingToken(tenantId = tenantId) as PairingTokenResult.Success).code
 
-        val result = service.pair(code, UUID.randomUUID())
-        assertEquals(PairResult.InvalidOrExpiredCode, result)
+        val result = service.pair(pairingCode = code, localInstanceId = UUID.randomUUID())
+        assertEquals(expected = PairResult.InvalidOrExpiredCode, actual = result)
     }
 }

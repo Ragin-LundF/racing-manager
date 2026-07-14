@@ -62,7 +62,11 @@ class ReconfigurableMeasurementGatewayTest {
     fun `reconfigure builds a new delegate, updates current, and keeps the events stream flowing`() = runBlocking {
         var builds = 0
         val gateway = ReconfigurableMeasurementGateway(
-            initialSettings = RaceDeviceSettings(mode = RaceDeviceMode.SIMULATED, endpoint = "ws://a", finishTimeoutMs = 30_000),
+            initialSettings = RaceDeviceSettings(
+                mode = RaceDeviceMode.SIMULATED,
+                endpoint = "ws://a",
+                finishTimeoutMs = 30_000
+            ),
             buildDelegate = {
                 builds++
                 fastSimulator()
@@ -87,7 +91,11 @@ class ReconfigurableMeasurementGatewayTest {
             gateway.start(heat = firstHeat)
             withTimeout(timeMillis = 2_000) { finishes.receive() }
 
-            val updated = RaceDeviceSettings(mode = RaceDeviceMode.SIMULATED, endpoint = "ws://b", finishTimeoutMs = 10_000)
+            val updated = RaceDeviceSettings(
+                mode = RaceDeviceMode.SIMULATED,
+                endpoint = "ws://b",
+                finishTimeoutMs = 10_000
+            )
             gateway.reconfigure(newSettings = updated)
 
             assertEquals(expected = updated, actual = gateway.current())

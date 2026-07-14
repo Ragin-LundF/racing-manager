@@ -2,6 +2,7 @@ package io.github.raginlundf.racingmanager.application.participant
 
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.SetupResult
+import io.github.raginlundf.racingmanager.application.event.ActivateEventResult
 import io.github.raginlundf.racingmanager.application.event.CreateEventResult
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
@@ -9,23 +10,22 @@ import io.github.raginlundf.racingmanager.domain.participant.ParticipantStatus
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
-import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.MembershipRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.RefreshTokenRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.TenantRepository
+import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.github.raginlundf.racingmanager.infrastructure.security.LocalJwtKeyProvider
-import io.github.raginlundf.racingmanager.infrastructure.repositories.UserRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.PasswordHasher
+import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import java.util.UUID
 
 class ParticipantServiceTest {
 
@@ -33,12 +33,28 @@ class ParticipantServiceTest {
     private val eventRepository = EventRepository()
     private val auditRepository = AuditRepository()
     private val userRepository = UserRepository()
-    private val jwtKeyProvider = LocalJwtKeyProvider(SigningKeyRepository())
-    private val jwtService = JwtService(jwtKeyProvider)
+    private val jwtKeyProvider = LocalJwtKeyProvider(repository = SigningKeyRepository())
+    private val jwtService = JwtService(keyProvider = jwtKeyProvider)
     private val passwordHasher = PasswordHasher()
-    private val authService = AuthService(userRepository, TenantRepository(), MembershipRepository(), RefreshTokenRepository(), auditRepository, passwordHasher, jwtService)
-    private val eventService = EventService(eventRepository, ParticipantRepository(), auditRepository)
-    private val participantService = ParticipantService(participantRepository, eventRepository, auditRepository)
+    private val authService = AuthService(
+        userRepository = userRepository,
+        tenantRepository = TenantRepository(),
+        membershipRepository = MembershipRepository(),
+        refreshTokenRepository = RefreshTokenRepository(),
+        auditRepository = auditRepository,
+        passwordHasher = passwordHasher,
+        jwtService = jwtService
+    )
+    private val eventService = EventService(
+        eventRepository = eventRepository,
+        participantRepository = participantRepository,
+        auditRepository = auditRepository
+    )
+    private val participantService = ParticipantService(
+        participantRepository = participantRepository,
+        eventRepository = eventRepository,
+        auditRepository = auditRepository
+    )
 
     private lateinit var actorId: UUID
     private lateinit var tenantId: UUID
@@ -48,12 +64,22 @@ class ParticipantServiceTest {
     fun setUp() {
         DatabaseTestHelper.setUp()
         jwtKeyProvider.ensureKeyExists()
-        val setupResult = authService.setupAdmin("admin", "password123", "Admin")
+        val setupResult = authService.setupAdmin(username = "admin", password = "password123", displayName = "Admin")
         actorId = (setupResult as SetupResult.Success).user.id
-        tenantId = (setupResult as SetupResult.Success).user.tenantId
-        val eventResult = eventService.create("Test Event", null, EventSettings(), actorId, tenantId)
-        val created = eventService.activate((eventResult as CreateEventResult.Success).event.id, 0L, actorId)
-        eventId = (created as io.github.raginlundf.racingmanager.application.event.ActivateEventResult.Success).event.id
+        tenantId = setupResult.user.tenantId
+        val eventResult = eventService.create(
+            name = "Test Event",
+            description = null,
+            settings = EventSettings(),
+            actorId = actorId,
+            tenantId = tenantId
+        )
+        val created = eventService.activate(
+            id = (eventResult as CreateEventResult.Success).event.id,
+            expectedVersion = 0L,
+            actorId = actorId
+        )
+        eventId = (created as ActivateEventResult.Success).event.id
     }
 
     @AfterTest
@@ -63,177 +89,452 @@ class ParticipantServiceTest {
 
     @Test
     fun `create participant returns Success`() {
-        val result = participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
-        val success = assertIs<CreateParticipantResult.Success>(result)
-        assertEquals(1, success.participant.startNumber)
-        assertEquals("John", success.participant.firstName)
-        assertEquals("Doe", success.participant.lastName)
-        assertEquals(ParticipantStatus.ACTIVE, success.participant.status)
+        val result = participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        val success = assertIs<CreateParticipantResult.Success>(value = result)
+        assertEquals(expected = 1, actual = success.participant.startNumber)
+        assertEquals(expected = "John", actual = success.participant.firstName)
+        assertEquals(expected = "Doe", actual = success.participant.lastName)
+        assertEquals(expected = ParticipantStatus.ACTIVE, actual = success.participant.status)
     }
 
     @Test
     fun `create participant without start number assigns next available`() {
-        val first = participantService.create(eventId, null, "John", "Doe", null, null, null, actorId)
-        val firstSuccess = assertIs<CreateParticipantResult.Success>(first)
-        assertEquals(1, firstSuccess.participant.startNumber)
+        val first = participantService.create(
+            eventId = eventId,
+            startNumber = null,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        val firstSuccess = assertIs<CreateParticipantResult.Success>(value = first)
+        assertEquals(expected = 1, actual = firstSuccess.participant.startNumber)
 
-        val second = participantService.create(eventId, null, "Jane", "Smith", null, null, null, actorId)
-        val secondSuccess = assertIs<CreateParticipantResult.Success>(second)
-        assertEquals(2, secondSuccess.participant.startNumber)
+        val second = participantService.create(
+            eventId = eventId,
+            startNumber = null,
+            firstName = "Jane",
+            lastName = "Smith",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        val secondSuccess = assertIs<CreateParticipantResult.Success>(value = second)
+        assertEquals(expected = 2, actual = secondSuccess.participant.startNumber)
     }
 
     @Test
     fun `create participant without start number continues after manually set numbers`() {
-        participantService.create(eventId, 5, "John", "Doe", null, null, null, actorId)
+        participantService.create(
+            eventId = eventId,
+            startNumber = 5,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
 
-        val result = participantService.create(eventId, null, "Jane", "Smith", null, null, null, actorId)
-        val success = assertIs<CreateParticipantResult.Success>(result)
-        assertEquals(6, success.participant.startNumber)
+        val result = participantService.create(
+            eventId = eventId,
+            startNumber = null,
+            firstName = "Jane",
+            lastName = "Smith",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        val success = assertIs<CreateParticipantResult.Success>(value = result)
+        assertEquals(expected = 6, actual = success.participant.startNumber)
     }
 
     @Test
     fun `create participant with duplicate start number returns error`() {
-        participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
-        val result = participantService.create(eventId, 1, "Jane", "Smith", null, null, null, actorId)
-        assertIs<CreateParticipantResult.DuplicateStartNumber>(result)
+        participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        val result = participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "Jane",
+            lastName = "Smith",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        assertIs<CreateParticipantResult.DuplicateStartNumber>(value = result)
     }
 
     @Test
     fun `create participant for non-active event returns error`() {
-        val draftEvent = eventService.create("Draft", null, EventSettings(), actorId, tenantId)
+        val draftEvent = eventService.create(
+            name = "Draft",
+            description = null,
+            settings = EventSettings(),
+            actorId = actorId,
+            tenantId = tenantId
+        )
         val draftId = (draftEvent as CreateEventResult.Success).event.id
-        val result = participantService.create(draftId, 1, "John", "Doe", null, null, null, actorId)
-        assertIs<CreateParticipantResult.EventNotActive>(result)
+        val result = participantService.create(
+            eventId = draftId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        assertIs<CreateParticipantResult.EventNotActive>(value = result)
     }
 
     @Test
     fun `findByEventId returns participants sorted by sortOrder`() {
-        participantService.create(eventId, 2, "B", "B", null, null, null, actorId)
-        participantService.create(eventId, 1, "A", "A", null, null, null, actorId)
+        participantService.create(
+            eventId = eventId,
+            startNumber = 2,
+            firstName = "B",
+            lastName = "B",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "A",
+            lastName = "A",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
 
-        val participants = participantService.findByEventId(eventId)
-        assertEquals(2, participants.size)
+        val participants = participantService.findByEventId(eventId = eventId)
+        assertEquals(expected = 2, actual = participants.size)
     }
 
     @Test
     fun `findById returns participant`() {
-        val created = participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
+        val created = participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
         val id = (created as CreateParticipantResult.Success).participant.id
 
-        val found = participantService.findById(id)
-        assertNotNull(found)
-        assertEquals("John", found.firstName)
+        val found = participantService.findById(id = id)
+        assertNotNull(actual = found)
+        assertEquals(expected = "John", actual = found.firstName)
     }
 
     @Test
     fun `update participant changes fields`() {
-        val created = participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
+        val created = participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
         val p = (created as CreateParticipantResult.Success).participant
 
-        val result = participantService.update(p.id, 2, "Jane", "Smith", "Club", actorId)
-        val success = assertIs<UpdateParticipantResult.Success>(result)
-        assertEquals(2, success.participant.startNumber)
-        assertEquals("Jane", success.participant.firstName)
-        assertEquals("Smith", success.participant.lastName)
-        assertEquals("Club", success.participant.club)
+        val result = participantService.update(
+            id = p.id,
+            startNumber = 2,
+            firstName = "Jane",
+            lastName = "Smith",
+            club = "Club",
+            actorId = actorId
+        )
+        val success = assertIs<UpdateParticipantResult.Success>(value = result)
+        assertEquals(expected = 2, actual = success.participant.startNumber)
+        assertEquals(expected = "Jane", actual = success.participant.firstName)
+        assertEquals(expected = "Smith", actual = success.participant.lastName)
+        assertEquals(expected = "Club", actual = success.participant.club)
     }
 
     @Test
     fun `update with duplicate start number returns error`() {
-        participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
-        val created = participantService.create(eventId, 2, "Jane", "Smith", null, null, null, actorId)
+        participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        val created = participantService.create(
+            eventId = eventId,
+            startNumber = 2,
+            firstName = "Jane",
+            lastName = "Smith",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
         val p = (created as CreateParticipantResult.Success).participant
 
-        val result = participantService.update(p.id, 1, "Jane", "Smith", null, actorId)
-        assertIs<UpdateParticipantResult.DuplicateStartNumber>(result)
+        val result = participantService.update(
+            id = p.id,
+            startNumber = 1,
+            firstName = "Jane",
+            lastName = "Smith",
+            club = null,
+            actorId = actorId
+        )
+        assertIs<UpdateParticipantResult.DuplicateStartNumber>(value = result)
     }
 
     @Test
     fun `deactivate changes status to INACTIVE`() {
-        val created = participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
+        val created = participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
         val p = (created as CreateParticipantResult.Success).participant
 
-        val result = participantService.deactivate(p.id, actorId)
-        val success = assertIs<ParticipantActionResult.Success>(result)
-        assertEquals(ParticipantStatus.INACTIVE, success.participant.status)
+        val result = participantService.deactivate(id = p.id, actorId = actorId)
+        val success = assertIs<ParticipantActionResult.Success>(value = result)
+        assertEquals(expected = ParticipantStatus.INACTIVE, actual = success.participant.status)
     }
 
     @Test
     fun `reactivate changes status to ACTIVE`() {
-        val created = participantService.create(eventId, 1, "John", "Doe", null, null, null, actorId)
+        val created = participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "John",
+            lastName = "Doe",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
         val p = (created as CreateParticipantResult.Success).participant
-        participantService.deactivate(p.id, actorId)
+        participantService.deactivate(id = p.id, actorId = actorId)
 
-        val result = participantService.reactivate(p.id, actorId)
-        val success = assertIs<ParticipantActionResult.Success>(result)
-        assertEquals(ParticipantStatus.ACTIVE, success.participant.status)
+        val result = participantService.reactivate(id = p.id, actorId = actorId)
+        val success = assertIs<ParticipantActionResult.Success>(value = result)
+        assertEquals(expected = ParticipantStatus.ACTIVE, actual = success.participant.status)
     }
 
     @Test
     fun `randomize assigns sort orders`() {
-        participantService.create(eventId, 1, "A", "A", null, null, null, actorId)
-        participantService.create(eventId, 2, "B", "B", null, null, null, actorId)
-        participantService.create(eventId, 3, "C", "C", null, null, null, actorId)
+        participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "A",
+            lastName = "A",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        participantService.create(
+            eventId = eventId,
+            startNumber = 2,
+            firstName = "B",
+            lastName = "B",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        participantService.create(
+            eventId = eventId,
+            startNumber = 3,
+            firstName = "C",
+            lastName = "C",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
 
         val result = participantService.randomize(eventId, actorId)
-        assertIs<RandomizeResult.Success>(result)
+        assertIs<RandomizeResult.Success>(value = result)
 
-        val participants = participantService.findByEventId(eventId)
+        val participants = participantService.findByEventId(eventId = eventId)
         val orders = participants.mapNotNull { it.sortOrder }
-        assertEquals(3, orders.toSet().size)
-        assertEquals(listOf(0, 1, 2), orders.sorted())
+        assertEquals(expected = 3, actual = orders.toSet().size)
+        assertEquals(expected = listOf(0, 1, 2), actual = orders.sorted())
     }
 
     @Test
     fun `randomize with same seed produces same order`() {
-        participantService.create(eventId, 1, "A", "A", null, null, null, actorId)
-        participantService.create(eventId, 2, "B", "B", null, null, null, actorId)
-        participantService.create(eventId, 3, "C", "C", null, null, null, actorId)
+        participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "A",
+            lastName = "A",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        participantService.create(
+            eventId = eventId,
+            startNumber = 2,
+            firstName = "B",
+            lastName = "B",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        participantService.create(
+            eventId = eventId,
+            startNumber = 3,
+            firstName = "C",
+            lastName = "C",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
 
-        participantService.randomize(eventId, actorId)
-        val firstMap = participantService.findByEventId(eventId).associateBy({ it.id }, { it.sortOrder })
+        participantService.randomize(eventId = eventId, actorId = actorId)
+        val firstMap = participantService.findByEventId(eventId = eventId).associateBy(
+            keySelector = { it.id },
+            valueTransform = { it.sortOrder })
 
-        participantService.randomize(eventId, actorId, force = true)
-        val secondMap = participantService.findByEventId(eventId).associateBy({ it.id }, { it.sortOrder })
+        participantService.randomize(eventId = eventId, actorId = actorId, force = true)
+        val secondMap = participantService.findByEventId(eventId = eventId).associateBy(
+            keySelector = { it.id },
+            valueTransform = { it.sortOrder })
 
-        assertEquals(firstMap, secondMap)
+        assertEquals(expected = firstMap, actual = secondMap)
     }
 
     @Test
     fun `randomize returns AlreadyRandomized on second call without force`() {
-        participantService.create(eventId, 1, "A", "A", null, null, null, actorId)
-        participantService.randomize(eventId, actorId)
+        participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "A",
+            lastName = "A",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
+        )
+        participantService.randomize(eventId = eventId, actorId = actorId)
 
-        val result = participantService.randomize(eventId, actorId)
-        assertIs<RandomizeResult.AlreadyRandomized>(result)
+        val result = participantService.randomize(eventId = eventId, actorId = actorId)
+        assertIs<RandomizeResult.AlreadyRandomized>(value = result)
     }
 
     @Test
     fun `importCsv creates participants and reports errors`() {
         val rows = listOf(
-            CsvParticipantRow(1, "John", "Doe", null, null, null),
-            CsvParticipantRow(2, "Jane", "Smith", "Club", "Car", "Sports"),
-            CsvParticipantRow(null, null, null, null, null, null),
+            CsvParticipantRow(
+                startNumber = 1,
+                firstName = "John",
+                lastName = "Doe",
+                club = null,
+                vehicleName = null,
+                vehicleCategory = null
+            ),
+            CsvParticipantRow(
+                startNumber = 2,
+                firstName = "Jane",
+                lastName = "Smith",
+                club = "Club",
+                vehicleName = "Car",
+                vehicleCategory = "Sports"
+            ),
+            CsvParticipantRow(
+                startNumber = null,
+                firstName = null,
+                lastName = null,
+                club = null,
+                vehicleName = null,
+                vehicleCategory = null
+            ),
         )
 
-        val result = participantService.importCsv(eventId, rows, actorId)
-        val completed = assertIs<ImportResult.Completed>(result)
-        assertEquals(2, completed.created.size)
-        assertEquals(1, completed.errors.size)
+        val result = participantService.importCsv(eventId = eventId, rows = rows, actorId = actorId)
+        val completed = assertIs<ImportResult.Completed>(value = result)
+        assertEquals(expected = 2, actual = completed.created.size)
+        assertEquals(expected = 1, actual = completed.errors.size)
     }
 
     @Test
     fun `importCsv with duplicate start numbers reports errors`() {
-        participantService.create(eventId, 1, "Existing", "User", null, null, null, actorId)
-
-        val rows = listOf(
-            CsvParticipantRow(1, "John", "Doe", null, null, null),
-            CsvParticipantRow(2, "Jane", "Smith", null, null, null),
+        participantService.create(
+            eventId = eventId,
+            startNumber = 1,
+            firstName = "Existing",
+            lastName = "User",
+            club = null,
+            vehicleName = null,
+            vehicleCategory = null,
+            actorId = actorId
         )
 
-        val result = participantService.importCsv(eventId, rows, actorId)
-        val completed = assertIs<ImportResult.Completed>(result)
-        assertEquals(1, completed.created.size)
-        assertEquals(1, completed.errors.size)
+        val rows = listOf(
+            CsvParticipantRow(
+                startNumber = 1,
+                firstName = "John",
+                lastName = "Doe",
+                club = null,
+                vehicleName = null,
+                vehicleCategory = null
+            ),
+            CsvParticipantRow(
+                startNumber = 2,
+                firstName = "Jane",
+                lastName = "Smith",
+                club = null,
+                vehicleName = null,
+                vehicleCategory = null
+            ),
+        )
+
+        val result = participantService.importCsv(eventId = eventId, rows = rows, actorId = actorId)
+        val completed = assertIs<ImportResult.Completed>(value = result)
+        assertEquals(expected = 1, actual = completed.created.size)
+        assertEquals(expected = 1, actual = completed.errors.size)
     }
 }

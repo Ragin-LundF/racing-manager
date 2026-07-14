@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "2.4.0"
     kotlin("plugin.serialization") version "2.4.0"
+    alias(libs.plugins.detekt)
     application
 }
 
@@ -59,6 +60,18 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+detekt {
+    config.setFrom(rootProject.projectDir.resolve("config/detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    reports {
+        html.required = true
+        sarif.required = true
+    }
 }
 
 // Copy Angular build output into backend resources for embedded serving
