@@ -9,7 +9,7 @@ import {KnockoutClient} from '../libs/clients/knockout/knockout.client';
 import {HeatResponse, HeatStateChangeEvent, MeasurementResponse} from '../libs/clients/heat/heat.models';
 import {ParticipantResponse} from '../libs/clients/participant/participant.models';
 import {QualificationResponse} from '../libs/clients/qualification/qualification.models';
-import {KnockoutTournamentResponse} from '../libs/clients/knockout/knockout.models';
+import {KnockoutMatchResponse, KnockoutTournamentResponse} from '../libs/clients/knockout/knockout.models';
 
 @Component({
   selector: 'app-race-control',
@@ -37,6 +37,7 @@ export class RaceControlComponent implements OnDestroy {
 
   protected qualification = signal<QualificationResponse | null>(null);
   protected knockout = signal<KnockoutTournamentResponse | null>(null);
+  protected koMatches = signal<KnockoutMatchResponse[]>([]);
   protected qualExpanded = signal(true);
   protected koExpanded = signal(true);
   protected showQualFinalizeConfirm = signal(false);
@@ -47,6 +48,11 @@ export class RaceControlComponent implements OnDestroy {
   /** Heats split by phase (round 1 = qualification, round 2 = knockout), heat-number ordered. */
   protected qualHeats = computed(() => this.heats().filter(h => h.round === 1).sort((a, b) => a.heatNumber - b.heatNumber));
   protected koHeats = computed(() => this.heats().filter(h => h.round === 2).sort((a, b) => a.heatNumber - b.heatNumber));
+
+  /** Knockout matches ready to race: both feeders resolved, no heat yet. Mirrors the backend guard. */
+  protected readyMatches = computed(() => this.koMatches()
+    .filter(m => m.status === 'PLANNED' && m.participant1Id && m.participant2Id && !m.heatId)
+    .sort((a, b) => a.roundNumber - b.roundNumber || a.matchNumber - b.matchNumber));
 
   private ws: WebSocket | null = null;
 
@@ -91,6 +97,14 @@ export class RaceControlComponent implements OnDestroy {
     this.knockoutService.findByEventId(this.eventId).subscribe({
       next: (k) => this.knockout.set(k),
       error: () => this.knockout.set(null),
+    });
+    this.loadKnockoutMatches();
+  }
+
+  private loadKnockoutMatches(): void {
+    this.knockoutService.getMatches(this.eventId).subscribe({
+      next: (matches) => this.koMatches.set(matches),
+      error: () => this.koMatches.set([]),
     });
   }
 
@@ -187,6 +201,29 @@ export class RaceControlComponent implements OnDestroy {
     });
   }
 
+  protected onCreateKnockoutHeat(match: KnockoutMatchResponse): void {
+    this.creating.set(true);
+    this.error.set('');
+    this.knockoutService.createHeatForMatch(this.eventId, { matchId: match.id }).subscribe({
+      next: () => {
+        this.creating.set(false);
+        this.loadHeats();
+        this.loadKnockoutMatches();
+      },
+      error: () => {
+        this.error.set(this.translate.instant('races.control.createError'));
+        this.creating.set(false);
+      },
+    });
+  }
+
+  /** Participant display name from the loaded participant list (matches carry only ids). */
+  protected participantName(id: string | null): string {
+    if (!id) return '';
+    const p = this.participants().find(x => x.id === id);
+    return p ? `${p.firstName} ${p.lastName}` : '';
+  }
+
   protected onArm(heat: HeatResponse): void {
     this.heatService.arm(this.eventId, heat.id).subscribe({
       next: () => this.loadHeats(),
@@ -231,6 +268,7 @@ export class RaceControlComponent implements OnDestroy {
         this.accepting.set(false);
         this.success.set(this.translate.instant('races.control.acceptSuccess'));
         this.loadHeats();
+        this.loadKnockoutMatches();
       },
       error: () => {
         this.accepting.set(false);

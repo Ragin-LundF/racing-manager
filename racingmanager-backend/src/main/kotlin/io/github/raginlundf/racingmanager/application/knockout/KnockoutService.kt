@@ -252,6 +252,13 @@ class KnockoutService(
         val match = matches.find { it.id == matchId }
             ?: return CreateHeatForMatchResult.MatchNotFound
 
+        // Idempotent: a match whose heat already exists just returns that heat, so a double-click
+        // or re-navigation is harmless instead of a misleading 409.
+        val existingHeatId = match.heatId
+        if (match.status == KnockoutMatchStatus.IN_PROGRESS && existingHeatId != null) {
+            heatRepository.findById(existingHeatId)?.let { return CreateHeatForMatchResult.Success(it) }
+        }
+
         if (match.status != KnockoutMatchStatus.PLANNED) {
             return CreateHeatForMatchResult.MatchAlreadyCompleted
         }
@@ -259,7 +266,9 @@ class KnockoutService(
         val participant1Id = match.participant1Id
         val participant2Id = match.participant2Id
 
-        if (participant1Id == null) {
+        // A PLANNED match with an empty slot is still waiting on a feeder winner (true byes are
+        // COMPLETED at pairing generation and never reach here), so it is not ready to race.
+        if (participant1Id == null || participant2Id == null) {
             return CreateHeatForMatchResult.MissingParticipants
         }
 

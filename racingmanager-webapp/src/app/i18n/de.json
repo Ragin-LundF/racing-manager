@@ -380,6 +380,8 @@
       "noParticipants": "Keine aktiven Teilnehmer verfügbar.",
       "phaseKnockout": "K.o.-Phase",
       "phaseQualification": "Qualifikation",
+      "createKnockoutHeat": "Lauf erstellen",
+      "readyMatches": "Startbereit",
       "qualificationHeatLabel": "Qualifikations-Lauf #{{number}}",
       "reject": "Ablehnen",
       "rejectError": "Ablehnen des Ergebnisses fehlgeschlagen.",

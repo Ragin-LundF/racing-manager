@@ -10,7 +10,8 @@ import { QualificationClient } from '../libs/clients/qualification/qualification
 import { KnockoutClient } from '../libs/clients/knockout/knockout.client';
 import { HeatResponse } from '../libs/clients/heat/heat.models';
 import { QualificationResponse } from '../libs/clients/qualification/qualification.models';
-import { KnockoutTournamentResponse } from '../libs/clients/knockout/knockout.models';
+import { KnockoutMatchResponse, KnockoutTournamentResponse } from '../libs/clients/knockout/knockout.models';
+import { ParticipantResponse } from '../libs/clients/participant/participant.models';
 
 function heat(status: string, round = 1, heatNumber = 1): HeatResponse {
   return {
@@ -21,15 +22,19 @@ function heat(status: string, round = 1, heatNumber = 1): HeatResponse {
 
 const acceptResult = vi.fn(() => of({ status: 'accepted' }));
 const qualFinalize = vi.fn(() => of(void 0));
+const createHeatForMatch = vi.fn((_eventId: string, _req: { matchId: string }) => of(void 0));
 
 interface Opts {
   qualification?: QualificationResponse;
   knockout?: KnockoutTournamentResponse;
+  matches?: KnockoutMatchResponse[];
+  participants?: ParticipantResponse[];
 }
 
 async function createComponent(heats: HeatResponse[], opts: Opts = {}): Promise<ComponentFixture<RaceControlComponent>> {
   acceptResult.mockClear();
   qualFinalize.mockClear();
+  createHeatForMatch.mockClear();
   const heatClient: Partial<HeatClient> = {
     findByEventId: () => of(heats),
     acceptResult,
@@ -37,13 +42,15 @@ async function createComponent(heats: HeatResponse[], opts: Opts = {}): Promise<
     repeat: () => of(heat('PLANNED')),
     connectLive: () => undefined as unknown as WebSocket,
   };
-  const participantClient: Partial<ParticipantClient> = { findByEventId: () => of([]) };
+  const participantClient: Partial<ParticipantClient> = { findByEventId: () => of(opts.participants ?? []) };
   const qualificationClient: Partial<QualificationClient> = {
     findByEventId: () => (opts.qualification ? of(opts.qualification) : throwError(() => new Error('none'))),
     finalize: qualFinalize,
   };
   const knockoutClient: Partial<KnockoutClient> = {
     findByEventId: () => (opts.knockout ? of(opts.knockout) : throwError(() => new Error('none'))),
+    getMatches: () => of(opts.matches ?? []),
+    createHeatForMatch,
     finalize: () => of(void 0),
   };
 
@@ -72,6 +79,12 @@ function qualification(status: string): QualificationResponse {
 }
 function knockout(status: string): KnockoutTournamentResponse {
   return { id: 't1', eventId: 'e1', status, pairingMode: 'RANDOM', qualificationId: 'q1', createdAt: '', updatedAt: null, finalizedAt: null, finalizedBy: null } as KnockoutTournamentResponse;
+}
+function readyMatch(): KnockoutMatchResponse {
+  return { id: 'm1', tournamentId: 't1', roundNumber: 1, matchNumber: 1, participant1Id: 'p1', participant2Id: 'p2', winnerId: null, heatId: null, status: 'PLANNED', createdAt: '' };
+}
+function participant(id: string, first: string, last: string): ParticipantResponse {
+  return { id, eventId: 'e1', startNumber: 1, firstName: first, lastName: last, status: 'ACTIVE' } as ParticipantResponse;
 }
 
 describe('RaceControlComponent', () => {
@@ -150,6 +163,34 @@ describe('RaceControlComponent', () => {
     const fixture = await createComponent([heat('FINISHED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
     expect(fixture.nativeElement.querySelector('.heat-card')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.heat-summary')).toBeNull();
+  });
+
+  it('lists a ready knockout match with a Create heat button that creates the heat', async () => {
+    const fixture = await createComponent([], {
+      qualification: qualification('FINALIZED'),
+      knockout: knockout('IN_PROGRESS'),
+      matches: [readyMatch()],
+      participants: [participant('p1', 'Alice', 'Smith'), participant('p2', 'Bob', 'Jones')],
+    });
+    const ready = fixture.nativeElement.querySelector('.ready-match');
+    expect(ready).toBeTruthy();
+    expect(ready.textContent).toContain('Alice Smith');
+    expect(ready.textContent).toContain('Bob Jones');
+
+    const createBtn = ready.querySelector('button') as HTMLButtonElement;
+    createBtn.click();
+    expect(createHeatForMatch).toHaveBeenCalledOnce();
+    expect(createHeatForMatch.mock.calls[0][1]).toEqual({ matchId: 'm1' });
+  });
+
+  it('hides the generic Create Heat form once qualification is finalized', async () => {
+    const fixture = await createComponent([heat('ACCEPTED', 1, 1)], { qualification: qualification('FINALIZED') });
+    expect(fixture.nativeElement.querySelector('.create-section')).toBeNull();
+  });
+
+  it('shows the generic Create Heat form while qualification is in progress', async () => {
+    const fixture = await createComponent([heat('PLANNED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
+    expect(fixture.nativeElement.querySelector('.create-section')).toBeTruthy();
   });
 
   it('REJECTED heat disables Accept but keeps Repeat enabled', async () => {

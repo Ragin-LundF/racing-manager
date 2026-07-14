@@ -70,5 +70,9 @@ button.warning { background: var(--color-warning); color: #1a1305; border-color:
 .create-section { margin-bottom: var(--space-4); padding: var(--space-4); border: 1px dashed var(--color-border); border-radius: var(--radius-panel); background: var(--color-bg-panel); }
 .create-section h3 { margin-top: 0; font-size: 15px; font-weight: 600; }
 .create-section label { display: inline-flex; align-items: center; gap: var(--space-1); margin-right: var(--space-3); margin-bottom: var(--space-2); }
+.ready-matches { margin-bottom: var(--space-3); }
+.ready-matches h3 { margin: 0 0 var(--space-2); font-size: 15px; font-weight: 600; }
+.ready-match { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-panel); margin-bottom: var(--space-2); }
+.ready-match .lane-info { color: var(--color-text-muted); margin: 0 var(--space-1); }
 .empty { padding: var(--space-8); text-align: center; color: var(--color-text-secondary); }
 .timestamps { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--color-text-muted); text-align: right; }

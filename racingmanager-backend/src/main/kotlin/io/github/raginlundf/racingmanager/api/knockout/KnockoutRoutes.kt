@@ -2,6 +2,9 @@ package io.github.raginlundf.racingmanager.api.knockout
 
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
 import io.github.raginlundf.racingmanager.api.authenticateRequest
+import io.github.raginlundf.racingmanager.api.heat.models.HeatLaneResponseModel
+import io.github.raginlundf.racingmanager.api.heat.models.HeatResponseModel
+import io.github.raginlundf.racingmanager.api.heat.models.MeasurementResponseModel
 import io.github.raginlundf.racingmanager.api.knockout.models.CreateHeatForMatchRequestModel
 import io.github.raginlundf.racingmanager.api.knockout.models.KnockoutMatchResponseModel
 import io.github.raginlundf.racingmanager.api.knockout.models.KnockoutResultEntryResponseModel
@@ -21,6 +24,7 @@ import io.github.raginlundf.racingmanager.application.knockout.KnockoutService
 import io.github.raginlundf.racingmanager.application.knockout.RecordMatchResult
 import io.github.raginlundf.racingmanager.application.knockout.SetManualPairingsResult
 import io.github.raginlundf.racingmanager.application.knockout.SetupKnockoutResult
+import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutMatchEntity
 import io.github.raginlundf.racingmanager.domain.knockout.KnockoutTournamentEntity
 import io.github.raginlundf.racingmanager.domain.knockout.PairingMode
@@ -334,7 +338,7 @@ private fun Route.knockoutHeatRoute(
 private suspend fun ApplicationCall.respondCreateHeatResult(result: CreateHeatForMatchResult) {
     when (result) {
         is CreateHeatForMatchResult.Success -> {
-            respond(status = HttpStatusCode.Created, message = result.heat)
+            respond(status = HttpStatusCode.Created, message = result.heat.toResponseModel())
         }
 
         is CreateHeatForMatchResult.TournamentNotFound -> {
@@ -572,5 +576,38 @@ private fun QualificationRanking.toQualifiedResponseModel(): QualifiedParticipan
         lastName = lastName,
         club = club,
         qualificationRank = rank,
+    )
+}
+
+private fun HeatEntity.toResponseModel(): HeatResponseModel {
+    return HeatResponseModel(
+        id = id.toString(),
+        eventId = eventId.toString(),
+        round = round,
+        heatNumber = heatNumber,
+        status = status.name,
+        lanes = lanes.map { l ->
+            HeatLaneResponseModel(
+                lane = l.lane,
+                participantId = l.participantId.toString(),
+                participantStartNumber = l.participantStartNumber,
+                participantFirstName = l.participantFirstName,
+                participantLastName = l.participantLastName,
+            )
+        },
+        measurements = measurements.map { m ->
+            MeasurementResponseModel(
+                id = m.id.toString(),
+                heatId = m.heatId.toString(),
+                lane = m.lane,
+                durationNanos = m.durationNanos,
+                outcome = m.outcome.name,
+                receivedAt = m.receivedAt.toString(),
+            )
+        },
+        createdAt = createdAt.toString(),
+        armedAt = armedAt?.toString(),
+        startedAt = startedAt?.toString(),
+        finishedAt = finishedAt?.toString(),
     )
 }

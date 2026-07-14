@@ -10,22 +10,6 @@
     <p class="success">{{ success() }}</p>
   }
 
-  <div class="create-section">
-    <h3>{{ 'races.control.createHeat' | translate }}</h3>
-    <div>
-      @for (p of participants(); track p.id) {
-        <label>
-          <input type="checkbox" [checked]="selectedParticipantIds().includes(p.id)" (change)="toggleParticipant(p.id)" />
-          #{{ p.startNumber }} {{ p.firstName }} {{ p.lastName }}
-        </label>
-      }
-    </div>
-    @if (participants().length === 0) {
-      <p class="empty">{{ 'races.control.noParticipants' | translate }}</p>
-    }
-    <button class="primary" (click)="onCreateHeat()" [disabled]="selectedParticipantIds().length < 2 || creating()">{{ 'races.control.create' | translate }}</button>
-  </div>
-
   @if (heats().length === 0) {
     <div class="empty">{{ 'races.control.noHeats' | translate }}</div>
   }
@@ -42,6 +26,23 @@
       </div>
 
       @if (qualExpanded()) {
+        @if (qualification()?.status !== 'FINALIZED') {
+          <div class="create-section">
+            <h3>{{ 'races.control.createHeat' | translate }}</h3>
+            <div>
+              @for (p of participants(); track p.id) {
+                <label>
+                  <input type="checkbox" [checked]="selectedParticipantIds().includes(p.id)" (change)="toggleParticipant(p.id)" />
+                  #{{ p.startNumber }} {{ p.firstName }} {{ p.lastName }}
+                </label>
+              }
+            </div>
+            @if (participants().length === 0) {
+              <p class="empty">{{ 'races.control.noParticipants' | translate }}</p>
+            }
+            <button class="primary" (click)="onCreateHeat()" [disabled]="selectedParticipantIds().length < 2 || creating()">{{ 'races.control.create' | translate }}</button>
+          </div>
+        }
         @if (qualHeats().length === 0) {
           <p class="empty">{{ 'races.control.noHeats' | translate }}</p>
         }
@@ -79,6 +80,17 @@
       </div>
 
       @if (koExpanded()) {
+        @if (readyMatches().length > 0) {
+          <div class="ready-matches">
+            <h3>{{ 'races.control.readyMatches' | translate }}</h3>
+            @for (match of readyMatches(); track match.id) {
+              <div class="ready-match">
+                <span>{{ participantName(match.participant1Id) }} <span class="lane-info">vs</span> {{ participantName(match.participant2Id) }}</span>
+                <button class="primary" (click)="onCreateKnockoutHeat(match)" [disabled]="creating()">{{ 'races.control.createKnockoutHeat' | translate }}</button>
+              </div>
+            }
+          </div>
+        }
         @if (koHeats().length === 0) {
           <p class="empty">{{ 'races.control.noHeats' | translate }}</p>
         }

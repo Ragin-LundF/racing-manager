@@ -101,7 +101,7 @@
                 </div>
                 <div class="heat-actions">
                   <span class="chip" [class]="matchStatusChipClass(match.status)">{{ match.status }}</span>
-                  @if (match.status === 'PLANNED' && match.participant1Id) {
+                  @if (match.status === 'PLANNED' && match.participant1Id && match.participant2Id) {
                     <button class="primary" (click)="onCreateHeat(match)" [disabled]="loading()">{{ 'knockout.createHeat' | translate }}</button>
                   }
                   @if (match.heatId) {

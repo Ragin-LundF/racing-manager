@@ -380,6 +380,8 @@
       "noParticipants": "No active participants available.",
       "phaseKnockout": "Knockout",
       "phaseQualification": "Qualification",
+      "createKnockoutHeat": "Create Heat",
+      "readyMatches": "Ready to race",
       "qualificationHeatLabel": "Qualification Heat #{{number}}",
       "reject": "Reject",
       "rejectError": "Failed to reject result.",

@@ -497,6 +497,46 @@ class KnockoutServiceTest {
         assertIs<CreateHeatForMatchResult.MatchAlreadyCompleted>(value = result)
     }
 
+    @Test
+    fun `createHeatForMatch is idempotent and returns the existing heat on a second call`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+        val firstMatch = knockoutService.getMatches(eventId = eventId).first { it.roundNumber == 1 }
+
+        val first = assertIs<CreateHeatForMatchResult.Success>(
+            value = knockoutService.createHeatForMatch(eventId = eventId, matchId = firstMatch.id, actorId = actorId),
+        )
+        val second = assertIs<CreateHeatForMatchResult.Success>(
+            value = knockoutService.createHeatForMatch(eventId = eventId, matchId = firstMatch.id, actorId = actorId),
+        )
+        assertEquals(expected = first.heat.id, actual = second.heat.id)
+    }
+
+    @Test
+    fun `createHeatForMatch returns MissingParticipants for a match still awaiting a feeder`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+
+        // Complete only round-1 match #1 so exactly one slot of the round-2 final gets filled.
+        val round1Match1 = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 1 && it.matchNumber == 1 }
+        val heat = (knockoutService.createHeatForMatch(
+            eventId = eventId, matchId = round1Match1.id, actorId = actorId,
+        ) as CreateHeatForMatchResult.Success).heat
+        knockoutService.recordMatchResult(
+            eventId = eventId, matchId = round1Match1.id, winnerId = round1Match1.participant1Id!!,
+            heatId = heat.id, actorId = actorId,
+        )
+
+        val round2Match = knockoutService.getMatches(eventId = eventId).first { it.roundNumber == 2 }
+        assertTrue(actual = round2Match.participant1Id == null || round2Match.participant2Id == null)
+
+        val result = knockoutService.createHeatForMatch(eventId = eventId, matchId = round2Match.id, actorId = actorId)
+        assertIs<CreateHeatForMatchResult.MissingParticipants>(value = result)
+    }
+
     // --- recordMatchResult ---
 
     @Test
