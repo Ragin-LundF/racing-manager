@@ -358,6 +358,7 @@
       "cancel": "Cancel",
       "cancelAccept": "Cancel",
       "cancelError": "Failed to cancel heat.",
+      "collapse": "Collapse",
       "confirmAccept": "Confirm",
       "confirmFinalize": "Yes, Finalize",
       "create": "Create Heat",

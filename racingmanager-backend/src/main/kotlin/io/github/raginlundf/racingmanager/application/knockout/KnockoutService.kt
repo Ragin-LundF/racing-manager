@@ -130,6 +130,8 @@ class KnockoutService(
             knockoutRepository.insertMatch(match.copy(createdAt = now))
         }
 
+        advanceByes(matches)
+
         knockoutRepository.updateStatus(
             id = tournament.id,
             status = KnockoutStatus.IN_PROGRESS,
@@ -196,6 +198,8 @@ class KnockoutService(
             knockoutRepository.insertMatch(m)
         }
         matches.addAll(subsequentRounds)
+
+        advanceByes(matches)
 
         knockoutRepository.updateStatus(
             id = tournament.id,
@@ -351,24 +355,8 @@ class KnockoutService(
             return RecordMatchResult.WinnerNotInMatch
         }
 
-        val now = clock.now()
         knockoutRepository.updateMatchResult(matchId, winnerId, heatId, KnockoutMatchStatus.COMPLETED)
-
-        val nextRound = match.roundNumber + 1
-        val nextRoundMatches = knockoutRepository.findMatchesByRound(tournament.id, nextRound)
-
-        if (nextRoundMatches.isNotEmpty()) {
-            val targetMatchNumber = ((match.matchNumber - 1) / 2) + 1
-            val targetMatch = nextRoundMatches.find { it.matchNumber == targetMatchNumber }
-            if (targetMatch != null) {
-                val isFirstInPair = (match.matchNumber % 2) == 1
-                if (isFirstInPair) {
-                    knockoutRepository.updateMatchParticipants(targetMatch.id, winnerId, targetMatch.participant2Id)
-                } else {
-                    knockoutRepository.updateMatchParticipants(targetMatch.id, targetMatch.participant1Id, winnerId)
-                }
-            }
-        }
+        advanceWinner(sourceMatch = match, winnerId = winnerId)
 
         auditRepository.insert(
             AuditEntryEntity(
@@ -383,6 +371,32 @@ class KnockoutService(
         )
 
         return RecordMatchResult.Success
+    }
+
+    /**
+     * Propagate [winnerId] from a completed [sourceMatch] into its next-round slot. If the target's
+     * sibling feeder match does not exist (odd feeder round), the target can only ever hold this one
+     * participant, so it is completed as a bye and advanced recursively.
+     */
+    private fun advanceWinner(sourceMatch: KnockoutMatchEntity, winnerId: UUID) {
+        val nextRoundMatches = knockoutRepository.findMatchesByRound(sourceMatch.tournamentId, sourceMatch.roundNumber + 1)
+        if (nextRoundMatches.isEmpty()) return
+        val targetNumber = ((sourceMatch.matchNumber - 1) / 2) + 1
+        val target = nextRoundMatches.find { it.matchNumber == targetNumber } ?: return
+
+        val isFirstInPair = (sourceMatch.matchNumber % 2) == 1
+        if (isFirstInPair) {
+            knockoutRepository.updateMatchParticipants(target.id, winnerId, target.participant2Id)
+        } else {
+            knockoutRepository.updateMatchParticipants(target.id, target.participant1Id, winnerId)
+        }
+
+        val siblingNumber = if (isFirstInPair) sourceMatch.matchNumber + 1 else sourceMatch.matchNumber - 1
+        val feederRound = knockoutRepository.findMatchesByRound(sourceMatch.tournamentId, sourceMatch.roundNumber)
+        if (feederRound.none { it.matchNumber == siblingNumber }) {
+            knockoutRepository.completeBye(target.id, winnerId)
+            advanceWinner(sourceMatch = target, winnerId = winnerId)
+        }
     }
 
     /**
@@ -561,32 +575,49 @@ class KnockoutService(
         mode: PairingMode,
     ): List<KnockoutMatchEntity> {
         val sorted = participants.sortedBy { it.qualificationRank }
-        val matchCount = sorted.size / 2
-        val hasBye = sorted.size % 2 != 0
+        // Pad to a full single-elimination bracket; the strongest seeds get the byes.
+        val bracketSize = nextPowerOfTwo(sorted.size)
+        val byeCount = bracketSize - sorted.size
+        val byeSeeds = sorted.take(byeCount)
+        val racing = sorted.drop(byeCount)
 
-        val firstRoundMatches = when (mode) {
-            PairingMode.FIRST_VS_LAST -> createFirstVsLastPairings(tournamentId, sorted, matchCount)
-            PairingMode.ADJACENT -> createAdjacentPairings(tournamentId, sorted, matchCount)
-            PairingMode.RANDOM -> createRandomPairings(tournamentId, sorted, matchCount)
-            PairingMode.MANUAL -> createManualPairings(tournamentId, sorted, matchCount)
+        val racingPairs = when (mode) {
+            PairingMode.FIRST_VS_LAST -> firstVsLastPairs(racing)
+            PairingMode.RANDOM -> adjacentPairs(racing.shuffled(java.util.Random(clock.now().toEpochMilliseconds())))
+            else -> adjacentPairs(racing) // ADJACENT / MANUAL fall back to seed-order pairing here
         }
 
+        val now = clock.now()
         val matches = mutableListOf<KnockoutMatchEntity>()
-        matches.addAll(firstRoundMatches)
+        var matchNumber = 1
 
-        if (hasBye) {
-            val byeParticipant = sorted.last()
+        // Byes first (matchNumbers 1..byeCount): auto-completed, advanced after insertion.
+        for (bye in byeSeeds) {
             matches.add(
                 KnockoutMatchEntity(
                     id = UUID.randomUUID(),
                     tournamentId = tournamentId,
                     roundNumber = 1,
-                    matchNumber = matches.size + 1,
-                    participant1Id = byeParticipant.participantId,
+                    matchNumber = matchNumber++,
+                    participant1Id = bye.participantId,
                     participant2Id = null,
                     status = KnockoutMatchStatus.COMPLETED,
-                    winnerId = byeParticipant.participantId,
-                    createdAt = clock.now(),
+                    winnerId = bye.participantId,
+                    createdAt = now,
+                ),
+            )
+        }
+        for ((p1, p2) in racingPairs) {
+            matches.add(
+                KnockoutMatchEntity(
+                    id = UUID.randomUUID(),
+                    tournamentId = tournamentId,
+                    roundNumber = 1,
+                    matchNumber = matchNumber++,
+                    participant1Id = p1.participantId,
+                    participant2Id = p2.participantId,
+                    status = KnockoutMatchStatus.PLANNED,
+                    createdAt = now,
                 ),
             )
         }
@@ -594,12 +625,41 @@ class KnockoutService(
         matches.addAll(
             generateSubsequentRounds(
                 tournamentId = tournamentId,
-                firstRoundSize = matchCount + (if (hasBye) 1 else 0),
-                createdAt = clock.now(),
+                firstRoundSize = bracketSize / 2,
+                createdAt = now,
             ),
         )
-
         return matches
+    }
+
+    private fun firstVsLastPairs(
+        participants: List<KnockoutRankedParticipant>,
+    ): List<Pair<KnockoutRankedParticipant, KnockoutRankedParticipant>> {
+        val remaining = participants.toMutableList()
+        val pairs = mutableListOf<Pair<KnockoutRankedParticipant, KnockoutRankedParticipant>>()
+        while (remaining.size >= 2) {
+            pairs.add(remaining.removeFirst() to remaining.removeLast())
+        }
+        return pairs
+    }
+
+    private fun adjacentPairs(
+        participants: List<KnockoutRankedParticipant>,
+    ): List<Pair<KnockoutRankedParticipant, KnockoutRankedParticipant>> {
+        return participants.chunked(2).filter { it.size == 2 }.map { it[0] to it[1] }
+    }
+
+    private fun nextPowerOfTwo(n: Int): Int {
+        var size = 1
+        while (size < n) size *= 2
+        return size
+    }
+
+    /** Propagate every round-1 bye winner into the next round (recursively resolving chained byes). */
+    private fun advanceByes(matches: List<KnockoutMatchEntity>) {
+        matches
+            .filter { it.roundNumber == 1 && it.participant2Id == null && it.winnerId != null }
+            .forEach { advanceWinner(sourceMatch = it, winnerId = it.winnerId!!) }
     }
 
     private fun generateSubsequentRounds(
@@ -611,131 +671,23 @@ class KnockoutService(
         var currentRoundSize = firstRoundSize
         var roundNumber = 2
         while (currentRoundSize > 1) {
-            val roundMatches = (1..currentRoundSize / 2).map { matchIndex ->
-                KnockoutMatchEntity(
-                    id = UUID.randomUUID(),
-                    tournamentId = tournamentId,
-                    roundNumber = roundNumber,
-                    matchNumber = matchIndex,
-                    status = KnockoutMatchStatus.PLANNED,
-                    createdAt = createdAt,
-                )
-            }
-            rounds.addAll(roundMatches)
-            currentRoundSize = currentRoundSize / 2 + (if (currentRoundSize % 2 != 0) 1 else 0)
+            val nextSize = (currentRoundSize + 1) / 2 // ceil: every winner needs a target match
+            rounds.addAll(
+                (1..nextSize).map { matchIndex ->
+                    KnockoutMatchEntity(
+                        id = UUID.randomUUID(),
+                        tournamentId = tournamentId,
+                        roundNumber = roundNumber,
+                        matchNumber = matchIndex,
+                        status = KnockoutMatchStatus.PLANNED,
+                        createdAt = createdAt,
+                    )
+                },
+            )
+            currentRoundSize = nextSize
             roundNumber++
         }
         return rounds
-    }
-
-    private fun createFirstVsLastPairings(
-        tournamentId: UUID,
-        participants: List<KnockoutRankedParticipant>,
-        matchCount: Int,
-    ): List<KnockoutMatchEntity> {
-        val shuffled = participants.toMutableList()
-        val matches = mutableListOf<KnockoutMatchEntity>()
-
-        for (i in 0 until matchCount) {
-            val first = shuffled.removeFirst()
-            val last = shuffled.removeLast()
-            matches.add(
-                KnockoutMatchEntity(
-                    id = UUID.randomUUID(),
-                    tournamentId = tournamentId,
-                    roundNumber = 1,
-                    matchNumber = i + 1,
-                    participant1Id = first.participantId,
-                    participant2Id = last.participantId,
-                    status = KnockoutMatchStatus.PLANNED,
-                    createdAt = clock.now(),
-                ),
-            )
-        }
-
-        return matches
-    }
-
-    private fun createAdjacentPairings(
-        tournamentId: UUID,
-        participants: List<KnockoutRankedParticipant>,
-        matchCount: Int,
-    ): List<KnockoutMatchEntity> {
-        val matches = mutableListOf<KnockoutMatchEntity>()
-
-        for (i in 0 until matchCount) {
-            val first = participants[i * 2]
-            val second = participants[i * 2 + 1]
-            matches.add(
-                KnockoutMatchEntity(
-                    id = UUID.randomUUID(),
-                    tournamentId = tournamentId,
-                    roundNumber = 1,
-                    matchNumber = i + 1,
-                    participant1Id = first.participantId,
-                    participant2Id = second.participantId,
-                    status = KnockoutMatchStatus.PLANNED,
-                    createdAt = clock.now(),
-                ),
-            )
-        }
-
-        return matches
-    }
-
-    private fun createRandomPairings(
-        tournamentId: UUID,
-        participants: List<KnockoutRankedParticipant>,
-        matchCount: Int,
-    ): List<KnockoutMatchEntity> {
-        val shuffled = participants.shuffled(java.util.Random(clock.now().toEpochMilliseconds()))
-        val matches = mutableListOf<KnockoutMatchEntity>()
-
-        for (i in 0 until matchCount) {
-            val first = shuffled[i * 2]
-            val second = shuffled[i * 2 + 1]
-            matches.add(
-                KnockoutMatchEntity(
-                    id = UUID.randomUUID(),
-                    tournamentId = tournamentId,
-                    roundNumber = 1,
-                    matchNumber = i + 1,
-                    participant1Id = first.participantId,
-                    participant2Id = second.participantId,
-                    status = KnockoutMatchStatus.PLANNED,
-                    createdAt = clock.now(),
-                ),
-            )
-        }
-
-        return matches
-    }
-
-    private fun createManualPairings(
-        tournamentId: UUID,
-        participants: List<KnockoutRankedParticipant>,
-        matchCount: Int,
-    ): List<KnockoutMatchEntity> {
-        val matches = mutableListOf<KnockoutMatchEntity>()
-
-        for (i in 0 until matchCount) {
-            val first = participants[i * 2]
-            val second = if (i * 2 + 1 < participants.size) participants[i * 2 + 1] else null
-            matches.add(
-                KnockoutMatchEntity(
-                    id = UUID.randomUUID(),
-                    tournamentId = tournamentId,
-                    roundNumber = 1,
-                    matchNumber = i + 1,
-                    participant1Id = first.participantId,
-                    participant2Id = second?.participantId,
-                    status = KnockoutMatchStatus.PLANNED,
-                    createdAt = clock.now(),
-                ),
-            )
-        }
-
-        return matches
     }
 }
 

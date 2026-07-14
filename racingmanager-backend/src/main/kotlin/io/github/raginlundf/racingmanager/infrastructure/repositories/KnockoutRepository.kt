@@ -140,6 +140,16 @@ class KnockoutRepository {
         }
     }
 
+    /** Complete a match that is a bye (no heat): set the winner and mark it COMPLETED. */
+    fun completeBye(id: UUID, winnerId: UUID) {
+        transaction {
+            KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
+                it[KnockoutMatchTable.winnerId] = winnerId
+                it[status] = KnockoutMatchStatus.COMPLETED.name
+            }
+        }
+    }
+
     /** Undo a recorded result: clear the winner/heat and set the match back to PLANNED. */
     fun resetMatch(id: UUID) {
         transaction {

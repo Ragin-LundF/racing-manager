@@ -105,6 +105,16 @@
   }
 
   <ng-template #heatCard let-heat>
+    @if (isHeatCollapsed(heat)) {
+      <div class="heat-summary" (click)="toggleHeat(heat.id)">
+        @if (heat.round === 2) {
+          <strong>{{ 'races.control.knockoutHeatLabel' | translate: { number: heat.heatNumber } }}</strong>
+        } @else {
+          <strong>{{ 'races.control.qualificationHeatLabel' | translate: { number: heat.heatNumber } }}</strong>
+        }
+        <span class="summary-detail tnum"> - {{ heatSummary(heat) }}</span>
+      </div>
+    } @else {
     <div class="heat-card" [class.armed]="heat.status === 'ARMED'" [class.started]="heat.status === 'STARTED'" [class.finished]="heat.status === 'FINISHED'" [class.cancelled]="heat.status === 'CANCELLED'">
       <div class="heat-header">
         <div>
@@ -162,9 +172,8 @@
           }
         }
         @if (heat.status === 'ACCEPTED') {
-          <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
-          <button class="danger" [disabled]="true">{{ 'races.control.reject' | translate }}</button>
-          <button [disabled]="true">{{ 'races.control.repeat' | translate }}</button>
+          <span class="chip chip-success">{{ heat.status }}</span>
+          <button (click)="toggleHeat(heat.id)">{{ 'races.control.collapse' | translate }}</button>
         }
         @if (heat.status === 'REJECTED') {
           <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
@@ -176,5 +185,6 @@
         }
       </div>
     </div>
+    }
   </ng-template>
 </div>

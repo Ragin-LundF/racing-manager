@@ -134,11 +134,22 @@ describe('RaceControlComponent', () => {
     expect(acceptResult).toHaveBeenCalled();
   });
 
-  it('ACCEPTED heat disables all three action buttons', async () => {
+  it('ACCEPTED heat collapses to a summary row and expands on click', async () => {
     const fixture = await createComponent([heat('ACCEPTED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
-    const buttons = actionButtons(fixture);
-    expect(buttons.length).toBe(3);
-    expect(buttons.every(b => b.disabled)).toBe(true);
+    const summary = fixture.nativeElement.querySelector('.heat-summary');
+    expect(summary).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.heat-card')).toBeNull();
+
+    summary.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.heat-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.heat-summary')).toBeNull();
+  });
+
+  it('FINISHED heat renders the full card, not a summary', async () => {
+    const fixture = await createComponent([heat('FINISHED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
+    expect(fixture.nativeElement.querySelector('.heat-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.heat-summary')).toBeNull();
   });
 
   it('REJECTED heat disables Accept but keeps Repeat enabled', async () => {

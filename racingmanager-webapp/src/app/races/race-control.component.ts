@@ -42,6 +42,7 @@ export class RaceControlComponent implements OnDestroy {
   protected showQualFinalizeConfirm = signal(false);
   protected showKoFinalizeConfirm = signal(false);
   protected finalizing = signal(false);
+  protected expandedHeatIds = signal<Set<string>>(new Set());
 
   /** Heats split by phase (round 1 = qualification, round 2 = knockout), heat-number ordered. */
   protected qualHeats = computed(() => this.heats().filter(h => h.round === 1).sort((a, b) => a.heatNumber - b.heatNumber));
@@ -270,5 +271,32 @@ export class RaceControlComponent implements OnDestroy {
 
   protected statusClass(status: string): string {
     return status.toLowerCase();
+  }
+
+  /** Accepted heats collapse to a one-line summary to keep the overview short; click to expand. */
+  protected isHeatCollapsed(heat: HeatResponse): boolean {
+    return heat.status === 'ACCEPTED' && !this.expandedHeatIds().has(heat.id);
+  }
+
+  protected toggleHeat(id: string): void {
+    this.expandedHeatIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  protected heatSummary(heat: HeatResponse): string {
+    return heat.lanes
+      .map((lane) => {
+        const m = this.getLaneMeasurement(heat, lane.lane);
+        const time = m ? (m.outcome === 'FINISHED' ? this.formatNanos(m.durationNanos) : m.outcome) : '-';
+        return `${lane.participantFirstName} ${lane.participantLastName} (${time})`;
+      })
+      .join(' : ');
   }
 }

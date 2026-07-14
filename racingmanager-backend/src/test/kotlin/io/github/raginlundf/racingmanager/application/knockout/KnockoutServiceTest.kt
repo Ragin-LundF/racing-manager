@@ -39,6 +39,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertTrue
 
 class KnockoutServiceTest {
 
@@ -178,6 +179,64 @@ class KnockoutServiceTest {
             }
         }
         qualificationService.finalize(eventId = eventId, actorId = actorId)
+    }
+
+    private fun addParticipants(count: Int) {
+        for (i in 0 until count) {
+            participantService.create(
+                eventId = eventId, startNumber = 5 + i, firstName = "Extra$i", lastName = "X",
+                club = null, vehicleName = null, vehicleCategory = null, actorId = actorId,
+            ) as CreateParticipantResult.Success
+        }
+    }
+
+    /** Set up + race a full FIRST_VS_LAST knockout to completion, then finalize; returns the result. */
+    private fun driveKnockoutToFinalize(): FinalizeKnockoutResult = runBlocking {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+        var guard = 0
+        while (guard++ < 20) {
+            val matches = knockoutService.getMatches(eventId = eventId)
+            if (matches.all { it.status == KnockoutMatchStatus.COMPLETED }) break
+            val playable = matches.filter {
+                it.status != KnockoutMatchStatus.COMPLETED && it.participant1Id != null && it.participant2Id != null
+            }
+            if (playable.isEmpty()) break
+            for (m in playable) {
+                val heat = (knockoutService.createHeatForMatch(
+                    eventId = eventId, matchId = m.id, actorId = actorId
+                ) as CreateHeatForMatchResult.Success).heat
+                knockoutService.recordMatchResult(
+                    eventId = eventId, matchId = m.id, winnerId = m.participant1Id!!, heatId = heat.id, actorId = actorId
+                )
+            }
+        }
+        knockoutService.finalize(eventId = eventId, actorId = actorId)
+    }
+
+    private fun assertFinalizesWithParticipants(activeCount: Int) {
+        val result = driveKnockoutToFinalize()
+        assertIs<FinalizeKnockoutResult.Success>(value = result)
+        val matches = knockoutService.getMatches(eventId = eventId)
+        assertTrue(actual = matches.all { it.status == KnockoutMatchStatus.COMPLETED })
+        val round1Ids = matches.filter { it.roundNumber == 1 }
+            .flatMap { listOfNotNull(it.participant1Id, it.participant2Id) }
+        // Every participant appears exactly once in round 1 — none dropped or duplicated.
+        assertEquals(expected = activeCount, actual = round1Ids.size)
+        assertEquals(expected = activeCount, actual = round1Ids.toSet().size)
+    }
+
+    @Test
+    fun `knockout with 5 participants finalizes via byes`() {
+        addParticipants(1)
+        assertFinalizesWithParticipants(activeCount = 5)
+    }
+
+    @Test
+    fun `knockout with 6 participants finalizes via byes`() {
+        addParticipants(2)
+        assertFinalizesWithParticipants(activeCount = 6)
     }
 
     // --- findByEventId ---

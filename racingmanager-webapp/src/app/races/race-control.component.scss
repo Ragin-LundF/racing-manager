@@ -7,9 +7,13 @@
 .section { background: var(--color-bg-panel); border: 1px solid var(--color-border); border-radius: var(--radius-panel); padding: var(--space-4); margin-bottom: var(--space-4); }
 .phase-header { display: flex; align-items: center; gap: var(--space-3); cursor: pointer; user-select: none; }
 .phase-header h3 { margin: 0; font-size: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.phase-header .chevron { margin-left: auto; transition: transform 0.15s ease; }
+.phase-header .chevron { margin-left: auto; width: 24px; text-align: center; font-size: 20px; line-height: 1; color: var(--color-text-secondary); transition: transform 0.15s ease; }
+.phase-header:hover .chevron { color: var(--color-text-primary); }
 .phase-header .chevron.collapsed { transform: rotate(-90deg); }
 .section .heats { margin-top: var(--space-3); }
+.heat-summary { display: flex; align-items: baseline; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-success); border-radius: var(--radius-control); background: var(--color-bg-raised); cursor: pointer; }
+.heat-summary:hover { border-color: var(--color-text-muted); }
+.heat-summary .summary-detail { color: var(--color-text-secondary); font-size: 14px; }
 .finalize-hint { margin: var(--space-3) 0 var(--space-2); font-size: 13px; color: var(--color-text-secondary); }
 .chip { display: inline-flex; align-items: center; padding: 2px var(--space-3); border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
 .chip-success { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 40%, transparent); background: color-mix(in srgb, var(--color-success) 14%, transparent); }
