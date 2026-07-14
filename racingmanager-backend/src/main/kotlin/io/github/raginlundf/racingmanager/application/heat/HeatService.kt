@@ -75,7 +75,8 @@ class HeatService(
 
         val existingHeats = heatRepository.findByEventId(eventId = eventId)
         val round = 1
-        val heatNumber = existingHeats.size + 1
+        // Per-phase counter: count only this round's heats so qualification numbers from #1.
+        val heatNumber = existingHeats.count { it.round == round } + 1
 
         val now = clock.now()
         val heat = HeatEntity(

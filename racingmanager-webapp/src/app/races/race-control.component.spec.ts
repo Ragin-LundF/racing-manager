@@ -1,24 +1,35 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { provideTestTranslate } from '../testing/translate.testing';
 import { RaceControlComponent } from './race-control.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { HeatClient } from '../libs/clients/heat/heat.client';
 import { ParticipantClient } from '../libs/clients/participant/participant.client';
+import { QualificationClient } from '../libs/clients/qualification/qualification.client';
+import { KnockoutClient } from '../libs/clients/knockout/knockout.client';
 import { HeatResponse } from '../libs/clients/heat/heat.models';
+import { QualificationResponse } from '../libs/clients/qualification/qualification.models';
+import { KnockoutTournamentResponse } from '../libs/clients/knockout/knockout.models';
 
-function heat(status: string): HeatResponse {
+function heat(status: string, round = 1, heatNumber = 1): HeatResponse {
   return {
-    id: 'h1', eventId: 'e1', round: 1, heatNumber: 1, status,
+    id: `h${round}-${heatNumber}`, eventId: 'e1', round, heatNumber, status,
     lanes: [], measurements: [], createdAt: '', armedAt: null, startedAt: null, finishedAt: null,
   };
 }
 
 const acceptResult = vi.fn(() => of({ status: 'accepted' }));
+const qualFinalize = vi.fn(() => of(void 0));
 
-async function createComponent(heats: HeatResponse[]): Promise<ComponentFixture<RaceControlComponent>> {
+interface Opts {
+  qualification?: QualificationResponse;
+  knockout?: KnockoutTournamentResponse;
+}
+
+async function createComponent(heats: HeatResponse[], opts: Opts = {}): Promise<ComponentFixture<RaceControlComponent>> {
   acceptResult.mockClear();
+  qualFinalize.mockClear();
   const heatClient: Partial<HeatClient> = {
     findByEventId: () => of(heats),
     acceptResult,
@@ -27,6 +38,14 @@ async function createComponent(heats: HeatResponse[]): Promise<ComponentFixture<
     connectLive: () => undefined as unknown as WebSocket,
   };
   const participantClient: Partial<ParticipantClient> = { findByEventId: () => of([]) };
+  const qualificationClient: Partial<QualificationClient> = {
+    findByEventId: () => (opts.qualification ? of(opts.qualification) : throwError(() => new Error('none'))),
+    finalize: qualFinalize,
+  };
+  const knockoutClient: Partial<KnockoutClient> = {
+    findByEventId: () => (opts.knockout ? of(opts.knockout) : throwError(() => new Error('none'))),
+    finalize: () => of(void 0),
+  };
 
   await TestBed.configureTestingModule({
     imports: [RaceControlComponent],
@@ -34,6 +53,8 @@ async function createComponent(heats: HeatResponse[]): Promise<ComponentFixture<
       provideHttpClient(), provideRouter([]), ...provideTestTranslate(),
       { provide: HeatClient, useValue: heatClient },
       { provide: ParticipantClient, useValue: participantClient },
+      { provide: QualificationClient, useValue: qualificationClient },
+      { provide: KnockoutClient, useValue: knockoutClient },
     ],
   }).compileComponents();
 
@@ -43,7 +64,14 @@ async function createComponent(heats: HeatResponse[]): Promise<ComponentFixture<
 }
 
 function actionButtons(fixture: ComponentFixture<RaceControlComponent>): HTMLButtonElement[] {
-  return [...fixture.nativeElement.querySelectorAll('.actions button')] as HTMLButtonElement[];
+  return [...fixture.nativeElement.querySelectorAll('.heat-card .actions button')] as HTMLButtonElement[];
+}
+
+function qualification(status: string): QualificationResponse {
+  return { id: 'q1', eventId: 'e1', status, numberOfRuns: 2, seed: 1, createdAt: '', updatedAt: null, finalizedAt: null, finalizedBy: null } as QualificationResponse;
+}
+function knockout(status: string): KnockoutTournamentResponse {
+  return { id: 't1', eventId: 'e1', status, pairingMode: 'RANDOM', qualificationId: 'q1', createdAt: '', updatedAt: null, finalizedAt: null, finalizedBy: null } as KnockoutTournamentResponse;
 }
 
 describe('RaceControlComponent', () => {
@@ -57,34 +85,64 @@ describe('RaceControlComponent', () => {
     expect(fixture.nativeElement.querySelector('h2')?.textContent).toContain('Race Control');
   });
 
-  it('Accept opens a confirm block and does not call the service until confirmed', async () => {
-    const fixture = await createComponent([heat('FINISHED')]);
+  it('groups round-1 heats under a Qualification box and shows no Knockout box without a tournament', async () => {
+    const fixture = await createComponent([heat('PLANNED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
+    const sections = [...fixture.nativeElement.querySelectorAll('.section .phase-header h3')] as HTMLElement[];
+    const titles = sections.map(s => s.textContent?.trim());
+    expect(titles).toContain('Qualification');
+    expect(titles).not.toContain('Knockout');
+    // The round-1 heat renders with the qualification phase label.
+    expect(fixture.nativeElement.textContent).toContain('Qualification Heat #1');
+  });
 
+  it('shows a Knockout box with round-2 heats when a tournament exists', async () => {
+    const fixture = await createComponent([heat('PLANNED', 2, 1)], {
+      qualification: qualification('FINALIZED'),
+      knockout: knockout('IN_PROGRESS'),
+    });
+    const titles = [...fixture.nativeElement.querySelectorAll('.phase-header h3')].map((s: HTMLElement) => s.textContent?.trim());
+    expect(titles).toContain('Knockout');
+    expect(fixture.nativeElement.textContent).toContain('Knockout Heat #1');
+  });
+
+  it('finalizes the qualification phase from race control', async () => {
+    const fixture = await createComponent([heat('ACCEPTED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
+    const finalizeBtn = [...fixture.nativeElement.querySelectorAll('button')]
+      .find((b: HTMLButtonElement) => b.textContent?.includes('Finalize Qualification')) as HTMLButtonElement;
+    expect(finalizeBtn).toBeTruthy();
+    finalizeBtn.click();
+    fixture.detectChanges();
+    const confirm = [...fixture.nativeElement.querySelectorAll('.confirm-dialog button')]
+      .find((b: HTMLButtonElement) => b.textContent?.trim() === 'Yes, Finalize') as HTMLButtonElement;
+    confirm.click();
+    expect(qualFinalize).toHaveBeenCalled();
+  });
+
+  it('Accept opens a confirm block and does not call the service until confirmed', async () => {
+    const fixture = await createComponent([heat('FINISHED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
     const accept = actionButtons(fixture).find(b => b.textContent?.trim() === 'Accept')!;
     accept.click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.confirm-dialog')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.heat-card .confirm-dialog')).toBeTruthy();
     expect(acceptResult).not.toHaveBeenCalled();
 
-    const confirm = [...fixture.nativeElement.querySelectorAll('.confirm-dialog button')]
+    const confirm = [...fixture.nativeElement.querySelectorAll('.heat-card .confirm-dialog button')]
       .find((b: HTMLButtonElement) => b.textContent?.trim() === 'Confirm') as HTMLButtonElement;
     confirm.click();
     fixture.detectChanges();
-
     expect(acceptResult).toHaveBeenCalled();
-    expect(fixture.nativeElement.querySelector('.success')).toBeTruthy();
   });
 
   it('ACCEPTED heat disables all three action buttons', async () => {
-    const fixture = await createComponent([heat('ACCEPTED')]);
+    const fixture = await createComponent([heat('ACCEPTED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
     const buttons = actionButtons(fixture);
     expect(buttons.length).toBe(3);
     expect(buttons.every(b => b.disabled)).toBe(true);
   });
 
   it('REJECTED heat disables Accept but keeps Repeat enabled', async () => {
-    const fixture = await createComponent([heat('REJECTED')]);
+    const fixture = await createComponent([heat('REJECTED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
     const buttons = actionButtons(fixture);
     expect(buttons.find(b => b.textContent?.trim() === 'Accept')!.disabled).toBe(true);
     expect(buttons.find(b => b.textContent?.trim() === 'Repeat')!.disabled).toBe(false);

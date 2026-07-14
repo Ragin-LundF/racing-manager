@@ -30,75 +30,151 @@
     <div class="empty">{{ 'races.control.noHeats' | translate }}</div>
   }
 
-  <div class="heats">
-    @for (heat of heats(); track heat.id) {
-      <div class="heat-card" [class.armed]="heat.status === 'ARMED'" [class.started]="heat.status === 'STARTED'" [class.finished]="heat.status === 'FINISHED'" [class.cancelled]="heat.status === 'CANCELLED'">
-        <div class="heat-header">
-          <div>
-            <strong>{{ 'races.control.heatLabel' | translate: { number: heat.heatNumber } }}</strong>
-            <span class="heat-status" [class]="statusClass(heat.status)">{{ heat.status }}</span>
-          </div>
-          <div class="timestamps">
-            @if (heat.armedAt) { <span>{{ 'races.control.armedAt' | translate: { time: (heat.armedAt | date: 'HH:mm:ss') } }}</span> }
-            @if (heat.startedAt) { <span>{{ 'races.control.startedAt' | translate: { time: (heat.startedAt | date: 'HH:mm:ss') } }}</span> }
-            @if (heat.finishedAt) { <span>{{ 'races.control.finishedAt' | translate: { time: (heat.finishedAt | date: 'HH:mm:ss') } }}</span> }
-          </div>
+  <!-- QUALIFICATION phase -->
+  @if (qualification() || qualHeats().length > 0) {
+    <div class="section">
+      <div class="phase-header" (click)="toggleQual()">
+        <h3>{{ 'races.control.phaseQualification' | translate }}</h3>
+        @if (qualification(); as q) {
+          <span class="chip" [class]="phaseChipClass(q.status)">{{ q.status }}</span>
+        }
+        <span class="chevron" [class.collapsed]="!qualExpanded()">▾</span>
+      </div>
+
+      @if (qualExpanded()) {
+        @if (qualHeats().length === 0) {
+          <p class="empty">{{ 'races.control.noHeats' | translate }}</p>
+        }
+        <div class="heats">
+          @for (heat of qualHeats(); track heat.id) {
+            <ng-container [ngTemplateOutlet]="heatCard" [ngTemplateOutletContext]="{ $implicit: heat }" />
+          }
         </div>
 
-        <div class="lanes">
-          @for (lane of heat.lanes; track lane.lane) {
-            @let measurement = getLaneMeasurement(heat, lane.lane);
-            <div class="lane-card" [class.lane-1]="lane.lane === 1" [class.lane-2]="lane.lane === 2" [class.finished]="measurement?.outcome === 'FINISHED'" [class.dnf]="measurement?.outcome === 'DNF'">
-              <div class="lane-number">{{ lane.lane }}</div>
-              <div class="lane-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</div>
-              <div class="lane-time tnum">{{ measurement ? formatNanos(measurement.durationNanos) : '-' }}</div>
-              @if (measurement) {
-                <div class="lane-outcome">{{ measurement.outcome }}</div>
-              }
+        @if (qualification()?.status === 'SCHEDULED' || qualification()?.status === 'IN_PROGRESS') {
+          <p class="finalize-hint">{{ 'races.control.finalizeHint' | translate }}</p>
+          @if (!showQualFinalizeConfirm()) {
+            <button class="success" (click)="showQualFinalizeConfirm.set(true)">{{ 'races.control.finalizeQualification' | translate }}</button>
+          } @else {
+            <div class="confirm-dialog">
+              <p>{{ 'races.control.finalizeConfirm' | translate }}</p>
+              <button class="success" (click)="onFinalizeQualification()" [disabled]="finalizing()">{{ 'races.control.confirmFinalize' | translate }}</button>
+              <button (click)="showQualFinalizeConfirm.set(false)" [disabled]="finalizing()">{{ 'races.control.cancelAccept' | translate }}</button>
             </div>
           }
+        }
+      }
+    </div>
+  }
+
+  <!-- KNOCKOUT phase -->
+  @if (knockout()) {
+    <div class="section">
+      <div class="phase-header" (click)="toggleKo()">
+        <h3>{{ 'races.control.phaseKnockout' | translate }}</h3>
+        @if (knockout(); as k) {
+          <span class="chip" [class]="phaseChipClass(k.status)">{{ k.status }}</span>
+        }
+        <span class="chevron" [class.collapsed]="!koExpanded()">▾</span>
+      </div>
+
+      @if (koExpanded()) {
+        @if (koHeats().length === 0) {
+          <p class="empty">{{ 'races.control.noHeats' | translate }}</p>
+        }
+        <div class="heats">
+          @for (heat of koHeats(); track heat.id) {
+            <ng-container [ngTemplateOutlet]="heatCard" [ngTemplateOutletContext]="{ $implicit: heat }" />
+          }
         </div>
 
-        <div class="actions">
-          @if (heat.status === 'PLANNED') {
-            <button class="primary" (click)="onArm(heat)">{{ 'races.control.arm' | translate }}</button>
+        @if (knockout()?.status === 'IN_PROGRESS') {
+          <p class="finalize-hint">{{ 'races.control.finalizeHint' | translate }}</p>
+          @if (!showKoFinalizeConfirm()) {
+            <button class="success" (click)="showKoFinalizeConfirm.set(true)">{{ 'races.control.finalizeKnockout' | translate }}</button>
+          } @else {
+            <div class="confirm-dialog">
+              <p>{{ 'races.control.finalizeConfirm' | translate }}</p>
+              <button class="success" (click)="onFinalizeKnockout()" [disabled]="finalizing()">{{ 'races.control.confirmFinalize' | translate }}</button>
+              <button (click)="showKoFinalizeConfirm.set(false)" [disabled]="finalizing()">{{ 'races.control.cancelAccept' | translate }}</button>
+            </div>
           }
-          @if (heat.status === 'ARMED') {
-            <button class="success" (click)="onStart(heat)">{{ 'races.control.start' | translate }}</button>
-            <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
+        }
+      }
+    </div>
+  }
+
+  <ng-template #heatCard let-heat>
+    <div class="heat-card" [class.armed]="heat.status === 'ARMED'" [class.started]="heat.status === 'STARTED'" [class.finished]="heat.status === 'FINISHED'" [class.cancelled]="heat.status === 'CANCELLED'">
+      <div class="heat-header">
+        <div>
+          @if (heat.round === 2) {
+            <strong>{{ 'races.control.knockoutHeatLabel' | translate: { number: heat.heatNumber } }}</strong>
+          } @else {
+            <strong>{{ 'races.control.qualificationHeatLabel' | translate: { number: heat.heatNumber } }}</strong>
           }
-          @if (heat.status === 'STARTED') {
-            <button class="warning" (click)="onFinish(heat)">{{ 'races.control.finish' | translate }}</button>
-            <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
-          }
-          @if (heat.status === 'FINISHED' || heat.status === 'TIMEOUT') {
-            @if (confirmingAcceptId() === heat.id) {
-              <div class="confirm-dialog">
-                <p>{{ 'races.control.acceptConfirm' | translate }}</p>
-                <button class="success" (click)="onConfirmAccept(heat)" [disabled]="accepting()">{{ 'races.control.confirmAccept' | translate }}</button>
-                <button (click)="onCancelAccept()" [disabled]="accepting()">{{ 'races.control.cancelAccept' | translate }}</button>
-              </div>
-            } @else {
-              <button class="success" (click)="onAccept(heat)">{{ 'races.control.accept' | translate }}</button>
-              <button class="danger" (click)="onReject(heat)">{{ 'races.control.reject' | translate }}</button>
-              <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
-            }
-          }
-          @if (heat.status === 'ACCEPTED') {
-            <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
-            <button class="danger" [disabled]="true">{{ 'races.control.reject' | translate }}</button>
-            <button [disabled]="true">{{ 'races.control.repeat' | translate }}</button>
-          }
-          @if (heat.status === 'REJECTED') {
-            <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
-            <button class="danger" [disabled]="true">{{ 'races.control.reject' | translate }}</button>
-            <button class="success" (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
-          }
-          @if (heat.status === 'CANCELLED' || heat.status === 'TECHNICAL_ERROR') {
-            <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
-          }
+          <span class="heat-status" [class]="statusClass(heat.status)">{{ heat.status }}</span>
+        </div>
+        <div class="timestamps">
+          @if (heat.armedAt) { <span>{{ 'races.control.armedAt' | translate: { time: (heat.armedAt | date: 'HH:mm:ss') } }}</span> }
+          @if (heat.startedAt) { <span>{{ 'races.control.startedAt' | translate: { time: (heat.startedAt | date: 'HH:mm:ss') } }}</span> }
+          @if (heat.finishedAt) { <span>{{ 'races.control.finishedAt' | translate: { time: (heat.finishedAt | date: 'HH:mm:ss') } }}</span> }
         </div>
       </div>
-    }
-  </div>
+
+      <div class="lanes">
+        @for (lane of heat.lanes; track lane.lane) {
+          @let measurement = getLaneMeasurement(heat, lane.lane);
+          <div class="lane-card" [class.lane-1]="lane.lane === 1" [class.lane-2]="lane.lane === 2" [class.finished]="measurement?.outcome === 'FINISHED'" [class.dnf]="measurement?.outcome === 'DNF'">
+            <div class="lane-number">{{ lane.lane }}</div>
+            <div class="lane-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</div>
+            <div class="lane-time tnum">{{ measurement ? formatNanos(measurement.durationNanos) : '-' }}</div>
+            @if (measurement) {
+              <div class="lane-outcome">{{ measurement.outcome }}</div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="actions">
+        @if (heat.status === 'PLANNED') {
+          <button class="primary" (click)="onArm(heat)">{{ 'races.control.arm' | translate }}</button>
+        }
+        @if (heat.status === 'ARMED') {
+          <button class="success" (click)="onStart(heat)">{{ 'races.control.start' | translate }}</button>
+          <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
+        }
+        @if (heat.status === 'STARTED') {
+          <button class="warning" (click)="onFinish(heat)">{{ 'races.control.finish' | translate }}</button>
+          <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
+        }
+        @if (heat.status === 'FINISHED' || heat.status === 'TIMEOUT') {
+          @if (confirmingAcceptId() === heat.id) {
+            <div class="confirm-dialog">
+              <p>{{ 'races.control.acceptConfirm' | translate }}</p>
+              <button class="success" (click)="onConfirmAccept(heat)" [disabled]="accepting()">{{ 'races.control.confirmAccept' | translate }}</button>
+              <button (click)="onCancelAccept()" [disabled]="accepting()">{{ 'races.control.cancelAccept' | translate }}</button>
+            </div>
+          } @else {
+            <button class="success" (click)="onAccept(heat)">{{ 'races.control.accept' | translate }}</button>
+            <button class="danger" (click)="onReject(heat)">{{ 'races.control.reject' | translate }}</button>
+            <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
+          }
+        }
+        @if (heat.status === 'ACCEPTED') {
+          <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
+          <button class="danger" [disabled]="true">{{ 'races.control.reject' | translate }}</button>
+          <button [disabled]="true">{{ 'races.control.repeat' | translate }}</button>
+        }
+        @if (heat.status === 'REJECTED') {
+          <button class="success" [disabled]="true">{{ 'races.control.accept' | translate }}</button>
+          <button class="danger" [disabled]="true">{{ 'races.control.reject' | translate }}</button>
+          <button class="success" (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
+        }
+        @if (heat.status === 'CANCELLED' || heat.status === 'TECHNICAL_ERROR') {
+          <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
+        }
+      </div>
+    </div>
+  </ng-template>
 </div>

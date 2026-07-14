@@ -260,7 +260,8 @@ class KnockoutService(
         }
 
         val existingHeats = heatRepository.findByEventId(eventId)
-        val heatNumber = existingHeats.size + 1
+        // Per-phase counter: knockout heats number from #1 independently of qualification.
+        val heatNumber = existingHeats.count { it.round == 2 } + 1
 
         val now = clock.now()
         val lanes = buildKnockoutHeatLanes(

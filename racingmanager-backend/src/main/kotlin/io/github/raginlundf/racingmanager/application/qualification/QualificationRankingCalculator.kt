@@ -44,8 +44,10 @@ object QualificationRankingCalculator {
             )
         }
 
+        // Participants with a measured time rank fastest-first; anyone with no valid time
+        // (DNF-only or not yet raced) sinks to the bottom as last place (null sorts last).
         val sorted = participantResults.sortedWith(
-            compareBy<QualificationRanking> { it.bestTimeNanos != null }
+            compareBy<QualificationRanking> { it.bestTimeNanos == null }
                 .thenBy { it.bestTimeNanos }
                 .thenBy { it.totalTimeNanos },
         )

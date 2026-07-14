@@ -1,22 +1,28 @@
-import {Component, inject, OnDestroy, signal} from '@angular/core';
+import {Component, computed, inject, OnDestroy, signal} from '@angular/core';
 import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {ActivatedRoute} from '@angular/router';
-import {DatePipe} from '@angular/common';
+import {DatePipe, NgTemplateOutlet} from '@angular/common';
 import {HeatClient} from '../libs/clients/heat/heat.client';
 import {ParticipantClient} from '../libs/clients/participant/participant.client';
+import {QualificationClient} from '../libs/clients/qualification/qualification.client';
+import {KnockoutClient} from '../libs/clients/knockout/knockout.client';
 import {HeatResponse, HeatStateChangeEvent, MeasurementResponse} from '../libs/clients/heat/heat.models';
 import {ParticipantResponse} from '../libs/clients/participant/participant.models';
+import {QualificationResponse} from '../libs/clients/qualification/qualification.models';
+import {KnockoutTournamentResponse} from '../libs/clients/knockout/knockout.models';
 
 @Component({
   selector: 'app-race-control',
   standalone: true,
-  imports: [DatePipe, TranslatePipe],
+  imports: [DatePipe, NgTemplateOutlet, TranslatePipe],
   templateUrl: './race-control.component.html',
   styleUrl: './race-control.component.scss',
 })
 export class RaceControlComponent implements OnDestroy {
   private readonly heatService = inject(HeatClient);
   private readonly participantService = inject(ParticipantClient);
+  private readonly qualificationService = inject(QualificationClient);
+  private readonly knockoutService = inject(KnockoutClient);
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
 
@@ -29,6 +35,18 @@ export class RaceControlComponent implements OnDestroy {
   protected confirmingAcceptId = signal<string | null>(null);
   protected accepting = signal(false);
 
+  protected qualification = signal<QualificationResponse | null>(null);
+  protected knockout = signal<KnockoutTournamentResponse | null>(null);
+  protected qualExpanded = signal(true);
+  protected koExpanded = signal(true);
+  protected showQualFinalizeConfirm = signal(false);
+  protected showKoFinalizeConfirm = signal(false);
+  protected finalizing = signal(false);
+
+  /** Heats split by phase (round 1 = qualification, round 2 = knockout), heat-number ordered. */
+  protected qualHeats = computed(() => this.heats().filter(h => h.round === 1).sort((a, b) => a.heatNumber - b.heatNumber));
+  protected koHeats = computed(() => this.heats().filter(h => h.round === 2).sort((a, b) => a.heatNumber - b.heatNumber));
+
   private ws: WebSocket | null = null;
 
   private get eventId(): string {
@@ -38,6 +56,7 @@ export class RaceControlComponent implements OnDestroy {
   constructor() {
     this.loadHeats();
     this.loadParticipants();
+    this.loadPhases();
     this.connectWebSocket();
   }
 
@@ -57,6 +76,71 @@ export class RaceControlComponent implements OnDestroy {
       next: (participants) => this.participants.set(participants.filter(p => p.status === 'ACTIVE')),
       error: () => undefined,
     });
+  }
+
+  private loadPhases(): void {
+    this.qualificationService.findByEventId(this.eventId).subscribe({
+      next: (q) => {
+        this.qualification.set(q);
+        // Collapse the qualification box once it is finalized so the knockout box is in focus.
+        this.qualExpanded.set(q.status !== 'FINALIZED');
+      },
+      error: () => this.qualification.set(null),
+    });
+    this.knockoutService.findByEventId(this.eventId).subscribe({
+      next: (k) => this.knockout.set(k),
+      error: () => this.knockout.set(null),
+    });
+  }
+
+  protected toggleQual(): void {
+    this.qualExpanded.update(v => !v);
+  }
+
+  protected toggleKo(): void {
+    this.koExpanded.update(v => !v);
+  }
+
+  protected onFinalizeQualification(): void {
+    this.finalizing.set(true);
+    this.error.set('');
+    this.success.set('');
+    this.qualificationService.finalize(this.eventId).subscribe({
+      next: () => {
+        this.finalizing.set(false);
+        this.showQualFinalizeConfirm.set(false);
+        this.success.set(this.translate.instant('races.control.finalizeSuccess'));
+        this.loadPhases();
+      },
+      error: () => {
+        this.finalizing.set(false);
+        this.error.set(this.translate.instant('races.control.finalizeError'));
+      },
+    });
+  }
+
+  protected onFinalizeKnockout(): void {
+    this.finalizing.set(true);
+    this.error.set('');
+    this.success.set('');
+    this.knockoutService.finalize(this.eventId).subscribe({
+      next: () => {
+        this.finalizing.set(false);
+        this.showKoFinalizeConfirm.set(false);
+        this.success.set(this.translate.instant('races.control.finalizeSuccess'));
+        this.loadPhases();
+      },
+      error: () => {
+        this.finalizing.set(false);
+        this.error.set(this.translate.instant('races.control.finalizeError'));
+      },
+    });
+  }
+
+  protected phaseChipClass(status: string | undefined): string {
+    if (status === 'SCHEDULED' || status === 'IN_PROGRESS' || status === 'PAIRING') return 'chip-success';
+    if (status === 'FINALIZED') return 'chip-warning';
+    return 'chip-muted';
   }
 
   private connectWebSocket(): void {
