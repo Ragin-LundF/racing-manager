@@ -11,4 +11,6 @@ data class SpectatorParticipantStandingModel(
     val bestQualificationTimeNanos: Long? = null,
     val bestKnockoutTimeNanos: Long? = null,
     val state: String,
+    val place: Int = 0,
+    val racing: Boolean = false,
 )

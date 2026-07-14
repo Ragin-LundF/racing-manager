@@ -4,7 +4,8 @@ import java.util.UUID
 
 /**
  * Per-participant knockout-phase standing for the spectator view: name, best qualification and
- * best knockout times, and the current knockout [state] (WON / BYE / OUT / ACTIVE).
+ * best knockout times, the current knockout [state] (WON / BYE / OUT / ACTIVE), the 1-based
+ * [place] on the live placement board, and [racing] when the participant is in the in-progress heat.
  */
 data class SpectatorParticipantStanding(
     val participantId: UUID,
@@ -14,4 +15,6 @@ data class SpectatorParticipantStanding(
     val bestQualificationTimeNanos: Long?,
     val bestKnockoutTimeNanos: Long?,
     val state: String,
+    val place: Int,
+    val racing: Boolean,
 )

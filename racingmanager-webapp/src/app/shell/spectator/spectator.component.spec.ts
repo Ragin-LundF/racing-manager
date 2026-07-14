@@ -63,8 +63,8 @@ const mockSnapshot: SpectatorSnapshotResponse = {
     ],
   },
   knockoutStandings: [
-    { participantId: 'p1', startNumber: 1, firstName: 'Alice', lastName: 'Smith', bestQualificationTimeNanos: 1_500_000_000, bestKnockoutTimeNanos: 1_400_000_000, state: 'WON' },
-    { participantId: 'p2', startNumber: 2, firstName: 'Bob', lastName: 'Jones', bestQualificationTimeNanos: 1_600_000_000, state: 'OUT' },
+    { participantId: 'p1', startNumber: 1, firstName: 'Alice', lastName: 'Smith', bestQualificationTimeNanos: 1_500_000_000, bestKnockoutTimeNanos: 1_400_000_000, state: 'WON', place: 1, racing: false },
+    { participantId: 'p2', startNumber: 2, firstName: 'Bob', lastName: 'Jones', bestQualificationTimeNanos: 1_600_000_000, state: 'OUT', place: 2, racing: true },
   ],
 };
 
@@ -266,6 +266,23 @@ describe('SpectatorShellComponent', () => {
     expect(rows[0].textContent).toContain('Alice');
     expect(fixture.nativeElement.querySelector('.standing-badge.WON')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.standing-times')).toBeTruthy();
+  });
+
+  it('renders standing places and a racing dot for the in-progress pair', async () => {
+    window.location.hash = '#code=abc123';
+    const fixture = await createComponent({
+      exchange: () => of(mockExchange),
+      getSnapshot: () => of(mockSnapshot),
+      getLiveWebSocketUrl: () => 'ws://localhost/test',
+    });
+    const rows = fixture.nativeElement.querySelectorAll('.standing');
+    // Places rendered in backend order (Alice #1, Bob #2).
+    expect(rows[0].querySelector('.standing-place').textContent.trim()).toBe('1');
+    expect(rows[1].querySelector('.standing-place').textContent.trim()).toBe('2');
+    // Only the racing participant (Bob) shows the green dot.
+    expect(rows[0].querySelector('.racing-dot')).toBeNull();
+    expect(rows[1].querySelector('.racing-dot')).toBeTruthy();
+    expect(rows[1].classList.contains('racing')).toBe(true);
   });
 
   it('shows the qualification rankings table when there is no knockout', async () => {

@@ -209,16 +209,41 @@
 
 /* ---------- Knockout standings (left column during KO) ---------- */
 .standing {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: var(--space-2);
   padding: var(--space-2);
   border-bottom: 1px solid var(--color-border);
 }
 .standing.out { opacity: 0.5; }
+.standing.racing {
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+}
+.standing-place {
+  grid-row: 1 / span 2;
+  align-self: center;
+  min-width: 1.6em;
+  font-weight: 700;
+  font-size: 15px;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+.racing-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 25%, transparent);
+}
 .standing-name {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
+.standing-name .name { margin-right: auto; }
 .standing-name .name { font-weight: 600; font-size: 15px; }
 .standing-badge {
   font-size: 11px;

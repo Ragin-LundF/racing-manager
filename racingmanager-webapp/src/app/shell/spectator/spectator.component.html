@@ -39,8 +39,12 @@
         @if (knockoutStandings().length > 0) {
           <div class="table-scroll">
             @for (s of knockoutStandings(); track s.participantId) {
-              <div class="standing" [class.out]="s.state === 'OUT'">
+              <div class="standing" [class.out]="s.state === 'OUT'" [class.racing]="s.racing">
+                <span class="standing-place tnum">{{ s.place }}</span>
                 <div class="standing-name">
+                  @if (s.racing) {
+                    <span class="racing-dot" aria-hidden="true"></span>
+                  }
                   <span class="name">{{ s.firstName }} {{ s.lastName }}</span>
                   @if (standingBadge(s.state); as badge) {
                     <span class="standing-badge" [class]="s.state">{{ badge | translate }}</span>

@@ -68,7 +68,11 @@ class SpectatorService(
     /**
      * One row per active participant for the knockout spectator view: best qualification time (from
      * [rankings]), best knockout time (fastest FINISHED measurement across round-2 heats), and the
-     * current knockout state derived from the participant's latest match. Ordered by qualification rank.
+     * current knockout state derived from the participant's latest match.
+     *
+     * Ordered as a live placement board: participants who reached a further round rank first, then
+     * within a tier the still-advancing (not eliminated) ahead of the eliminated, then fastest time.
+     * Each row carries its 1-based [place] and a [racing] flag for the pair in the in-progress match.
      */
     private fun buildKnockoutStandings(
         participants: List<ParticipantEntity>,
@@ -80,12 +84,27 @@ class SpectatorService(
             .calculate(participants, allHeats.filter { it.round == 2 })
             .associate { it.participantId to it.bestTimeNanos }
         val qualBest = rankings.associate { it.participantId to it.bestTimeNanos }
-        val rankOrder = rankings.withIndex().associate { (i, r) -> r.participantId to i }
         val matches = knockoutRepository.findMatchesByTournamentId(tournament.id)
 
+        fun matchesFor(id: UUID) = matches.filter { it.participant1Id == id || it.participant2Id == id }
+        val furthestRound = participants.associate { p -> p.id to (matchesFor(p.id).maxOfOrNull { it.roundNumber } ?: 0) }
+        // Accepted results only: a match becomes COMPLETED when its heat result is accepted.
+        val eliminated = participants.filter { p ->
+            matchesFor(p.id).any { it.status == KnockoutMatchStatus.COMPLETED && it.winnerId != null && it.winnerId != p.id }
+        }.map { it.id }.toSet()
+        val racing = matches.filter { it.status == KnockoutMatchStatus.IN_PROGRESS }
+            .flatMap { listOfNotNull(it.participant1Id, it.participant2Id) }
+            .toSet()
+        fun timeKey(id: UUID) = koBest[id] ?: qualBest[id]
+
         return participants
-            .sortedBy { rankOrder[it.id] ?: Int.MAX_VALUE }
-            .map { p ->
+            .sortedWith(
+                compareByDescending<ParticipantEntity> { furthestRound[it.id] ?: 0 }
+                    .thenBy { if (eliminated.contains(it.id)) 1 else 0 }
+                    .thenBy { timeKey(it.id) == null }
+                    .thenBy { timeKey(it.id) ?: Long.MAX_VALUE },
+            )
+            .mapIndexed { index, p ->
                 SpectatorParticipantStanding(
                     participantId = p.id,
                     startNumber = p.startNumber,
@@ -94,6 +113,8 @@ class SpectatorService(
                     bestQualificationTimeNanos = qualBest[p.id],
                     bestKnockoutTimeNanos = koBest[p.id],
                     state = knockoutStateFor(p.id, matches),
+                    place = index + 1,
+                    racing = racing.contains(p.id),
                 )
             }
     }

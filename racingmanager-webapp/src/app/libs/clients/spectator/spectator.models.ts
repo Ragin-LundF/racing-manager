@@ -80,6 +80,8 @@ export interface SpectatorParticipantStandingModel {
   bestQualificationTimeNanos?: number;
   bestKnockoutTimeNanos?: number;
   state: string;
+  place: number;
+  racing: boolean;
 }
 
 export interface SpectatorSnapshotResponse {

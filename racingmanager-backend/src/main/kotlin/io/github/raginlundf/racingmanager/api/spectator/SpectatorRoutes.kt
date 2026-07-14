@@ -288,6 +288,8 @@ internal fun SpectatorSnapshot.toResponseModel(): SpectatorSnapshotResponseModel
                 bestQualificationTimeNanos = s.bestQualificationTimeNanos,
                 bestKnockoutTimeNanos = s.bestKnockoutTimeNanos,
                 state = s.state,
+                place = s.place,
+                racing = s.racing,
             )
         },
     )
