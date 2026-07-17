@@ -1,0 +1,35 @@
+/* Overlay backdrop mirrors the mobile nav-scrim pattern (racemanager.component.scss). */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.confirm-panel {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-6);
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}
+
+.confirm-panel--danger { border-color: color-mix(in srgb, var(--color-error) 55%, var(--color-border)); }
+.confirm-panel--warning { border-color: color-mix(in srgb, var(--color-warning) 55%, var(--color-border)); }
+.confirm-panel--success { border-color: color-mix(in srgb, var(--color-success) 55%, var(--color-border)); }
+
+.confirm-title { margin: 0 0 var(--space-3); font-size: 17px; font-weight: 600; }
+.confirm-message { margin: 0 0 var(--space-4); color: var(--color-text-secondary); white-space: pre-line; }
+.confirm-panel input { width: 100%; margin-bottom: var(--space-4); }
+
+.confirm-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.confirm-actions button.primary { background: var(--color-action); color: #08130b; border-color: var(--color-action); font-weight: 600; }
+.confirm-actions button.danger { background: var(--color-error); color: #fff; border-color: var(--color-error); font-weight: 600; }
+.confirm-actions button.warning { background: var(--color-warning); color: #1a1305; border-color: var(--color-warning); font-weight: 600; }
+.confirm-actions button.success { background: var(--color-success); color: #08130b; border-color: var(--color-success); font-weight: 600; }

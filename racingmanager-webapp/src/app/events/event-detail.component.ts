@@ -4,6 +4,7 @@ import { EventClient } from '../libs/clients/event/event.client';
 import { EventResponse } from '../libs/clients/event/event.models';
 import { SelectedEventService } from '../core/selected-event.service';
 import { SpectatorClient } from '../libs/clients/spectator/spectator.client';
+import { ConfirmService } from '../shared/confirm/confirm.service';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -18,6 +19,7 @@ export class EventDetailComponent {
   private readonly spectatorClient = inject(SpectatorClient);
   private readonly selectedEvent = inject(SelectedEventService);
   private readonly translate = inject(TranslateService);
+  private readonly confirm = inject(ConfirmService);
   protected readonly route = inject(ActivatedRoute);
 
   protected event = signal<EventResponse | null>(null);
@@ -49,11 +51,14 @@ export class EventDetailComponent {
     });
   }
 
-  protected onArchive(): void {
+  protected async onArchive(): Promise<void> {
     const event = this.event();
     if (!event) return;
-    // ponytail: native confirm — a styled modal is more code than the ask warrants.
-    if (!confirm(this.translate.instant('events.detail.archiveConfirm', { name: event.name }))) return;
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('events.detail.archiveConfirm', { name: event.name }),
+      variant: 'warning',
+    });
+    if (!ok) return;
 
     this.eventService.archive(event.id).subscribe({
       next: (updated) => {
@@ -66,11 +71,14 @@ export class EventDetailComponent {
     });
   }
 
-  protected onReactivate(): void {
+  protected async onReactivate(): Promise<void> {
     const event = this.event();
     if (!event) return;
-    // ponytail: native confirm — a styled modal is more code than the ask warrants.
-    if (!confirm(this.translate.instant('events.detail.reactivateConfirm', { name: event.name }))) return;
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('events.detail.reactivateConfirm', { name: event.name }),
+      variant: 'warning',
+    });
+    if (!ok) return;
 
     this.eventService.reactivate(event.id).subscribe({
       next: (updated) => {

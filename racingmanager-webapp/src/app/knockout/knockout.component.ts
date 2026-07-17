@@ -10,6 +10,7 @@ import {
   KnockoutResultEntryResponse,
   QualifiedParticipantResponse,
 } from '../libs/clients/knockout/knockout.models';
+import { ConfirmService } from '../shared/confirm/confirm.service';
 
 @Component({
   selector: 'app-knockout',
@@ -23,6 +24,7 @@ export class KnockoutComponent {
   private readonly participantClient = inject(ParticipantClient);
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly confirm = inject(ConfirmService);
 
   protected tournament = signal<KnockoutTournamentResponse | null>(null);
   protected matches = signal<KnockoutMatchResponse[]>([]);
@@ -32,7 +34,6 @@ export class KnockoutComponent {
   protected error = signal('');
   protected success = signal('');
   protected selectedPairingMode = signal('FIRST_VS_LAST');
-  protected showFinalizeConfirm = signal(false);
   protected loading = signal(false);
 
   // Manual pairing editor
@@ -130,14 +131,19 @@ export class KnockoutComponent {
     });
   }
 
-  protected onFinalize(): void {
+  protected async onFinalize(): Promise<void> {
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('knockout.finalizeConfirm'),
+      confirmLabel: this.translate.instant('knockout.confirmFinalize'),
+      variant: 'success',
+    });
+    if (!ok) return;
     this.loading.set(true);
     this.error.set('');
     this.success.set('');
     this.knockoutClient.finalize(this.eventId).subscribe({
       next: () => {
         this.loading.set(false);
-        this.showFinalizeConfirm.set(false);
         this.success.set(this.translate.instant('knockout.finalizedSuccess'));
         this.load();
       },

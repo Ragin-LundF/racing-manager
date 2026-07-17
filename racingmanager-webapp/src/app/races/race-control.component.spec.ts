@@ -12,6 +12,7 @@ import { HeatResponse } from '../libs/clients/heat/heat.models';
 import { QualificationResponse } from '../libs/clients/qualification/qualification.models';
 import { KnockoutMatchResponse, KnockoutTournamentResponse } from '../libs/clients/knockout/knockout.models';
 import { ParticipantResponse } from '../libs/clients/participant/participant.models';
+import { ConfirmService } from '../shared/confirm/confirm.service';
 
 function heat(status: string, round = 1, heatNumber = 1): HeatResponse {
   return {
@@ -118,32 +119,32 @@ describe('RaceControlComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Knockout Heat #1');
   });
 
-  it('finalizes the qualification phase from race control', async () => {
+  it('finalizes the qualification phase from race control once the confirm is accepted', async () => {
     const fixture = await createComponent([heat('ACCEPTED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
+    const confirmService = TestBed.inject(ConfirmService);
     const finalizeBtn = [...fixture.nativeElement.querySelectorAll('button')]
       .find((b: HTMLButtonElement) => b.textContent?.includes('Finalize Qualification')) as HTMLButtonElement;
     expect(finalizeBtn).toBeTruthy();
     finalizeBtn.click();
-    fixture.detectChanges();
-    const confirm = [...fixture.nativeElement.querySelectorAll('.confirm-dialog button')]
-      .find((b: HTMLButtonElement) => b.textContent?.trim() === 'Yes, Finalize') as HTMLButtonElement;
-    confirm.click();
+    // A confirm is requested and the service is not called until the user accepts.
+    expect(confirmService.request()).toBeTruthy();
+    expect(qualFinalize).not.toHaveBeenCalled();
+    confirmService.resolve(true);
+    await fixture.whenStable();
     expect(qualFinalize).toHaveBeenCalled();
   });
 
-  it('Accept opens a confirm block and does not call the service until confirmed', async () => {
+  it('Accept requests a confirm and does not call the service until confirmed', async () => {
     const fixture = await createComponent([heat('FINISHED', 1, 1)], { qualification: qualification('IN_PROGRESS') });
+    const confirmService = TestBed.inject(ConfirmService);
     const accept = actionButtons(fixture).find(b => b.textContent?.trim() === 'Accept')!;
     accept.click();
-    fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.heat-card .confirm-dialog')).toBeTruthy();
+    expect(confirmService.request()).toBeTruthy();
     expect(acceptResult).not.toHaveBeenCalled();
 
-    const confirm = [...fixture.nativeElement.querySelectorAll('.heat-card .confirm-dialog button')]
-      .find((b: HTMLButtonElement) => b.textContent?.trim() === 'Confirm') as HTMLButtonElement;
-    confirm.click();
-    fixture.detectChanges();
+    confirmService.resolve(true);
+    await fixture.whenStable();
     expect(acceptResult).toHaveBeenCalled();
   });
 

@@ -10,6 +10,7 @@ import {
   HeatScheduleResponse,
 } from '../libs/clients/qualification/qualification.models';
 import { HeatResponse } from '../libs/clients/heat/heat.models';
+import { ConfirmService } from '../shared/confirm/confirm.service';
 
 @Component({
   selector: 'app-qualification',
@@ -23,6 +24,7 @@ export class QualificationComponent {
   private readonly heatService = inject(HeatClient);
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly confirm = inject(ConfirmService);
 
   protected qualification = signal<QualificationResponse | null>(null);
   protected rankings = signal<QualificationRankingResponse[]>([]);
@@ -32,8 +34,6 @@ export class QualificationComponent {
   protected error = signal('');
   protected success = signal('');
   protected numberOfRuns = signal(2);
-  protected showFinalizeConfirm = signal(false);
-  protected showReopenConfirm = signal(false);
   protected loading = signal(false);
 
   private get eventId(): string {
@@ -122,14 +122,19 @@ export class QualificationComponent {
     });
   }
 
-  protected onFinalize(): void {
+  protected async onFinalize(): Promise<void> {
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('qualification.finalizeConfirm'),
+      confirmLabel: this.translate.instant('qualification.confirmFinalize'),
+      variant: 'success',
+    });
+    if (!ok) return;
     this.loading.set(true);
     this.error.set('');
     this.success.set('');
     this.qualificationService.finalize(this.eventId).subscribe({
       next: () => {
         this.loading.set(false);
-        this.showFinalizeConfirm.set(false);
         this.success.set(this.translate.instant('qualification.finalizedSuccess'));
         this.load();
       },
@@ -140,14 +145,19 @@ export class QualificationComponent {
     });
   }
 
-  protected onReopen(): void {
+  protected async onReopen(): Promise<void> {
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('qualification.reopenConfirm'),
+      confirmLabel: this.translate.instant('qualification.confirmReopen'),
+      variant: 'warning',
+    });
+    if (!ok) return;
     this.loading.set(true);
     this.error.set('');
     this.success.set('');
     this.qualificationService.reopen(this.eventId).subscribe({
       next: () => {
         this.loading.set(false);
-        this.showReopenConfirm.set(false);
         this.success.set(this.translate.instant('qualification.reopenedSuccess'));
         this.load();
       },

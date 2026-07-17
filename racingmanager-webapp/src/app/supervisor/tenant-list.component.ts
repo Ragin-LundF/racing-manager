@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AdminClient } from '../libs/clients/admin/admin.client';
 import { TenantResponse } from '../libs/clients/admin/admin.models';
+import { ConfirmService } from '../shared/confirm/confirm.service';
 
 @Component({
   selector: 'app-tenant-list',
@@ -13,6 +14,7 @@ import { TenantResponse } from '../libs/clients/admin/admin.models';
 export class TenantListComponent {
   private readonly adminClient = inject(AdminClient);
   private readonly translate = inject(TranslateService);
+  private readonly confirm = inject(ConfirmService);
 
   protected readonly tenants = signal<TenantResponse[]>([]);
 
@@ -36,12 +38,18 @@ export class TenantListComponent {
     });
   }
 
-  protected onDelete(tenant: TenantResponse): void {
-    // ponytail: native prompt for slug confirmation — a styled modal is more code than the ask warrants.
-    const confirmSlug = prompt(this.translate.instant('supervisor.tenants.confirmSlugPrompt'));
-    if (!confirmSlug || confirmSlug !== tenant.slug) return;
+  protected async onDelete(tenant: TenantResponse): Promise<void> {
+    const slug = tenant.slug;
+    if (!slug) return;
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('supervisor.tenants.confirmSlugPrompt'),
+      requireText: slug,
+      requireTextLabel: slug,
+      variant: 'danger',
+    });
+    if (!ok) return;
 
-    this.adminClient.deleteTenant(tenant.id, { confirmSlug }).subscribe((updated) => {
+    this.adminClient.deleteTenant(tenant.id, { confirmSlug: slug }).subscribe((updated) => {
       this.tenants.update((list) => list.map((t) => (t.id === updated.id ? updated : t)));
     });
   }

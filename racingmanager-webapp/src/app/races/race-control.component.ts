@@ -10,6 +10,7 @@ import {HeatResponse, HeatStateChangeEvent, MeasurementResponse} from '../libs/c
 import {ParticipantResponse} from '../libs/clients/participant/participant.models';
 import {QualificationResponse} from '../libs/clients/qualification/qualification.models';
 import {KnockoutMatchResponse, KnockoutTournamentResponse} from '../libs/clients/knockout/knockout.models';
+import {ConfirmService} from '../shared/confirm/confirm.service';
 
 @Component({
   selector: 'app-race-control',
@@ -25,6 +26,7 @@ export class RaceControlComponent implements OnDestroy {
   private readonly knockoutService = inject(KnockoutClient);
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly confirm = inject(ConfirmService);
 
   protected heats = signal<HeatResponse[]>([]);
   protected participants = signal<ParticipantResponse[]>([]);
@@ -32,7 +34,6 @@ export class RaceControlComponent implements OnDestroy {
   protected error = signal('');
   protected success = signal('');
   protected creating = signal(false);
-  protected confirmingAcceptId = signal<string | null>(null);
   protected accepting = signal(false);
 
   protected qualification = signal<QualificationResponse | null>(null);
@@ -40,8 +41,6 @@ export class RaceControlComponent implements OnDestroy {
   protected koMatches = signal<KnockoutMatchResponse[]>([]);
   protected qualExpanded = signal(true);
   protected koExpanded = signal(true);
-  protected showQualFinalizeConfirm = signal(false);
-  protected showKoFinalizeConfirm = signal(false);
   protected finalizing = signal(false);
   protected expandedHeatIds = signal<Set<string>>(new Set());
 
@@ -116,14 +115,19 @@ export class RaceControlComponent implements OnDestroy {
     this.koExpanded.update(v => !v);
   }
 
-  protected onFinalizeQualification(): void {
+  protected async onFinalizeQualification(): Promise<void> {
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('races.control.finalizeConfirm'),
+      confirmLabel: this.translate.instant('races.control.confirmFinalize'),
+      variant: 'success',
+    });
+    if (!ok) return;
     this.finalizing.set(true);
     this.error.set('');
     this.success.set('');
     this.qualificationService.finalize(this.eventId).subscribe({
       next: () => {
         this.finalizing.set(false);
-        this.showQualFinalizeConfirm.set(false);
         this.success.set(this.translate.instant('races.control.finalizeSuccess'));
         this.loadPhases();
       },
@@ -134,14 +138,19 @@ export class RaceControlComponent implements OnDestroy {
     });
   }
 
-  protected onFinalizeKnockout(): void {
+  protected async onFinalizeKnockout(): Promise<void> {
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('races.control.finalizeConfirm'),
+      confirmLabel: this.translate.instant('races.control.confirmFinalize'),
+      variant: 'success',
+    });
+    if (!ok) return;
     this.finalizing.set(true);
     this.error.set('');
     this.success.set('');
     this.knockoutService.finalize(this.eventId).subscribe({
       next: () => {
         this.finalizing.set(false);
-        this.showKoFinalizeConfirm.set(false);
         this.success.set(this.translate.instant('races.control.finalizeSuccess'));
         this.loadPhases();
       },
@@ -252,19 +261,16 @@ export class RaceControlComponent implements OnDestroy {
     });
   }
 
-  protected onAccept(heat: HeatResponse): void {
-    this.confirmingAcceptId.set(heat.id);
-  }
-
-  protected onCancelAccept(): void {
-    this.confirmingAcceptId.set(null);
-  }
-
-  protected onConfirmAccept(heat: HeatResponse): void {
+  protected async onAccept(heat: HeatResponse): Promise<void> {
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('races.control.acceptConfirm'),
+      confirmLabel: this.translate.instant('races.control.confirmAccept'),
+      variant: 'success',
+    });
+    if (!ok) return;
     this.accepting.set(true);
     this.heatService.acceptResult(this.eventId, heat.id).subscribe({
       next: () => {
-        this.confirmingAcceptId.set(null);
         this.accepting.set(false);
         this.success.set(this.translate.instant('races.control.acceptSuccess'));
         this.loadHeats();

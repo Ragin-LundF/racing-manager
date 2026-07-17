@@ -1,4 +1,8 @@
 {
+  "common": {
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen"
+  },
   "app": {
     "health": {
       "available": "Backend ist verfügbar.",

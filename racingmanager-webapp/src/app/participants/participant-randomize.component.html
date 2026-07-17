@@ -10,15 +10,6 @@
     <div class="actions">
       <button (click)="router.navigate(['..'], { relativeTo: route })">{{ 'participants.randomize.back' | translate }}</button>
     </div>
-  } @else if (alreadyRandomized()) {
-    <div class="warning">
-      <strong>{{ 'participants.randomize.already.title' | translate }}</strong>
-      <p>{{ 'participants.randomize.already.message' | translate }}</p>
-      <div class="actions">
-        <button class="primary" (click)="onForceRandomize()">{{ 'participants.randomize.already.confirm' | translate }}</button>
-        <button (click)="router.navigate(['..'], { relativeTo: route })">{{ 'participants.randomize.already.cancel' | translate }}</button>
-      </div>
-    </div>
   } @else {
     <p>{{ 'participants.randomize.hint' | translate }}</p>
     <div class="actions">

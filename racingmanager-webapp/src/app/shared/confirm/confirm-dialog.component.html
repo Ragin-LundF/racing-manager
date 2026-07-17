@@ -1,0 +1,39 @@
+@if (confirm.request(); as req) {
+  <div class="confirm-backdrop" (click)="cancel()">
+    <div
+      class="confirm-panel confirm-panel--{{ req.variant || 'default' }}"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      @if (req.title) {
+        <h2 class="confirm-title">{{ req.title }}</h2>
+      }
+      <p class="confirm-message">{{ req.message }}</p>
+
+      @if (req.requireText) {
+        <input
+          type="text"
+          [value]="typed()"
+          (input)="typed.set($any($event.target).value)"
+          [placeholder]="req.requireTextLabel || ''"
+          autofocus
+        />
+      }
+
+      <div class="confirm-actions">
+        <button (click)="cancel()">{{ req.cancelLabel || ('common.cancel' | translate) }}</button>
+        <button
+          [class.primary]="!req.variant || req.variant === 'default'"
+          [class.danger]="req.variant === 'danger'"
+          [class.warning]="req.variant === 'warning'"
+          [class.success]="req.variant === 'success'"
+          [disabled]="!canConfirm()"
+          (click)="onConfirm()"
+        >
+          {{ req.confirmLabel || ('common.confirm' | translate) }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -134,16 +134,7 @@
       <div class="section">
         <h3>{{ 'knockout.actionsTitle' | translate }}</h3>
         <p>{{ 'knockout.finalizeHint' | translate }}</p>
-        @if (!showFinalizeConfirm()) {
-          <button class="success" (click)="showFinalizeConfirm.set(true)">{{ 'knockout.finalizeButton' | translate }}</button>
-        }
-        @if (showFinalizeConfirm()) {
-          <div class="confirm-dialog">
-            <p>{{ 'knockout.finalizeConfirm' | translate }}</p>
-            <button class="success" (click)="onFinalize()" [disabled]="loading()">{{ 'knockout.confirmFinalize' | translate }}</button>
-            <button (click)="showFinalizeConfirm.set(false)">{{ 'knockout.cancel' | translate }}</button>
-          </div>
-        }
+        <button class="success" (click)="onFinalize()" [disabled]="loading()">{{ 'knockout.finalizeButton' | translate }}</button>
       </div>
     }
 

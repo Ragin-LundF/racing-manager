@@ -128,16 +128,7 @@
       <div class="section">
         <h3>{{ 'qualification.actionsTitle' | translate }}</h3>
         <p>{{ 'qualification.finalizeHint' | translate }}</p>
-        @if (!showFinalizeConfirm()) {
-          <button class="success" (click)="showFinalizeConfirm.set(true)">{{ 'qualification.finalizeButton' | translate }}</button>
-        }
-        @if (showFinalizeConfirm()) {
-          <div class="confirm-dialog">
-            <p>{{ 'qualification.finalizeConfirm' | translate }}</p>
-            <button class="success" (click)="onFinalize()" [disabled]="loading()">{{ 'qualification.confirmFinalize' | translate }}</button>
-            <button (click)="showFinalizeConfirm.set(false)">{{ 'qualification.cancel' | translate }}</button>
-          </div>
-        }
+        <button class="success" (click)="onFinalize()" [disabled]="loading()">{{ 'qualification.finalizeButton' | translate }}</button>
       </div>
     }
 
@@ -145,16 +136,7 @@
       <div class="section">
         <h3>{{ 'qualification.finalizedTitle' | translate }}</h3>
         <p>{{ 'qualification.finalizedMessage' | translate }}</p>
-        @if (!showReopenConfirm()) {
-          <button class="warning" (click)="showReopenConfirm.set(true)">{{ 'qualification.reopenButton' | translate }}</button>
-        }
-        @if (showReopenConfirm()) {
-          <div class="confirm-dialog">
-            <p>{{ 'qualification.reopenConfirm' | translate }}</p>
-            <button class="warning" (click)="onReopen()" [disabled]="loading()">{{ 'qualification.confirmReopen' | translate }}</button>
-            <button (click)="showReopenConfirm.set(false)">{{ 'qualification.cancel' | translate }}</button>
-          </div>
-        }
+        <button class="warning" (click)="onReopen()" [disabled]="loading()">{{ 'qualification.reopenButton' | translate }}</button>
       </div>
     }
   }

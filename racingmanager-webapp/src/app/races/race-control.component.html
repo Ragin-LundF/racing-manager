@@ -54,15 +54,7 @@
 
         @if (qualification()?.status === 'SCHEDULED' || qualification()?.status === 'IN_PROGRESS') {
           <p class="finalize-hint">{{ 'races.control.finalizeHint' | translate }}</p>
-          @if (!showQualFinalizeConfirm()) {
-            <button class="success" (click)="showQualFinalizeConfirm.set(true)">{{ 'races.control.finalizeQualification' | translate }}</button>
-          } @else {
-            <div class="confirm-dialog">
-              <p>{{ 'races.control.finalizeConfirm' | translate }}</p>
-              <button class="success" (click)="onFinalizeQualification()" [disabled]="finalizing()">{{ 'races.control.confirmFinalize' | translate }}</button>
-              <button (click)="showQualFinalizeConfirm.set(false)" [disabled]="finalizing()">{{ 'races.control.cancelAccept' | translate }}</button>
-            </div>
-          }
+          <button class="success" (click)="onFinalizeQualification()" [disabled]="finalizing()">{{ 'races.control.finalizeQualification' | translate }}</button>
         }
       }
     </div>
@@ -102,15 +94,7 @@
 
         @if (knockout()?.status === 'IN_PROGRESS') {
           <p class="finalize-hint">{{ 'races.control.finalizeHint' | translate }}</p>
-          @if (!showKoFinalizeConfirm()) {
-            <button class="success" (click)="showKoFinalizeConfirm.set(true)">{{ 'races.control.finalizeKnockout' | translate }}</button>
-          } @else {
-            <div class="confirm-dialog">
-              <p>{{ 'races.control.finalizeConfirm' | translate }}</p>
-              <button class="success" (click)="onFinalizeKnockout()" [disabled]="finalizing()">{{ 'races.control.confirmFinalize' | translate }}</button>
-              <button (click)="showKoFinalizeConfirm.set(false)" [disabled]="finalizing()">{{ 'races.control.cancelAccept' | translate }}</button>
-            </div>
-          }
+          <button class="success" (click)="onFinalizeKnockout()" [disabled]="finalizing()">{{ 'races.control.finalizeKnockout' | translate }}</button>
         }
       }
     </div>
@@ -171,17 +155,9 @@
           <button class="danger" (click)="onCancel(heat)">{{ 'races.control.cancel' | translate }}</button>
         }
         @if (heat.status === 'FINISHED' || heat.status === 'TIMEOUT') {
-          @if (confirmingAcceptId() === heat.id) {
-            <div class="confirm-dialog">
-              <p>{{ 'races.control.acceptConfirm' | translate }}</p>
-              <button class="success" (click)="onConfirmAccept(heat)" [disabled]="accepting()">{{ 'races.control.confirmAccept' | translate }}</button>
-              <button (click)="onCancelAccept()" [disabled]="accepting()">{{ 'races.control.cancelAccept' | translate }}</button>
-            </div>
-          } @else {
-            <button class="success" (click)="onAccept(heat)">{{ 'races.control.accept' | translate }}</button>
-            <button class="danger" (click)="onReject(heat)">{{ 'races.control.reject' | translate }}</button>
-            <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
-          }
+          <button class="success" (click)="onAccept(heat)" [disabled]="accepting()">{{ 'races.control.accept' | translate }}</button>
+          <button class="danger" (click)="onReject(heat)">{{ 'races.control.reject' | translate }}</button>
+          <button (click)="onRepeat(heat)">{{ 'races.control.repeat' | translate }}</button>
         }
         @if (heat.status === 'ACCEPTED') {
           <span class="chip chip-success">{{ heat.status }}</span>

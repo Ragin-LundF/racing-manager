@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { EventResponse } from '../libs/clients/event/event.models';
 import { SelectedEventService } from '../core/selected-event.service';
+import { ConfirmService } from '../shared/confirm/confirm.service';
 import { DatePipe } from '@angular/common';
 
 @Component({
@@ -17,6 +18,7 @@ export class EventListComponent {
   private readonly eventService = inject(EventClient);
   private readonly selectedEvent = inject(SelectedEventService);
   private readonly translate = inject(TranslateService);
+  private readonly confirm = inject(ConfirmService);
 
   protected readonly events = signal<EventResponse[]>([]);
 
@@ -30,10 +32,13 @@ export class EventListComponent {
     });
   }
 
-  protected onDelete(event: EventResponse): void {
-    // ponytail: native confirm — a styled modal is more code than the ask warrants.
-    const message = this.translate.instant('events.list.deleteConfirm', { name: event.name });
-    if (!confirm(message)) return;
+  protected async onDelete(event: EventResponse): Promise<void> {
+    const ok = await this.confirm.confirm({
+      message: this.translate.instant('events.list.deleteConfirm', { name: event.name }),
+      confirmLabel: this.translate.instant('events.list.delete'),
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     this.eventService.delete(event.id).subscribe({
       next: () => {
