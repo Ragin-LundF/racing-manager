@@ -121,6 +121,18 @@ private fun Route.adminTenantRoutes(jwtService: JwtService, authService: AuthSer
             )
         call.respond(tenant.toResponseModel())
     }
+
+    post("/api/v1/admin/tenants/{id}/reactivate") {
+        val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
+        if (!call.requireScope(principal, Scopes.SUPERVISOR)) return@post
+        val tenantId = UUID.fromString(call.parameters["id"])
+        val tenant = authService.reactivateTenant(tenantId = tenantId, supervisorId = principal.userId)
+            ?: return@post call.respond(
+                status = HttpStatusCode.NotFound,
+                message = ErrorResponseModel(code = "TENANT_NOT_FOUND", message = "Tenant not found")
+            )
+        call.respond(tenant.toResponseModel())
+    }
 }
 
 private fun Route.adminTenantDeleteRoutes(jwtService: JwtService, authService: AuthService) {

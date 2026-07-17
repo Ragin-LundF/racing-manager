@@ -30,6 +30,10 @@ export class AdminClient {
     return this.http.post<TenantResponse>(`${this.baseUrl}/api/v1/admin/tenants/${id}/deactivate`, {});
   }
 
+  reactivateTenant(id: string): Observable<TenantResponse> {
+    return this.http.post<TenantResponse>(`${this.baseUrl}/api/v1/admin/tenants/${id}/reactivate`, {});
+  }
+
   deleteTenant(id: string, request: DeleteTenantRequest): Observable<TenantResponse> {
     return this.http.delete<TenantResponse>(`${this.baseUrl}/api/v1/admin/tenants/${id}`, { body: request });
   }

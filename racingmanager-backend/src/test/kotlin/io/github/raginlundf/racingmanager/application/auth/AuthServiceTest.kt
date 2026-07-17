@@ -1,5 +1,7 @@
 package io.github.raginlundf.racingmanager.application.auth
 
+import io.github.raginlundf.racingmanager.domain.tenant.TenantEntity
+import io.github.raginlundf.racingmanager.domain.tenant.TenantStatus
 import io.github.raginlundf.racingmanager.domain.user.UserRole
 import io.github.raginlundf.racingmanager.infrastructure.DatabaseTestHelper
 import io.github.raginlundf.racingmanager.infrastructure.repositories.AuditRepository
@@ -19,6 +21,8 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import java.util.UUID
 
 class AuthServiceTest {
@@ -213,5 +217,71 @@ class AuthServiceTest {
     @Test
     fun `currentUser returns null for unknown id`() {
         assertNull(authService.currentUser(UUID.randomUUID()))
+    }
+
+    /** Inserts a tenant with the given status and an `updatedAt` [ageHours] in the past. */
+    private fun seedTenant(status: TenantStatus, ageHours: Int): UUID {
+        val id = UUID.randomUUID()
+        val now = Clock.System.now()
+        tenantRepository.insert(
+            TenantEntity(
+                id = id,
+                slug = "t-${id}",
+                displayName = "Tenant",
+                status = status,
+                createdAt = now - (ageHours + 1).hours,
+                updatedAt = now - ageHours.hours,
+            ),
+        )
+        return id
+    }
+
+    @Test
+    fun `purgeExpiredTenants deletes tenants pending longer than the retention window`() {
+        val expired = seedTenant(TenantStatus.PENDING_DELETION, ageHours = 25)
+
+        val purged = authService.purgeExpiredTenants(24.hours)
+
+        assertEquals(1, purged)
+        assertNull(tenantRepository.findById(expired))
+    }
+
+    @Test
+    fun `purgeExpiredTenants keeps tenants still within the retention window`() {
+        val fresh = seedTenant(TenantStatus.PENDING_DELETION, ageHours = 1)
+
+        val purged = authService.purgeExpiredTenants(24.hours)
+
+        assertEquals(0, purged)
+        assertNotNull(tenantRepository.findById(fresh))
+    }
+
+    @Test
+    fun `purgeExpiredTenants never touches ACTIVE or DISABLED tenants`() {
+        val active = seedTenant(TenantStatus.ACTIVE, ageHours = 100)
+        val disabled = seedTenant(TenantStatus.DISABLED, ageHours = 100)
+
+        val purged = authService.purgeExpiredTenants(24.hours)
+
+        assertEquals(0, purged)
+        assertNotNull(tenantRepository.findById(active))
+        assertNotNull(tenantRepository.findById(disabled))
+    }
+
+    @Test
+    fun `reactivateTenant flips a pending-deletion tenant back to ACTIVE and audits it`() {
+        val id = seedTenant(TenantStatus.PENDING_DELETION, ageHours = 1)
+
+        val result = authService.reactivateTenant(id, UUID.randomUUID())
+
+        assertEquals(TenantStatus.ACTIVE, result?.status)
+        assertEquals(TenantStatus.ACTIVE, tenantRepository.findById(id)?.status)
+        val audit = auditRepository.query(action = "TENANT_REACTIVATED", targetId = id)
+        assertEquals(1, audit.size)
+    }
+
+    @Test
+    fun `reactivateTenant returns null for an unknown tenant`() {
+        assertNull(authService.reactivateTenant(UUID.randomUUID(), UUID.randomUUID()))
     }
 }

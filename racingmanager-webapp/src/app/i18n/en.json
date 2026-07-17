@@ -576,6 +576,7 @@
       "slug": "Slug",
       "status": "Status",
       "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
       "delete": "Delete",
       "confirmSlugPrompt": "Type the tenant slug to confirm deletion:",
       "empty": "No tenants yet."

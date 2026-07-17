@@ -576,6 +576,7 @@
       "slug": "Slug",
       "status": "Status",
       "deactivate": "Deaktivieren",
+      "reactivate": "Reaktivieren",
       "delete": "Löschen",
       "confirmSlugPrompt": "Geben Sie den Mandanten-Slug ein, um die Löschung zu bestätigen:",
       "empty": "Noch keine Mandanten."

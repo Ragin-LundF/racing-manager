@@ -21,6 +21,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import java.util.UUID
 
+@Suppress("TooManyFunctions") // Cohesive auth + tenant-lifecycle service; splitting would only scatter related logic.
 class AuthService(
     private val userRepository: UserRepository,
     private val tenantRepository: TenantRepository,
@@ -31,8 +32,8 @@ class AuthService(
     private val jwtService: JwtService,
     private val accessTokenTtl: Duration = 15.minutes,
     private val refreshTokenTtl: Duration = 30.days,
+    private val clock: Clock = Clock.System,
 ) {
-    private val clock: Clock = Clock.System
 
     fun isFirstRun(): Boolean {
         return userRepository.count() == 0L
@@ -488,6 +489,54 @@ class AuthService(
             ),
         )
         return DeleteTenantResult.Success(updated)
+    }
+
+    /** Reverses a soft-delete (or a deactivation): flips the tenant back to
+        [TenantStatus.ACTIVE]. This is the "change of mind" path — a supervisor can
+        cancel a pending deletion any time before the purge worker removes it. */
+    fun reactivateTenant(tenantId: UUID, supervisorId: UUID): TenantEntity? {
+        val tenant = tenantRepository.findById(tenantId) ?: return null
+        val updated = tenant.copy(status = TenantStatus.ACTIVE, updatedAt = clock.now())
+        tenantRepository.update(updated)
+        auditRepository.insert(
+            AuditEntryEntity(
+                id = UUID.randomUUID(),
+                actorId = supervisorId,
+                action = "TENANT_REACTIVATED",
+                targetType = "Tenant",
+                targetId = tenant.id,
+                summary = "Tenant '${tenant.displayName}' reactivated",
+                occurredAt = clock.now(),
+            ),
+        )
+        return updated
+    }
+
+    /** Purge worker entry point: hard-deletes every tenant that has been in
+        [TenantStatus.PENDING_DELETION] longer than [retention] (measured from
+        `updatedAt`). Returns how many were purged. Tenants whose `updatedAt` is null
+        are skipped (treated as not-yet-eligible). Each purge is audited with a
+        null-actor `TENANT_PURGED` entry, which survives because it is not authored
+        by one of the tenant's own users. */
+    fun purgeExpiredTenants(retention: Duration): Int {
+        val cutoff = clock.now() - retention
+        val expired = tenantRepository.findByStatus(TenantStatus.PENDING_DELETION)
+            .filter { it.updatedAt != null && it.updatedAt <= cutoff }
+        for (tenant in expired) {
+            tenantRepository.purgeTenant(tenant.id)
+            auditRepository.insert(
+                AuditEntryEntity(
+                    id = UUID.randomUUID(),
+                    actorId = null,
+                    action = "TENANT_PURGED",
+                    targetType = "Tenant",
+                    targetId = tenant.id,
+                    summary = "Tenant '${tenant.displayName}' purged after retention window",
+                    occurredAt = clock.now(),
+                ),
+            )
+        }
+        return expired.size
     }
 
     /** Idempotently returns the reserved tenant with the given fixed identity,

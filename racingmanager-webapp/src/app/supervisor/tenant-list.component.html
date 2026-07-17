@@ -19,8 +19,14 @@
             <td>{{ tenant.slug }}</td>
             <td>{{ tenant.status }}</td>
             <td class="actions">
-              <button (click)="onDeactivate(tenant)">{{ 'supervisor.tenants.deactivate' | translate }}</button>
-              <button class="btn-delete" (click)="onDelete(tenant)">{{ 'supervisor.tenants.delete' | translate }}</button>
+              @if (tenant.status === 'ACTIVE') {
+                <button (click)="onDeactivate(tenant)">{{ 'supervisor.tenants.deactivate' | translate }}</button>
+              } @else {
+                <button (click)="onReactivate(tenant)">{{ 'supervisor.tenants.reactivate' | translate }}</button>
+              }
+              @if (tenant.status !== 'PENDING_DELETION') {
+                <button class="btn-delete" (click)="onDelete(tenant)">{{ 'supervisor.tenants.delete' | translate }}</button>
+              }
             </td>
           </tr>
         }

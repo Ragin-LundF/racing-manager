@@ -18,6 +18,7 @@ import io.github.raginlundf.racingmanager.application.qualification.Qualificatio
 import io.github.raginlundf.racingmanager.application.results.ResultsService
 import io.github.raginlundf.racingmanager.application.spectator.SpectatorService
 import io.github.raginlundf.racingmanager.application.sync.SyncService
+import io.github.raginlundf.racingmanager.application.tenant.TenantPurgeWorker
 import io.github.raginlundf.racingmanager.infrastructure.DeploymentMode
 import io.github.raginlundf.racingmanager.infrastructure.configureDatabase
 import io.github.raginlundf.racingmanager.infrastructure.configureDeploymentMode
@@ -52,6 +53,8 @@ import io.github.raginlundf.racingmanager.infrastructure.spectator.SpectatorWebS
 import io.ktor.server.application.Application
 import io.ktor.server.netty.EngineMain
 import javax.sql.DataSource
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 
 private val logger = KotlinLogging.logger {}
 
@@ -70,6 +73,24 @@ private fun Application.seedDemoAdmin(authService: AuthService, deploymentMode: 
     if (setupResult is SetupResult.Success) {
         logger.warn { "[demo profile] Seeded default admin 'admin' / 'admin' — change these credentials." }
     }
+}
+
+/** Starts the background worker that hard-deletes tenants left in `PENDING_DELETION`
+past their retention window. Retention/interval/enabled come from
+`racingmanager.tenantPurge` (defaults: 24h retention, 1h sweep, enabled). Set
+`racingmanager.tenantPurge.enabled = false` to disable. */
+private fun Application.startTenantPurgeWorker(authService: AuthService) {
+    val config = environment.config
+    val enabled = config.propertyOrNull("racingmanager.tenantPurge.enabled")?.getString()?.toBoolean() ?: true
+    if (!enabled) {
+        logger.info { "Tenant purge worker disabled via config" }
+        return
+    }
+    val retention = config.propertyOrNull("racingmanager.tenantPurge.retention")?.getString()
+        ?.let { Duration.parse(it) } ?: 24.hours
+    val interval = config.propertyOrNull("racingmanager.tenantPurge.interval")?.getString()
+        ?.let { Duration.parse(it) } ?: 1.hours
+    TenantPurgeWorker(authService = authService, retention = retention, interval = interval).start()
 }
 
 /** Resolves the JWT signing key source for [deploymentMode]. In [DeploymentMode.LOCAL]
@@ -114,6 +135,7 @@ fun Application.module() {
 
     logUnfinishedHeats(diagnosticsService = securedServices.diagnosticsService)
     seedDemoAdmin(authService = securedServices.authService, deploymentMode = deploymentMode)
+    startTenantPurgeWorker(authService = securedServices.authService)
     configureWebSockets()
     coreServices.spectatorWebSocketService.start()
     configureAppRouting(

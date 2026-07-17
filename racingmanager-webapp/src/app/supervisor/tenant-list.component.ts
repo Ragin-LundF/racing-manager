@@ -30,6 +30,12 @@ export class TenantListComponent {
     });
   }
 
+  protected onReactivate(tenant: TenantResponse): void {
+    this.adminClient.reactivateTenant(tenant.id).subscribe((updated) => {
+      this.tenants.update((list) => list.map((t) => (t.id === updated.id ? updated : t)));
+    });
+  }
+
   protected onDelete(tenant: TenantResponse): void {
     // ponytail: native prompt for slug confirmation — a styled modal is more code than the ask warrants.
     const confirmSlug = prompt(this.translate.instant('supervisor.tenants.confirmSlugPrompt'));
