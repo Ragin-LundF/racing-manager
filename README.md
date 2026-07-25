@@ -31,6 +31,10 @@ a live spectator view for the audience.
 - **Multi-tenant / hosted mode** — run as a single local installation, or
   as a hosted multi-tenant service where organizations self-register.
 
+## Specification of the API
+
+You can find the specification of the API under [SYSTEM_SPEC.md](SYSTEM_SPEC.md).
+
 ## Project structure
 
 A Gradle multi-module repository:
