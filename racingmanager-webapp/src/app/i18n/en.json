@@ -417,10 +417,40 @@
     "config": {
       "title": "Raspberry Pi Setup",
       "intro": "Choose how the app connects to the race timing device. Use the simulator to test without hardware, or point the app at your Raspberry Pi. Changes apply immediately — no restart needed.",
+      "arduino": {
+        "baudRate": {
+          "hint": "115200 for the Arduino Mega 2560; this rarely needs changing.",
+          "label": "Baud rate"
+        },
+        "falseStartWindow": {
+          "hint": "0 turns the check off — the recommended setting for this board, which starts timing the moment a lane is armed. A finish with no measured time is always rejected as a sensor fault.",
+          "label": "False-start window (ms)"
+        },
+        "finishSemantics": {
+          "elapsed": "Elapsed time in ms (this board)",
+          "hint": "How the device reports the finish value. Elapsed time matches the observed board; switch to the board timestamp only if measured times come out far too large.",
+          "label": "Finish value",
+          "timestamp": "Board timestamp (finish − start)"
+        },
+        "noPorts": "No serial ports detected. Attach the device, or type the port name.",
+        "port": {
+          "hint": "The port the Arduino is on, e.g. /dev/tty.usbmodem1101, /dev/ttyACM0 or COM3.",
+          "label": "Serial port"
+        },
+        "rawLogPath": {
+          "hint": "Every line sent to and received from the device is appended here. Needed to review a race afterwards.",
+          "label": "Raw log file"
+        },
+        "readyTimeout": {
+          "hint": "The board resets when the port is opened and needs about 3.4 s to report readiness.",
+          "label": "Ready timeout (ms)"
+        }
+      },
       "mode": {
+        "arduinoTwoLane": "Arduino 2-lane light barrier (serial)",
+        "hardware": "Raspberry Pi (hardware)",
         "label": "Device",
-        "simulated": "Simulator (no hardware)",
-        "hardware": "Raspberry Pi (hardware)"
+        "simulated": "Simulator (no hardware)"
       },
       "endpoint": {
         "label": "Raspberry Pi address",

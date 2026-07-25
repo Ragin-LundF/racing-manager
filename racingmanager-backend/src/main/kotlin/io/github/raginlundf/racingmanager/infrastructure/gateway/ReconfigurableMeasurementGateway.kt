@@ -1,5 +1,6 @@
 package io.github.raginlundf.racingmanager.infrastructure.gateway
 
+import io.github.raginlundf.racingmanager.application.heat.CloseableMeasurementGateway
 import io.github.raginlundf.racingmanager.application.heat.GatewayArmResult
 import io.github.raginlundf.racingmanager.application.heat.GatewayCancelResult
 import io.github.raginlundf.racingmanager.application.heat.MeasurementGateway
@@ -28,7 +29,7 @@ private val logger = KotlinLogging.logger {}
     while the stable event stream keeps flowing to existing subscribers. */
 class ReconfigurableMeasurementGateway(
     initialSettings: RaceDeviceSettings,
-    private val buildDelegate: (RaceDeviceSettings) -> RaspberryPiMeasurementGateway,
+    private val buildDelegate: (RaceDeviceSettings) -> CloseableMeasurementGateway,
     private val scope: CoroutineScope = CoroutineScope(context = Dispatchers.Default),
 ) : MeasurementGateway {
     private val events = MutableSharedFlow<MeasurementGatewayEvent>(extraBufferCapacity = 64)
@@ -38,7 +39,7 @@ class ReconfigurableMeasurementGateway(
     private var settings: RaceDeviceSettings = initialSettings
 
     @Volatile
-    private var delegate: RaspberryPiMeasurementGateway = buildDelegate(initialSettings)
+    private var delegate: CloseableMeasurementGateway = buildDelegate(initialSettings)
 
     private var forwardJob: Job = startForwarding(source = delegate)
 
@@ -78,7 +79,7 @@ class ReconfigurableMeasurementGateway(
         }
     }
 
-    private fun startForwarding(source: RaspberryPiMeasurementGateway): Job {
+    private fun startForwarding(source: CloseableMeasurementGateway): Job {
         return scope.launch {
             source.events().collect { event -> events.emit(value = event) }
         }

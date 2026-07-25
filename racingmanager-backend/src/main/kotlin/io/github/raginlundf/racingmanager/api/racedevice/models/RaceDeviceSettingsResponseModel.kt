@@ -7,4 +7,5 @@ data class RaceDeviceSettingsResponseModel(
     val mode: String,
     val endpoint: String,
     val finishTimeoutMs: Long,
+    val arduino: ArduinoSettingsModel? = null,
 )

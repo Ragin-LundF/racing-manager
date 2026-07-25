@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../core/api.config';
-import { RaceDeviceSettings, RaceDeviceTestRequest, RaceDeviceTestResult } from './race-device.models';
+import { RaceDeviceSettings, RaceDeviceTestRequest, RaceDeviceTestResult, SerialPort } from './race-device.models';
 
 @Injectable({ providedIn: 'root' })
 export class RaceDeviceClient {
@@ -19,5 +19,10 @@ export class RaceDeviceClient {
 
   testConnection(request: RaceDeviceTestRequest): Observable<RaceDeviceTestResult> {
     return this.http.post<RaceDeviceTestResult>(`${this.baseUrl}/api/v1/racedevice/test`, request);
+  }
+
+  /** Serial ports of the machine running the backend, for the Arduino port picker. */
+  listSerialPorts(): Observable<SerialPort[]> {
+    return this.http.get<SerialPort[]>(`${this.baseUrl}/api/v1/racedevice/serialports`);
   }
 }

@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 data class TestRaceDeviceRequestModel(
     val mode: String,
     val endpoint: String,
+    val arduino: ArduinoSettingsModel? = null,
 )

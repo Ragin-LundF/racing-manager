@@ -1,5 +1,6 @@
 package io.github.raginlundf.racingmanager.infrastructure.gateway
 
+import io.github.raginlundf.racingmanager.application.heat.CloseableMeasurementGateway
 import io.github.raginlundf.racingmanager.application.heat.GatewayArmResult
 import io.github.raginlundf.racingmanager.application.heat.GatewayCancelResult
 import io.github.raginlundf.racingmanager.application.heat.MeasurementGateway
@@ -34,7 +35,7 @@ class RaspberryPiMeasurementGateway(
     private val transport: RaceDeviceTransport,
     private val finishTimeoutMs: Long = DEFAULT_FINISH_TIMEOUT_MS,
     private val scope: CoroutineScope = CoroutineScope(context = Dispatchers.Default),
-) : MeasurementGateway {
+) : CloseableMeasurementGateway {
     private val events = MutableSharedFlow<MeasurementGatewayEvent>(extraBufferCapacity = 64)
 
     // ponytail: a plain set of seen ids — a race day is at most a few thousand
@@ -60,7 +61,7 @@ class RaspberryPiMeasurementGateway(
         transport (including its reconnect loop). Called when the
         [ReconfigurableMeasurementGateway] swaps to new settings so an old
         connection does not linger and keep reconnecting. */
-    suspend fun close() {
+    override suspend fun close() {
         scope.cancel()
         transport.close()
     }

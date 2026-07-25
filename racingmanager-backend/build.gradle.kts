@@ -47,6 +47,9 @@ dependencies {
     // Security
     implementation(libs.bcrypt)
 
+    // Hardware — USB CDC serial for the Arduino two-lane timing device
+    implementation(libs.jserialcomm)
+
     // Logging
     implementation(libs.kotlin.logging)
     implementation(libs.log4j.core)

@@ -11,6 +11,7 @@ kotlin-logging = "8.0.4"
 log4j = "2.26.1"
 hikaricp = "7.1.0"
 bcrypt = "0.10.2"
+jserialcomm = "2.11.2"
 node = "24.18.0"
 detekt = "2.0.0-alpha.5"
 
@@ -57,6 +58,9 @@ log4j-slf4j2 = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.
 
 # Security
 bcrypt = { module = "at.favre.lib:bcrypt", version.ref = "bcrypt" }
+
+# Hardware
+jserialcomm = { module = "com.fazecast:jSerialComm", version.ref = "jserialcomm" }
 
 # Test
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

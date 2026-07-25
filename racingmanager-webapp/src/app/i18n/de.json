@@ -417,10 +417,40 @@
     "config": {
       "title": "Raspberry-Pi-Einrichtung",
       "intro": "Legen Sie fest, wie die App mit dem Zeitmessgerät verbunden wird. Nutzen Sie den Simulator zum Testen ohne Hardware oder verbinden Sie die App mit Ihrem Raspberry Pi. Änderungen werden sofort übernommen — kein Neustart nötig.",
+      "arduino": {
+        "baudRate": {
+          "hint": "115200 beim Arduino Mega 2560; eine Änderung ist selten nötig.",
+          "label": "Baudrate"
+        },
+        "falseStartWindow": {
+          "hint": "0 schaltet die Prüfung ab — empfohlen für dieses Board, das die Messung schon beim Scharfschalten startet. Ein Zieldurchgang ohne gemessene Zeit wird ohnehin als Sensorfehler abgewiesen.",
+          "label": "Fehlstart-Fenster (ms)"
+        },
+        "finishSemantics": {
+          "elapsed": "Bereits die gemessene Zeit in ms (dieses Board)",
+          "hint": "Wie das Gerät den Zielwert meldet. Die gemessene Zeit passt zum beobachteten Board; auf den Zeitstempel nur umstellen, wenn die Zeiten viel zu groß herauskommen.",
+          "label": "Zielwert",
+          "timestamp": "Zeitstempel des Boards (Ziel − Start)"
+        },
+        "noPorts": "Keine seriellen Ports gefunden. Gerät anschließen oder Portnamen eingeben.",
+        "port": {
+          "hint": "Der Port des Arduino, z. B. /dev/tty.usbmodem1101, /dev/ttyACM0 oder COM3.",
+          "label": "Serieller Port"
+        },
+        "rawLogPath": {
+          "hint": "Jede gesendete und empfangene Zeile wird hier angehängt. Nötig, um einen Lauf später auszuwerten.",
+          "label": "Rohprotokoll-Datei"
+        },
+        "readyTimeout": {
+          "hint": "Das Board startet beim Öffnen des Ports neu und braucht etwa 3,4 s bis zur Bereitmeldung.",
+          "label": "Bereit-Timeout (ms)"
+        }
+      },
       "mode": {
+        "arduinoTwoLane": "Arduino-Lichtschranke, 2 Bahnen (seriell)",
+        "hardware": "Raspberry Pi (Hardware)",
         "label": "Gerät",
-        "simulated": "Simulator (keine Hardware)",
-        "hardware": "Raspberry Pi (Hardware)"
+        "simulated": "Simulator (keine Hardware)"
       },
       "endpoint": {
         "label": "Raspberry-Pi-Adresse",

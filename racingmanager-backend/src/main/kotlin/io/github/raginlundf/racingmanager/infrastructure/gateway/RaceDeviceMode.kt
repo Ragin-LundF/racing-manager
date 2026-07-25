@@ -7,6 +7,10 @@ enum class RaceDeviceMode {
 
     /** A real Raspberry Pi reached over a WebSocket connection. */
     HARDWARE,
+
+    /** An Arduino two-lane light barrier on a local USB CDC serial port, speaking
+        the semicolon-delimited line protocol from `.plan/Adruino-impl.md`. */
+    ARDUINO_TWO_LANE,
     ;
 
     companion object {

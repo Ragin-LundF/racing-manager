@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="add-race-device-arduino-options" author="ragin">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="race_device_settings" columnName="arduino_options"/></not>
+        </preConditions>
+        <!-- JSON blob of ArduinoTwoLaneSettings; null for the WebSocket modes. -->
+        <addColumn tableName="race_device_settings">
+            <column name="arduino_options" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

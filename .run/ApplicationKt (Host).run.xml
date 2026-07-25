@@ -1,8 +1,12 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ApplicationKt" type="KtorApplicationConfigurationType" factoryName="Ktor" nameIsGenerated="true">
+  <configuration default="false" name="ApplicationKt (Host)" type="KtorApplicationConfigurationType" factoryName="Ktor">
     <option name="MAIN_CLASS_NAME" value="io.github.raginlundf.racingmanager.ApplicationKt" />
     <module name="racingmanager.racingmanager-backend.main" />
     <option name="PROGRAM_PARAMETERS" value="-config=application-demohost.conf" />
+    <extension name="com.egoshard.intellij.k8s-runtime-config-plugin">
+      <option name="ENABLED" value="false" />
+      <entries />
+    </extension>
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="io.github.raginlundf.racingmanager.*" />

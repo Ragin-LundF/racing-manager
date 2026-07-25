@@ -18,6 +18,7 @@
       <select name="mode" [(ngModel)]="mode">
         <option value="SIMULATED">{{ 'raspberryPi.config.mode.simulated' | translate }}</option>
         <option value="HARDWARE">{{ 'raspberryPi.config.mode.hardware' | translate }}</option>
+        <option value="ARDUINO_TWO_LANE">{{ 'raspberryPi.config.mode.arduinoTwoLane' | translate }}</option>
       </select>
     </label>
 
@@ -32,6 +33,63 @@
           placeholder="ws://192.168.1.100:8080/race"
         />
         <small class="hint">{{ 'raspberryPi.config.endpoint.hint' | translate }}</small>
+      </label>
+    }
+
+    @if (mode === 'ARDUINO_TWO_LANE') {
+      <label>
+        <span>{{ 'raspberryPi.config.arduino.port.label' | translate }}</span>
+        <input
+          name="portName"
+          [(ngModel)]="arduino.portName"
+          required
+          list="serial-ports"
+          placeholder="/dev/tty.usbmodem1101"
+        />
+        <datalist id="serial-ports">
+          @for (port of serialPorts(); track port.name) {
+            <option [value]="port.name">{{ port.description }}</option>
+          }
+        </datalist>
+        <small class="hint">
+          {{
+            (serialPorts().length ? 'raspberryPi.config.arduino.port.hint' : 'raspberryPi.config.arduino.noPorts')
+              | translate
+          }}
+        </small>
+      </label>
+
+      <label>
+        <span>{{ 'raspberryPi.config.arduino.baudRate.label' | translate }}</span>
+        <input type="number" name="baudRate" [(ngModel)]="arduino.baudRate" required min="1" />
+        <small class="hint">{{ 'raspberryPi.config.arduino.baudRate.hint' | translate }}</small>
+      </label>
+
+      <label>
+        <span>{{ 'raspberryPi.config.arduino.readyTimeout.label' | translate }}</span>
+        <input type="number" name="readyTimeoutMs" [(ngModel)]="arduino.readyTimeoutMs" required min="1" />
+        <small class="hint">{{ 'raspberryPi.config.arduino.readyTimeout.hint' | translate }}</small>
+      </label>
+
+      <label>
+        <span>{{ 'raspberryPi.config.arduino.falseStartWindow.label' | translate }}</span>
+        <input type="number" name="falseStartWindowMs" [(ngModel)]="arduino.falseStartWindowMs" required min="0" />
+        <small class="hint">{{ 'raspberryPi.config.arduino.falseStartWindow.hint' | translate }}</small>
+      </label>
+
+      <label>
+        <span>{{ 'raspberryPi.config.arduino.finishSemantics.label' | translate }}</span>
+        <select name="finishSemantics" [(ngModel)]="arduino.finishSemantics">
+          <option value="TIMESTAMP">{{ 'raspberryPi.config.arduino.finishSemantics.timestamp' | translate }}</option>
+          <option value="ELAPSED">{{ 'raspberryPi.config.arduino.finishSemantics.elapsed' | translate }}</option>
+        </select>
+        <small class="hint">{{ 'raspberryPi.config.arduino.finishSemantics.hint' | translate }}</small>
+      </label>
+
+      <label>
+        <span>{{ 'raspberryPi.config.arduino.rawLogPath.label' | translate }}</span>
+        <input name="rawLogPath" [(ngModel)]="arduino.rawLogPath" required />
+        <small class="hint">{{ 'raspberryPi.config.arduino.rawLogPath.hint' | translate }}</small>
       </label>
     }
 
