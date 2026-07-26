@@ -45,6 +45,7 @@ class EventRepository {
                 it[laneType] = event.settings.laneType.name
                 it[measurementType] = event.settings.measurementType.name
                 it[maxParticipants] = event.settings.maxParticipants
+                it[trackLength] = event.settings.trackLength
                 it[version] = event.version
                 it[createdBy] = event.createdBy
                 it[createdAt] = event.createdAt
@@ -68,6 +69,7 @@ class EventRepository {
                     it[laneType] = event.settings.laneType.name
                     it[measurementType] = event.settings.measurementType.name
                     it[maxParticipants] = event.settings.maxParticipants
+                    it[trackLength] = event.settings.trackLength
                     it[version] = event.version
                     it[updatedAt] = event.updatedAt
                     it[activatedAt] = event.activatedAt
@@ -119,6 +121,7 @@ class EventRepository {
                 laneType = LaneType.valueOf(this[EventTable.laneType]),
                 measurementType = MeasurementType.valueOf(this[EventTable.measurementType]),
                 maxParticipants = this[EventTable.maxParticipants],
+                trackLength = this[EventTable.trackLength],
             ),
             version = this[EventTable.version],
             createdBy = this[EventTable.createdBy],

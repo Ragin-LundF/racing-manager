@@ -17,7 +17,11 @@ object DatabaseTestHelper {
         val config = HikariConfig().apply {
             jdbcUrl = "jdbc:sqlite:file:test-${System.nanoTime()}.db?mode=memory&cache=shared"
             driverClassName = "org.sqlite.JDBC"
-            maximumPoolSize = 3
+            // SQLite's shared cache locks sqlite_master across connections, so a second
+            // pooled connection opened while Liquibase runs DDL dies with
+            // SQLITE_LOCKED_SHAREDCACHE. One connection removes the race entirely; the
+            // tests are sequential, so they never need a second.
+            maximumPoolSize = 1
             minimumIdle = 1
             isAutoCommit = false
         }

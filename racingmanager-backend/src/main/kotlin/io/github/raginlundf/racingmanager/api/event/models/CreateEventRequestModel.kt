@@ -9,4 +9,5 @@ data class CreateEventRequestModel(
     val laneType: String = "TWO_LANE",
     val measurementType: String = "SIMULATED",
     val maxParticipants: Int? = null,
+    val trackLength: Int? = null,
 )

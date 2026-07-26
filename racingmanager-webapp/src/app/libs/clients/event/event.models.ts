@@ -2,6 +2,8 @@ export interface EventSettings {
   laneType: string;
   measurementType: string;
   maxParticipants: number | null;
+  /** Course length in meters, or null when unknown. */
+  trackLength: number | null;
 }
 
 export interface EventResponse {
@@ -23,6 +25,7 @@ export interface CreateEventRequest {
   laneType?: string;
   measurementType?: string;
   maxParticipants?: number | null;
+  trackLength?: number | null;
 }
 
 export interface UpdateEventRequest {
@@ -31,6 +34,7 @@ export interface UpdateEventRequest {
   laneType?: string;
   measurementType?: string;
   maxParticipants?: number | null;
+  trackLength?: number | null;
   expectedVersion: number;
 }
 

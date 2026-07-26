@@ -5,6 +5,7 @@ import { interval, Subscription, switchMap, tap } from 'rxjs';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
 import { SpectatorClient } from '../../libs/clients/spectator/spectator.client';
 import { SpectatorLaneModel, SpectatorSnapshotResponse } from '../../libs/clients/spectator/spectator.models';
+import { formatSpeedKmh } from '../../shared/speed';
 
 @Component({
   selector: 'app-spectator-shell',
@@ -27,6 +28,11 @@ export class SpectatorShellComponent implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly reducedMotion = signal(false);
   protected readonly fullscreen = signal(false);
+
+  /** Set only when the event declares a track length — speed is shown only then. */
+  protected readonly trackLength = computed(
+    () => (this.snapshot() ?? this.lastKnownSnapshot())?.event.trackLength ?? null,
+  );
 
   private pollSubscription: Subscription | null = null;
   private ws: WebSocket | null = null;
@@ -214,6 +220,10 @@ export class SpectatorShellComponent implements OnInit {
         this.tryWebSocket();
       }
     }, 10000);
+  }
+
+  protected speed(nanos: number | undefined | null): string {
+    return formatSpeedKmh(nanos, this.trackLength());
   }
 
   protected formatNanos(nanos: number | undefined | null): string {

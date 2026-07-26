@@ -162,6 +162,14 @@ class QualificationServiceTest {
             actorId = actorId,
             tenantId = tenantId
         )
+        // A new event starts ACTIVE; creating another one returns this to DRAFT.
+        eventService.create(
+            name = "Takes Over",
+            description = null,
+            settings = EventSettings(),
+            actorId = actorId,
+            tenantId = tenantId
+        )
         val draftId = (draftEvent as CreateEventResult.Success).event.id
 
         val result = qualificationService.setup(eventId = draftId, numberOfRuns = 2, actorId = actorId)

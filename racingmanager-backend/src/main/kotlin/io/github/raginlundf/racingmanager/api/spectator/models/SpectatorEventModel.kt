@@ -10,4 +10,6 @@ data class SpectatorEventModel(
     val status: String,
     val laneType: String,
     val measurementType: String,
+    /** Course length in meters, or null. The spectator view derives km/h from it. */
+    val trackLength: Int? = null,
 )

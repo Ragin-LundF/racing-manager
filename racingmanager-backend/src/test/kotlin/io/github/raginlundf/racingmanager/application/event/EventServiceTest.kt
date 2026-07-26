@@ -65,15 +65,30 @@ class EventServiceTest {
     }
 
     @Test
-    fun `create event returns Success with DRAFT status`() {
+    fun `create event returns Success and starts it as the active event`() {
         val settings = EventSettings()
         val result = eventService.create("Test Event", null, settings, actorId, tenantId)
 
         val success = assertIs<CreateEventResult.Success>(result)
         assertEquals("Test Event", success.event.name)
-        assertEquals(EventStatus.DRAFT, success.event.status)
+        assertEquals(EventStatus.ACTIVE, success.event.status)
+        assertNotNull(success.event.activatedAt)
         assertEquals(0L, success.event.version)
         assertNotNull(success.event.id)
+    }
+
+    @Test
+    fun `creating an event returns the previously active event to DRAFT`() {
+        val first = (eventService.create("First", null, EventSettings(), actorId, tenantId)
+            as CreateEventResult.Success).event
+
+        val second = (eventService.create("Second", null, EventSettings(), actorId, tenantId)
+            as CreateEventResult.Success).event
+
+        val standDown = eventRepository.findById(first.id)!!
+        assertEquals(EventStatus.DRAFT, standDown.status)
+        assertNull(standDown.activatedAt)
+        assertEquals(EventStatus.ACTIVE, eventRepository.findById(second.id)!!.status)
     }
 
     @Test
@@ -171,7 +186,9 @@ class EventServiceTest {
     @Test
     fun `activate event changes status to ACTIVE`() {
         val created = eventService.create("To Activate", null, EventSettings(), actorId, tenantId)
-        val event = (created as CreateEventResult.Success).event
+        // A second event stands the first one down to DRAFT, so it can be activated again.
+        eventService.create("Takes Over", null, EventSettings(), actorId, tenantId)
+        val event = eventRepository.findById((created as CreateEventResult.Success).event.id)!!
 
         val result = eventService.activate(event.id, event.version, actorId)
 
@@ -184,9 +201,9 @@ class EventServiceTest {
     fun `activate non-draft event returns InvalidStatus`() {
         val created = eventService.create("To Activate", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
-        eventService.activate(event.id, event.version, actorId)
 
-        val result = eventService.activate(event.id, 1L, actorId)
+        // A new event is already ACTIVE — activating it again is invalid.
+        val result = eventService.activate(event.id, event.version, actorId)
 
         assertIs<ActivateEventResult.InvalidStatus>(result)
     }
@@ -195,7 +212,6 @@ class EventServiceTest {
     fun `archive active event changes status to ARCHIVED`() {
         val created = eventService.create("To Archive", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
-        eventService.activate(event.id, event.version, actorId)
 
         val result = eventService.archive(event.id, actorId)
 
@@ -206,6 +222,8 @@ class EventServiceTest {
     @Test
     fun `archive non-active event returns InvalidStatus`() {
         val created = eventService.create("Draft Only", null, EventSettings(), actorId, tenantId)
+        // A second event returns the first to DRAFT.
+        eventService.create("Takes Over", null, EventSettings(), actorId, tenantId)
         val event = (created as CreateEventResult.Success).event
 
         val result = eventService.archive(event.id, actorId)
@@ -241,6 +259,44 @@ class EventServiceTest {
         val result = eventService.reactivate(event.id, actorId)
 
         assertIs<ReactivateEventResult.InvalidStatus>(result)
+    }
+
+    @Test
+    fun `update is allowed while the event is ACTIVE`() {
+        val event = (eventService.create("Running", null, EventSettings(), actorId, tenantId)
+            as CreateEventResult.Success).event
+        assertEquals(EventStatus.ACTIVE, event.status)
+
+        val result = eventService.update(
+            id = event.id,
+            name = "Renamed",
+            description = null,
+            settings = EventSettings(trackLength = 120),
+            expectedVersion = event.version,
+            actorId = actorId,
+        )
+
+        val success = assertIs<UpdateEventResult.Success>(result)
+        assertEquals("Renamed", success.event.name)
+        assertEquals(120, success.event.settings.trackLength)
+    }
+
+    @Test
+    fun `update of an archived event returns CannotModifyFinishedEvent`() {
+        val event = (eventService.create("To Archive", null, EventSettings(), actorId, tenantId)
+            as CreateEventResult.Success).event
+        eventService.archive(event.id, actorId)
+
+        val result = eventService.update(
+            id = event.id,
+            name = "Renamed",
+            description = null,
+            settings = EventSettings(),
+            expectedVersion = event.version + 1,
+            actorId = actorId,
+        )
+
+        assertIs<UpdateEventResult.CannotModifyFinishedEvent>(result)
     }
 
     @Test

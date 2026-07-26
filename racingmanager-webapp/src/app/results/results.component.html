@@ -34,6 +34,9 @@
               <th>{{ 'results.name' | translate }}</th>
               <th>{{ 'results.club' | translate }}</th>
               <th>{{ 'results.bestTime' | translate }}</th>
+              @if (trackLength()) {
+                <th>{{ 'results.speed' | translate }}</th>
+              }
               <th>{{ 'results.runs' | translate }}</th>
               <th>{{ 'results.dnf' | translate }}</th>
             </tr>
@@ -46,6 +49,9 @@
                 <td>{{ entry.firstName }} {{ entry.lastName }}</td>
                 <td>{{ entry.club }}</td>
                 <td>{{ entry.bestTimeNanos !== null ? (entry.bestTimeNanos / 1000000) + ' ms' : '-' }}</td>
+                @if (trackLength()) {
+                  <td>{{ speed(entry.bestTimeNanos) || '-' }}</td>
+                }
                 <td>{{ entry.completedRuns }}</td>
                 <td>{{ entry.dnfCount }}</td>
               </tr>

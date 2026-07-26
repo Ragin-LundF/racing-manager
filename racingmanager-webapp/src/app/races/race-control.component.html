@@ -135,6 +135,9 @@
             <div class="lane-number">{{ lane.lane }}</div>
             <div class="lane-name">{{ lane.participantFirstName }} {{ lane.participantLastName }}</div>
             <div class="lane-time tnum">{{ measurement ? formatNanos(measurement.durationNanos) : '-' }}</div>
+            @if (measurement?.outcome === 'FINISHED' && speed(measurement!.durationNanos); as kmh) {
+              <div class="lane-speed tnum">{{ kmh }}</div>
+            }
             @if (measurement) {
               <div class="lane-outcome">{{ measurement.outcome }}</div>
             }

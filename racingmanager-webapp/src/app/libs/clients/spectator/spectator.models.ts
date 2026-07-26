@@ -16,6 +16,7 @@ export interface SpectatorEventModel {
   status: string;
   laneType: string;
   measurementType: string;
+  trackLength?: number;
 }
 
 export interface SpectatorLaneModel {

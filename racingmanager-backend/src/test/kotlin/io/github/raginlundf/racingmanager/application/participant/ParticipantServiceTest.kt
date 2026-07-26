@@ -2,7 +2,6 @@ package io.github.raginlundf.racingmanager.application.participant
 
 import io.github.raginlundf.racingmanager.application.auth.AuthService
 import io.github.raginlundf.racingmanager.application.auth.SetupResult
-import io.github.raginlundf.racingmanager.application.event.ActivateEventResult
 import io.github.raginlundf.racingmanager.application.event.CreateEventResult
 import io.github.raginlundf.racingmanager.application.event.EventService
 import io.github.raginlundf.racingmanager.domain.event.EventSettings
@@ -74,12 +73,8 @@ class ParticipantServiceTest {
             actorId = actorId,
             tenantId = tenantId
         )
-        val created = eventService.activate(
-            id = (eventResult as CreateEventResult.Success).event.id,
-            expectedVersion = 0L,
-            actorId = actorId
-        )
-        eventId = (created as ActivateEventResult.Success).event.id
+        // A newly created event is already the active one — no activate step needed.
+        eventId = (eventResult as CreateEventResult.Success).event.id
     }
 
     @AfterTest
@@ -191,6 +186,14 @@ class ParticipantServiceTest {
     fun `create participant for non-active event returns error`() {
         val draftEvent = eventService.create(
             name = "Draft",
+            description = null,
+            settings = EventSettings(),
+            actorId = actorId,
+            tenantId = tenantId
+        )
+        // A new event starts ACTIVE; creating another one returns this to DRAFT.
+        eventService.create(
+            name = "Takes Over",
             description = null,
             settings = EventSettings(),
             actorId = actorId,

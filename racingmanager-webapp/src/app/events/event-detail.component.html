@@ -20,11 +20,18 @@
         <span class="chip chip-muted">
           {{ 'events.detail.measurementLabel' | translate }}: {{ 'enum.' + e.settings.measurementType | translate }}
         </span>
+        @if (e.settings.trackLength) {
+          <span class="chip chip-muted">
+            {{ 'events.detail.trackLengthLabel' | translate }}: {{ e.settings.trackLength }} m
+          </span>
+        }
       </div>
 
       <div class="actions">
         @if (e.status === 'DRAFT') {
           <button class="success" (click)="onActivate()">{{ 'events.detail.activate' | translate }}</button>
+        }
+        @if (e.status === 'DRAFT' || e.status === 'ACTIVE') {
           <a [routerLink]="['edit']">{{ 'events.detail.edit' | translate }}</a>
         }
         @if (e.status === 'ACTIVE' || e.status === 'COMPLETED') {

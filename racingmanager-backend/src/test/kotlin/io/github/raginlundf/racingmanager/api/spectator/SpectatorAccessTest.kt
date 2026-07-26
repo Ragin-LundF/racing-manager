@@ -248,9 +248,12 @@ class SpectatorAccessTest {
             setBody(body = """{"name":"Spectator Event"}""")
         }.bodyAsText()
         val eventId = """"id":"([^"]+)"""".toRegex().find(input = createBody)!!.groupValues[1]
-        if (activate) {
-            post("/api/v1/events/$eventId/activate") {
+        if (!activate) {
+            // A new event starts ACTIVE — creating another one returns this to DRAFT.
+            post("/api/v1/events") {
                 header(key = "Authorization", value = "Bearer $adminToken")
+                contentType(type = ContentType.Application.Json)
+                setBody(body = """{"name":"Takes Over"}""")
             }
         }
         return eventId
@@ -353,6 +356,10 @@ class SpectatorAccessTest {
             val adminToken = client.adminAccessToken()
             val eventAId = client.createEvent(adminToken)
             val eventBId = client.createEvent(adminToken)
+            // Creating B made it the active event; A must be running again to be watchable.
+            client.post("/api/v1/events/$eventAId/activate") {
+                header(key = "Authorization", value = "Bearer $adminToken")
+            }
 
             val tokenResponseA = client.post("/api/v1/events/$eventAId/spectator-token") {
                 header(key = "Authorization", value = "Bearer $adminToken")

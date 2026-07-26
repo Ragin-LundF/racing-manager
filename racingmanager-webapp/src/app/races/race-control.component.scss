@@ -49,6 +49,7 @@
 .lane-number { font-size: 20px; font-weight: 700; opacity: 0.85; }
 .lane-name { font-weight: 500; }
 .lane-time { font-size: 18px; font-weight: 600; margin-top: var(--space-1); }
+.lane-speed { font-size: 13px; font-weight: 600; color: var(--color-text-muted); }
 .lane-outcome { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; opacity: 0.9; }
 
 .actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }

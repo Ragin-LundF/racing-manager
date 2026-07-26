@@ -11,6 +11,8 @@ import {ParticipantResponse} from '../libs/clients/participant/participant.model
 import {QualificationResponse} from '../libs/clients/qualification/qualification.models';
 import {KnockoutMatchResponse, KnockoutTournamentResponse} from '../libs/clients/knockout/knockout.models';
 import {ConfirmService} from '../shared/confirm/confirm.service';
+import {SelectedEventService} from '../core/selected-event.service';
+import {formatSpeedKmh} from '../shared/speed';
 
 @Component({
   selector: 'app-race-control',
@@ -27,6 +29,10 @@ export class RaceControlComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
   private readonly confirm = inject(ConfirmService);
+  private readonly selectedEvent = inject(SelectedEventService);
+
+  /** Set only when the event declares a track length — speed is shown only then. */
+  protected readonly trackLength = computed(() => this.selectedEvent.event()?.settings.trackLength ?? null);
 
   protected heats = signal<HeatResponse[]>([]);
   protected participants = signal<ParticipantResponse[]>([]);
@@ -303,6 +309,10 @@ export class RaceControlComponent implements OnDestroy {
     });
   }
 
+  protected speed(nanos: number): string {
+    return formatSpeedKmh(nanos, this.trackLength());
+  }
+
   protected formatNanos(nanos: number): string {
     if (nanos === 0) return '-';
     const seconds = nanos / 1_000_000_000;
@@ -338,8 +348,9 @@ export class RaceControlComponent implements OnDestroy {
     return heat.lanes
       .map((lane) => {
         const m = this.getLaneMeasurement(heat, lane.lane);
+        const kmh = m && m.outcome === 'FINISHED' ? this.speed(m.durationNanos) : '';
         const time = m ? (m.outcome === 'FINISHED' ? this.formatNanos(m.durationNanos) : m.outcome) : '-';
-        return `${lane.participantFirstName} ${lane.participantLastName} (${time})`;
+        return `${lane.participantFirstName} ${lane.participantLastName} (${kmh ? `${time}, ${kmh}` : time})`;
       })
       .join(' : ');
   }

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { ConflictResponse } from '../libs/clients/event/event.models';
 import { LocaleService } from '../i18n/locale.service';
+import { SelectedEventService } from '../core/selected-event.service';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { catchError, of } from 'rxjs';
 
@@ -19,6 +20,7 @@ export class EventFormComponent {
   protected readonly router = inject(Router);
   protected readonly route = inject(ActivatedRoute);
   private readonly localeService = inject(LocaleService);
+  private readonly selectedEvent = inject(SelectedEventService);
   // Zoneless CD: ngModel fields set in an async callback need an explicit nudge.
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
@@ -29,6 +31,7 @@ export class EventFormComponent {
   protected laneType = 'TWO_LANE';
   protected measurementType = 'SIMULATED';
   protected maxParticipants: number | null = null;
+  protected trackLength: number | null = null;
   protected version = 0;
   protected error = signal('');
   protected conflict = signal<ConflictResponse | null>(null);
@@ -52,6 +55,7 @@ export class EventFormComponent {
         this.laneType = event.settings.laneType;
         this.measurementType = event.settings.measurementType;
         this.maxParticipants = event.settings.maxParticipants;
+        this.trackLength = event.settings.trackLength;
         this.version = event.version;
         this.cdr.markForCheck();
       },
@@ -72,6 +76,7 @@ export class EventFormComponent {
         laneType: this.laneType,
         measurementType: this.measurementType,
         maxParticipants: this.maxParticipants,
+        trackLength: this.trackLength,
         expectedVersion: this.version,
       }).pipe(
         catchError((err) => {
@@ -85,6 +90,7 @@ export class EventFormComponent {
         }),
       ).subscribe((res) => {
         if (res) {
+          this.selectedEvent.notifyEventsChanged();
           this.router.navigate(['..'], { relativeTo: this.route });
         }
       });
@@ -95,6 +101,7 @@ export class EventFormComponent {
         laneType: this.laneType,
         measurementType: this.measurementType,
         maxParticipants: this.maxParticipants,
+        trackLength: this.trackLength,
       }).pipe(
         catchError((err) => {
           this.error.set(err?.error?.message ?? this.translate.instant('events.form.createError'));
@@ -102,6 +109,9 @@ export class EventFormComponent {
         }),
       ).subscribe((res) => {
         if (res) {
+          // The backend made this event the active one and returned any previously
+          // active event to DRAFT — refresh the shell so both statuses are current.
+          this.selectedEvent.notifyEventsChanged();
           // Open the newly created event directly — the shell then auto-selects
           // it, so there is no separate "select on top" step.
           this.router.navigate(['..', res.id], { relativeTo: this.route });

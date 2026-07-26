@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { EventClient } from '../libs/clients/event/event.client';
 import { EventResponse } from '../libs/clients/event/event.models';
@@ -28,6 +28,9 @@ export class EventDetailComponent {
   constructor() {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.loadEvent(id);
+    // Publish the loaded event to the child views (results, qualification, race
+    // control) — an effect covers the load and every activate/archive refresh.
+    effect(() => this.selectedEvent.event.set(this.event()));
   }
 
   private loadEvent(id: string): void {

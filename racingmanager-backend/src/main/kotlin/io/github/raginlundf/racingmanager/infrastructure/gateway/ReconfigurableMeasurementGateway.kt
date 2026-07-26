@@ -5,6 +5,7 @@ import io.github.raginlundf.racingmanager.application.heat.GatewayArmResult
 import io.github.raginlundf.racingmanager.application.heat.GatewayCancelResult
 import io.github.raginlundf.racingmanager.application.heat.MeasurementGateway
 import io.github.raginlundf.racingmanager.application.heat.MeasurementGatewayEvent
+import io.github.raginlundf.racingmanager.domain.event.MeasurementType
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
@@ -43,6 +44,13 @@ class ReconfigurableMeasurementGateway(
 
     private var forwardJob: Job = startForwarding(source = delegate)
 
+    /** In-process simulator kept alongside the configured device, so SIMULATED
+        events never reach real hardware. Built on first use — an install that only
+        runs hardware events never pays for it. */
+    @Volatile
+    private var simulator: CloseableMeasurementGateway? = null
+    private val simulatorLock = Any()
+
     override fun events(): Flow<MeasurementGatewayEvent> {
         return events.asSharedFlow()
     }
@@ -59,6 +67,25 @@ class ReconfigurableMeasurementGateway(
         return delegate.cancel(heatId = heatId)
     }
 
+    /** Routes a SIMULATED event to the simulator even when this instance is wired to
+        a Raspberry Pi or an Arduino: choosing simulated timing on the event is the
+        operator saying "no hardware", so a missing board must not fail the heat.
+        Everything else runs on the configured device. */
+    override fun forMeasurementType(measurementType: MeasurementType): MeasurementGateway {
+        if (measurementType != MeasurementType.SIMULATED || settings.mode == RaceDeviceMode.SIMULATED) {
+            return delegate
+        }
+        return simulator ?: synchronized(simulatorLock) {
+            simulator ?: buildDelegate(settings.copy(mode = RaceDeviceMode.SIMULATED)).also {
+                logger.info { "Simulated event on a ${settings.mode} instance — using the in-process simulator" }
+                simulator = it
+                // Share the stable event stream, so simulated measurements reach the
+                // same HeatService subscriber as hardware ones.
+                startForwarding(source = it)
+            }
+        }
+    }
+
     /** The currently active settings, for the settings read endpoint. */
     fun current(): RaceDeviceSettings {
         return settings
@@ -71,7 +98,11 @@ class ReconfigurableMeasurementGateway(
         reconfigureLock.withLock {
             logger.info { "Reconfiguring race device: mode=${newSettings.mode} endpoint=${newSettings.endpoint}" }
             forwardJob.cancelAndJoin()
-            delegate.close()
+            // A device that is already broken (board unplugged, port gone) must never
+            // stop the operator from switching to another mode — least of all back to
+            // the simulator, which is how they recover.
+            runCatching { delegate.close() }
+                .onFailure { logger.warn(it) { "Ignoring failure while closing the previous race device" } }
             val next = buildDelegate(newSettings)
             delegate = next
             settings = newSettings

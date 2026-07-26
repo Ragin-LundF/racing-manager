@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { EventResponse } from '../libs/clients/event/event.models';
 
 /** Globally-held "active event" selection, persisted to localStorage so it
     survives navigation and reloads. The URL is no longer the source of truth for
@@ -9,6 +10,11 @@ export class SelectedEventService {
   private readonly storageKey = 'racingmanager.selectedEventId';
 
   readonly selectedEventId = signal<string>(localStorage.getItem(this.storageKey) ?? '');
+
+  /** The fully-loaded event behind [selectedEventId], published by
+      `EventDetailComponent` so its child views (results, qualification, race
+      control) can read event settings without each refetching the event. */
+  readonly event = signal<EventResponse | null>(null);
 
   /** Bumped whenever the set of events changes (e.g. a delete), so long-lived
       views like the shell can refresh their cached list. */

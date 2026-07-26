@@ -51,6 +51,11 @@
       <input type="number" name="maxParticipants" [(ngModel)]="maxParticipants" min="1" />
     </label>
 
+    <label>
+      <span>{{ 'events.form.trackLength' | translate }}</span>
+      <input type="number" name="trackLength" [(ngModel)]="trackLength" min="1" />
+    </label>
+
     <div class="actions">
       <button type="submit" [disabled]="form.invalid">
         {{ (isEdit() ? 'events.form.save.edit' : 'events.form.save.create') | translate }}

@@ -13,6 +13,9 @@ object EventTable : Table("events") {
     val laneType = varchar("lane_type", 50)
     val measurementType = varchar("measurement_type", 50)
     val maxParticipants = integer("max_participants").nullable()
+
+    /** Course length in meters; drives the km/h readout next to measured times. */
+    val trackLength = integer("track_length").nullable()
     val version = long("version")
     val createdBy = javaUUID("created_by")
     val createdAt = timestamp("created_at")

@@ -78,6 +78,9 @@
                 <th class="rank-col">{{ 'spectator.rank' | translate }}</th>
                 <th>{{ 'spectator.name' | translate }}</th>
                 <th class="time-col">{{ 'spectator.bestTime' | translate }}</th>
+                @if (trackLength()) {
+                  <th class="time-col">{{ 'spectator.speed' | translate }}</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -86,6 +89,9 @@
                   <td class="rank">{{ entry.rank }}</td>
                   <td class="name">{{ entry.firstName }} {{ entry.lastName }}</td>
                   <td class="time tnum">{{ formatSeconds(entry.bestTimeNanos) }}</td>
+                  @if (trackLength()) {
+                    <td class="time tnum">{{ speed(entry.bestTimeNanos) || '—' }}</td>
+                  }
                 </tr>
               }
             </tbody>
@@ -130,6 +136,9 @@
                   } @else {
                     <span class="final tnum">{{ formatSeconds(lane.durationNanos) }}</span>
                     <span class="unit">{{ 'spectator.seconds' | translate }}</span>
+                    @if (speed(lane.durationNanos); as kmh) {
+                      <span class="unit tnum">{{ kmh }}</span>
+                    }
                   }
                 </div>
               }

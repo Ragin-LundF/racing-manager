@@ -44,6 +44,18 @@ class HeatService(
         }
     }
 
+    /** The device to drive for the event's timing mode, or null for MANUAL, which has
+        no device at all. SIMULATED events are routed to the simulator by the gateway
+        itself, so they never fail on missing hardware. */
+    private fun gatewayFor(eventId: UUID): MeasurementGateway? {
+        val measurementType = eventRepository.findById(id = eventId)?.settings?.measurementType
+            ?: return measurementGateway
+        if (measurementType == MeasurementType.MANUAL) {
+            return null
+        }
+        return measurementGateway.forMeasurementType(measurementType = measurementType)
+    }
+
     fun findByEventId(eventId: UUID): List<HeatEntity> {
         return heatRepository.findByEventId(eventId = eventId)
     }
@@ -128,9 +140,9 @@ class HeatService(
         heatRepository.updateStatus(id = id, status = HeatStatus.ARMED, armedAt = now)
 
         // Manual timing has no device to prepare — the operator enters times later.
-        val event = eventRepository.findById(id = heat.eventId)
-        if (event?.settings?.measurementType != MeasurementType.MANUAL) {
-            val result = measurementGateway.arm(heat = heat)
+        val gateway = gatewayFor(eventId = heat.eventId)
+        if (gateway != null) {
+            val result = gateway.arm(heat = heat)
             if (result is GatewayArmResult.Error) {
                 heatRepository.updateStatus(id = id, status = HeatStatus.PLANNED)
                 return ArmHeatResult.GatewayError(message = result.message)
@@ -179,10 +191,7 @@ class HeatService(
 
         val updated = heatRepository.findById(id = id)!!
         // Release the gate / begin timing on the device. Manual timing has none.
-        val event = eventRepository.findById(id = updated.eventId)
-        if (event?.settings?.measurementType != MeasurementType.MANUAL) {
-            measurementGateway.start(heat = updated)
-        }
+        gatewayFor(eventId = updated.eventId)?.start(heat = updated)
 
         _events.tryEmit(value = HeatServiceEvent.HeatStateChanged(heat = updated))
         return StartHeatResult.Success(heat = updated)
@@ -224,10 +233,7 @@ class HeatService(
             return CancelHeatResult.InvalidStatus(current = heat.status)
         }
 
-        val event = eventRepository.findById(id = heat.eventId)
-        if (event?.settings?.measurementType != MeasurementType.MANUAL) {
-            measurementGateway.cancel(heatId = id)
-        }
+        gatewayFor(eventId = heat.eventId)?.cancel(heatId = id)
         heatRepository.updateStatus(id = id, status = HeatStatus.CANCELLED)
 
         auditRepository.insert(

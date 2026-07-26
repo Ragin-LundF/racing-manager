@@ -244,8 +244,63 @@ class EventRoutesTest {
         assertEquals(expected = HttpStatusCode.Created, actual = response.status)
         val body = response.bodyAsText()
         assertTrue(actual = body.contains("\"name\":\"Test Event\""))
-        assertTrue(actual = body.contains("\"status\":\"DRAFT\""))
+        assertTrue(actual = body.contains("\"status\":\"ACTIVE\""))
         assertTrue(actual = body.contains("\"version\":0"))
+    }
+
+    @Test
+    fun `create event persists the track length`() = testApplication {
+        application { configureTestApp() }
+
+        client.post("/api/v1/auth/setup") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123","displayName":"Admin User"}""")
+        }
+        val loginResponse = client.post("/api/v1/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123"}""")
+        }
+        val sid = extractAccessToken(body = loginResponse.bodyAsText())
+
+        val createResponse = client.post("/api/v1/events") {
+            header("Authorization", "Bearer $sid")
+            contentType(ContentType.Application.Json)
+            setBody("""{"name":"Test Event","trackLength":250}""")
+        }
+        assertEquals(expected = HttpStatusCode.Created, actual = createResponse.status)
+        assertTrue(actual = createResponse.bodyAsText().contains("\"trackLength\":250"))
+
+        val id = extractEventId(body = createResponse.bodyAsText())
+        val getResponse = client.get("/api/v1/events/$id") {
+            header("Authorization", "Bearer $sid")
+        }
+
+        assertEquals(expected = HttpStatusCode.OK, actual = getResponse.status)
+        assertTrue(actual = getResponse.bodyAsText().contains("\"trackLength\":250"))
+    }
+
+    @Test
+    fun `create event treats a non-positive track length as unset`() = testApplication {
+        application { configureTestApp() }
+
+        client.post("/api/v1/auth/setup") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123","displayName":"Admin User"}""")
+        }
+        val loginResponse = client.post("/api/v1/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"username":"admin","password":"password123"}""")
+        }
+        val sid = extractAccessToken(body = loginResponse.bodyAsText())
+
+        val response = client.post("/api/v1/events") {
+            header("Authorization", "Bearer $sid")
+            contentType(ContentType.Application.Json)
+            setBody("""{"name":"Test Event","trackLength":0}""")
+        }
+
+        assertEquals(expected = HttpStatusCode.Created, actual = response.status)
+        assertTrue(actual = response.bodyAsText().contains("\"trackLength\":null"))
     }
 
     @Test
@@ -488,6 +543,12 @@ class EventRoutesTest {
             contentType(ContentType.Application.Json)
             setBody("""{"name":"To Activate"}""")
         }
+        // A second event takes over as the active one, returning the first to DRAFT.
+        client.post("/api/v1/events") {
+            header("Authorization", "Bearer $sid")
+            contentType(ContentType.Application.Json)
+            setBody("""{"name":"Takes Over"}""")
+        }
         val eventId = extractEventId(body = createResponse.bodyAsText())
 
         val response = client.post("/api/v1/events/$eventId/activate") {
@@ -549,6 +610,12 @@ class EventRoutesTest {
             header("Authorization", "Bearer $sid")
             contentType(ContentType.Application.Json)
             setBody("""{"name":"Draft Only"}""")
+        }
+        // A second event takes over as the active one, returning the first to DRAFT.
+        client.post("/api/v1/events") {
+            header("Authorization", "Bearer $sid")
+            contentType(ContentType.Application.Json)
+            setBody("""{"name":"Takes Over"}""")
         }
         val eventId = extractEventId(body = createResponse.bodyAsText())
 

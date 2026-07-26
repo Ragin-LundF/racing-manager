@@ -70,6 +70,7 @@ class LocalPackageService(
                 laneType = event.settings.laneType.name,
                 measurementType = event.settings.measurementType.name,
                 maxParticipants = event.settings.maxParticipants,
+                trackLength = event.settings.trackLength,
                 participants = participants.map { p ->
                     PackagedParticipant(
                         id = p.id.toString(),
@@ -264,6 +265,7 @@ class LocalPackageService(
                 laneType = LaneType.valueOf(pe.laneType),
                 measurementType = MeasurementType.valueOf(pe.measurementType),
                 maxParticipants = pe.maxParticipants,
+                trackLength = pe.trackLength,
             ),
             createdBy = importedByUserId,
             createdAt = now,

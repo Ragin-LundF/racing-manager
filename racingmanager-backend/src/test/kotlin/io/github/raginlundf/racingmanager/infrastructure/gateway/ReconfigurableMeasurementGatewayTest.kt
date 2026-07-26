@@ -4,6 +4,7 @@ import io.github.raginlundf.racingmanager.application.heat.CloseableMeasurementG
 import io.github.raginlundf.racingmanager.application.heat.GatewayArmResult
 import io.github.raginlundf.racingmanager.application.heat.GatewayCancelResult
 import io.github.raginlundf.racingmanager.application.heat.MeasurementGatewayEvent
+import io.github.raginlundf.racingmanager.domain.event.MeasurementType
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import io.github.raginlundf.racingmanager.domain.heat.HeatLaneAssignment
 import io.github.raginlundf.racingmanager.domain.heat.HeatStatus
@@ -19,6 +20,7 @@ import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 import java.util.UUID
@@ -144,6 +146,78 @@ class ReconfigurableMeasurementGatewayTest {
 
         assertTrue(actual = replaced.closed, message = "the replaced delegate must release its device connection")
         assertFalse(actual = replacement.closed)
+    }
+
+    @Test
+    fun `reconfigure survives a delegate that fails to close`() = runBlocking {
+        val broken = object : CloseableMeasurementGateway by RecordingGateway() {
+            override suspend fun close() = throw IllegalStateException("Unknown serial port '/dev/ttyGONE'")
+        }
+        val replacement = RecordingGateway()
+        val delegates = ArrayDeque<CloseableMeasurementGateway>(listOf(broken, replacement))
+        val arduino = RaceDeviceSettings(
+            mode = RaceDeviceMode.ARDUINO_TWO_LANE,
+            endpoint = "ws://a",
+            finishTimeoutMs = 30_000,
+            arduino = ArduinoTwoLaneSettings(portName = "/dev/ttyGONE"),
+        )
+        val gateway = ReconfigurableMeasurementGateway(
+            initialSettings = arduino,
+            buildDelegate = { delegates.removeFirst() },
+        )
+
+        val simulated = arduino.copy(mode = RaceDeviceMode.SIMULATED)
+        gateway.reconfigure(newSettings = simulated)
+
+        // Switching back to the simulator is how an operator recovers from an
+        // unplugged board — a throwing close() must not block it.
+        assertEquals(expected = simulated, actual = gateway.current())
+    }
+
+    @Test
+    fun `a simulated event runs on the simulator while the instance is wired to hardware`() {
+        val hardware = RecordingGateway()
+        val simulator = RecordingGateway()
+        val delegates = ArrayDeque<CloseableMeasurementGateway>(listOf(hardware, simulator))
+        val gateway = ReconfigurableMeasurementGateway(
+            initialSettings = RaceDeviceSettings(
+                mode = RaceDeviceMode.ARDUINO_TWO_LANE,
+                endpoint = "ws://a",
+                finishTimeoutMs = 30_000,
+                arduino = ArduinoTwoLaneSettings(portName = "/dev/ttyACM0"),
+            ),
+            buildDelegate = { delegates.removeFirst() },
+        )
+
+        assertSame(
+            expected = hardware,
+            actual = gateway.forMeasurementType(measurementType = MeasurementType.ELECTRONIC),
+        )
+        val forSimulated = gateway.forMeasurementType(measurementType = MeasurementType.SIMULATED)
+        assertSame(expected = simulator, actual = forSimulated)
+        // Built once and reused, not per heat.
+        assertSame(
+            expected = forSimulated,
+            actual = gateway.forMeasurementType(measurementType = MeasurementType.SIMULATED),
+        )
+    }
+
+    @Test
+    fun `a simulated event uses the configured delegate when the instance already simulates`() {
+        val delegate = RecordingGateway()
+        val gateway = ReconfigurableMeasurementGateway(
+            initialSettings = RaceDeviceSettings(
+                mode = RaceDeviceMode.SIMULATED,
+                endpoint = "ws://a",
+                finishTimeoutMs = 30_000,
+            ),
+            buildDelegate = { delegate },
+        )
+
+        assertSame(
+            expected = delegate,
+            actual = gateway.forMeasurementType(measurementType = MeasurementType.SIMULATED),
+        )
     }
 
     /** A delegate that only records whether it was torn down — a real device

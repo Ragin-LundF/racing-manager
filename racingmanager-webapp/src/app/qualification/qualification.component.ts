@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { QualificationClient } from '../libs/clients/qualification/qualification.client';
@@ -11,6 +11,8 @@ import {
 } from '../libs/clients/qualification/qualification.models';
 import { HeatResponse } from '../libs/clients/heat/heat.models';
 import { ConfirmService } from '../shared/confirm/confirm.service';
+import { SelectedEventService } from '../core/selected-event.service';
+import { formatSpeedKmh } from '../shared/speed';
 
 @Component({
   selector: 'app-qualification',
@@ -25,6 +27,11 @@ export class QualificationComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
   private readonly confirm = inject(ConfirmService);
+  private readonly selectedEvent = inject(SelectedEventService);
+
+  /** Set only when the event declares a track length — the speed column exists
+      only then. */
+  protected readonly trackLength = computed(() => this.selectedEvent.event()?.settings.trackLength ?? null);
 
   protected qualification = signal<QualificationResponse | null>(null);
   protected rankings = signal<QualificationRankingResponse[]>([]);
@@ -166,6 +173,10 @@ export class QualificationComponent {
         this.loading.set(false);
       },
     });
+  }
+
+  protected speed(nanos: number | null): string {
+    return formatSpeedKmh(nanos, this.trackLength());
   }
 
   protected formatNanos(nanos: number | null): string {

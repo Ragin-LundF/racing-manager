@@ -89,8 +89,15 @@ class JSerialCommLine(
         }.buffer(capacity = Channel.UNLIMITED)
     }
 
+    /** Never throws: closing a port that was never resolvable (unplugged board, wrong
+        name) must not block shutdown or a switch to another device mode. Kotlin does
+        not cache a failed `lazy`, so touching [port] here would re-run — and re-throw —
+        `getCommPort`. */
     override suspend fun close() {
-        withContext(Dispatchers.IO) { port.closePort() }
+        withContext(Dispatchers.IO) {
+            runCatching { port.closePort() }
+                .onFailure { logger.warn(it) { "Ignoring failure while closing serial port '$portName'" } }
+        }
     }
 
     private companion object {

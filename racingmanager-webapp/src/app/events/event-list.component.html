@@ -29,6 +29,9 @@
             <td>{{ event.createdAt | date:'short' }}</td>
             <td class="actions">
               <button class="btn-view" [routerLink]="event.id">{{ 'events.list.view' | translate }}</button>
+              @if (event.status === 'DRAFT' || event.status === 'ACTIVE') {
+                <button class="btn-edit" [routerLink]="[event.id, 'edit']">{{ 'events.list.edit' | translate }}</button>
+              }
               <button class="btn-delete" (click)="onDelete(event)">{{ 'events.list.delete' | translate }}</button>
             </td>
           </tr>

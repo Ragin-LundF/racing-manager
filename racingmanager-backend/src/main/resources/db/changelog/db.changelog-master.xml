@@ -28,4 +28,5 @@
     <include file="changesets/021-create-sync-tables.xml" relativeToChangelogFile="true"/>
     <include file="changesets/022-create-race-device-settings-table.xml" relativeToChangelogFile="true"/>
     <include file="changesets/023-add-race-device-arduino-options.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/024-add-event-track-length.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

@@ -83,6 +83,8 @@ private fun Route.eventCreateRoute(jwtService: JwtService, eventService: EventSe
                 MeasurementType.valueOf(request.measurementType)
             }.getOrDefault(defaultValue = MeasurementType.SIMULATED),
             maxParticipants = request.maxParticipants,
+            // ponytail: a non-positive length is meaningless, treat it as unset rather than a 400
+            trackLength = request.trackLength?.takeIf { it > 0 },
         )
 
         val result = eventService.create(
@@ -120,6 +122,8 @@ private fun Route.eventUpdateRoute(
                 MeasurementType.valueOf(request.measurementType)
             }.getOrDefault(defaultValue = MeasurementType.SIMULATED),
             maxParticipants = request.maxParticipants,
+            // ponytail: a non-positive length is meaningless, treat it as unset rather than a 400
+            trackLength = request.trackLength?.takeIf { it > 0 },
         )
 
         val result = eventService.update(
@@ -147,12 +151,12 @@ private suspend fun ApplicationCall.respondEventUpdate(result: UpdateEventResult
             )
         }
 
-        is UpdateEventResult.CannotModifyActiveEvent -> {
+        is UpdateEventResult.CannotModifyFinishedEvent -> {
             respond(
                 status = HttpStatusCode.Conflict,
                 message = ErrorResponseModel(
-                    code = "CANNOT_MODIFY_ACTIVE_EVENT",
-                    message = "Cannot modify an event that is not in DRAFT status"
+                    code = "CANNOT_MODIFY_FINISHED_EVENT",
+                    message = "Cannot modify a completed or archived event"
                 ),
             )
         }
@@ -215,13 +219,20 @@ private fun Route.eventActivateRoute(
         val principal = call.authenticateRequest(jwtService = jwtService) ?: return@post
         if (!call.requireScope(principal, Scopes.ADMIN, Scopes.USER)) return@post
         val id = UUID.fromString(call.parameters["id"])
-        call.requireTenantEvent(
+        val event = call.requireTenantEvent(
             principal = principal,
             eventId = id,
             eventRepository = eventRepository
         ) ?: return@post
 
-        when (val result = eventService.activate(id = id, expectedVersion = 0L, actorId = principal.userId)) {
+        // The event's own version, not a hardcoded 0 — a draft that was edited or
+        // stood down by a newer event is past version 0 and must still be activatable.
+        val activateResult = eventService.activate(
+            id = id,
+            expectedVersion = event.version,
+            actorId = principal.userId,
+        )
+        when (val result = activateResult) {
             is ActivateEventResult.Success -> {
                 call.respond(message = result.event.toResponseModel())
             }
@@ -344,6 +355,7 @@ private fun EventEntity.toResponseModel(): EventResponseModel {
             laneType = settings.laneType.name,
             measurementType = settings.measurementType.name,
             maxParticipants = settings.maxParticipants,
+            trackLength = settings.trackLength,
         ),
         version = version,
         createdBy = createdBy.toString(),

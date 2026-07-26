@@ -251,6 +251,7 @@ internal fun SpectatorSnapshot.toResponseModel(): SpectatorSnapshotResponseModel
             status = event.status.name,
             laneType = event.settings.laneType.name,
             measurementType = event.settings.measurementType.name,
+            trackLength = event.settings.trackLength,
         ),
         currentHeat = currentHeat?.toResponseModel(),
         upcomingHeats = upcomingHeats.map { it.toResponseModel() },

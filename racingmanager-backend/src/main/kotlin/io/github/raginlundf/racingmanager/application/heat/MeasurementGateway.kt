@@ -1,5 +1,6 @@
 package io.github.raginlundf.racingmanager.application.heat
 
+import io.github.raginlundf.racingmanager.domain.event.MeasurementType
 import io.github.raginlundf.racingmanager.domain.heat.HeatEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -23,4 +24,13 @@ interface MeasurementGateway {
     suspend fun cancel(heatId: java.util.UUID): GatewayCancelResult
 
     fun events(): Flow<MeasurementGatewayEvent>
+
+    /** The gateway that must drive a heat of an event timed by [measurementType].
+        A concrete adapter speaks for exactly one device and returns itself; only
+        [io.github.raginlundf.racingmanager.infrastructure.gateway.ReconfigurableMeasurementGateway]
+        overrides this, so a SIMULATED event runs on the in-process simulator even
+        while real hardware is configured. */
+    fun forMeasurementType(measurementType: MeasurementType): MeasurementGateway {
+        return this
+    }
 }

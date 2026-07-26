@@ -10,6 +10,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.EventRepos
 import io.github.raginlundf.racingmanager.infrastructure.repositories.ParticipantRepository
 import java.util.UUID
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Suppress("TooManyFunctions")
 class EventService(
@@ -27,16 +28,20 @@ class EventService(
         tenantId: UUID,
     ): CreateEventResult {
         val now = clock.now()
+        // A new event is the one being run: whatever was active steps back to DRAFT
+        // so exactly one event is ACTIVE at a time.
+        standDownActiveEvents(tenantId = tenantId, actorId = actorId, now = now)
         val event = EventEntity(
             id = UUID.randomUUID(),
             tenantId = tenantId,
             name = name,
             description = description,
-            status = EventStatus.DRAFT,
+            status = EventStatus.ACTIVE,
             settings = settings,
             version = 0L,
             createdBy = actorId,
             createdAt = now,
+            activatedAt = now,
         )
         eventRepository.insert(event = event)
         auditRepository.insert(
@@ -51,6 +56,35 @@ class EventService(
             ),
         )
         return CreateEventResult.Success(event = event)
+    }
+
+    /** Returns every currently ACTIVE event of [tenantId] to DRAFT, so creating a new
+        event takes over as the one being run. Archiving would hide them; DRAFT keeps
+        them alongside the others, ready to be activated again. */
+    private fun standDownActiveEvents(tenantId: UUID, actorId: UUID, now: Instant) {
+        eventRepository.findAllForTenant(tenantId = tenantId)
+            .filter { it.status == EventStatus.ACTIVE && !it.lockedForSync }
+            .forEach { active ->
+                eventRepository.update(
+                    event = active.copy(
+                        status = EventStatus.DRAFT,
+                        version = active.version + 1,
+                        updatedAt = now,
+                        activatedAt = null,
+                    ),
+                )
+                auditRepository.insert(
+                    entry = AuditEntryEntity(
+                        id = UUID.randomUUID(),
+                        actorId = actorId,
+                        action = "EVENT_DEACTIVATED",
+                        targetType = "Event",
+                        targetId = active.id,
+                        summary = "Event '${active.name}' returned to draft — another event was created",
+                        occurredAt = now,
+                    ),
+                )
+            }
     }
 
     fun findById(id: UUID): EventEntity? {
@@ -81,8 +115,8 @@ class EventService(
             return UpdateEventResult.Locked
         }
 
-        if (existing.status != EventStatus.DRAFT) {
-            return UpdateEventResult.CannotModifyActiveEvent
+        if (existing.status != EventStatus.DRAFT && existing.status != EventStatus.ACTIVE) {
+            return UpdateEventResult.CannotModifyFinishedEvent
         }
 
         if (existing.version != expectedVersion) {
@@ -158,6 +192,7 @@ class EventService(
         }
 
         val now = clock.now()
+        standDownActiveEvents(tenantId = existing.tenantId, actorId = actorId, now = now)
         val activated = existing.copy(
             status = EventStatus.ACTIVE,
             version = existing.version + 1,
@@ -236,6 +271,7 @@ class EventService(
         }
 
         val now = clock.now()
+        standDownActiveEvents(tenantId = existing.tenantId, actorId = actorId, now = now)
         val reactivated = existing.copy(
             status = EventStatus.ACTIVE,
             version = existing.version + 1,
@@ -297,6 +333,7 @@ class EventService(
         }
 
         val now = clock.now()
+        standDownActiveEvents(tenantId = event.tenantId, actorId = actorId, now = now)
         val reopened = event.copy(
             status = EventStatus.ACTIVE,
             version = event.version + 1,
