@@ -116,9 +116,9 @@ Qualification rankings (best time, speed, runs, DNF) and knockout results;
 
 Database connectivity and ping, event/participant/heat counters, readiness status.
 
-### 901 — Raspberry Pi setup
+### 901 — Arduino setup
 
-![Raspberry Pi / timing hardware setup](images/901_hardware-setup.png)
+![Arduino / timing hardware setup](images/901_hardware-setup.png)
 
 Timing device configuration: serial port, baud rate, timeouts, false-start
 window, finish value format, raw log file.
