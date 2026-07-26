@@ -29,11 +29,14 @@ private val logger = KotlinLogging.logger {}
  * In-process stand-in for the Raspberry Pi software. It speaks the same protocol
  * v1 the real controller will: it consumes command frames and emits event frames,
  * running a per-race state machine (PREPARED → RUNNING → FINISHED). On `startRace`
- * it generates a race deterministically per (raceId, attempt) — after [rampDelayMs]
- * each lane finishes between [raceMinMs] and [raceMaxMs], or (with [dnfProbability])
- * times out after [dnfTimeoutMs] and is reported as a `timeout` lane in `raceFinished`.
- * The attempt counter increments on every `prepareRace`, so repeating the same race
- * (re-arm → re-start) yields fresh results instead of replaying identical times.
+ * it generates a race — after [rampDelayMs] each lane finishes between [raceMinMs]
+ * and [raceMaxMs], or (with [dnfProbability]) times out after [dnfTimeoutMs] and is
+ * reported as a `timeout` lane in `raceFinished`.
+ * One RNG stream is seeded once from [seed] and shared by every race, so repeating
+ * the same race (re-arm → re-start) draws fresh numbers instead of replaying
+ * identical times. Do not reseed per race: `java.util.Random`'s first `nextDouble`
+ * barely moves when only the low seed bits differ, which pinned each race's DNF
+ * verdict to its raceId forever.
  */
 class FakeRaspberryPiController(
     private val seed: Long = DEFAULT_SEED,
@@ -50,8 +53,9 @@ class FakeRaspberryPiController(
     private val states = ConcurrentHashMap<String, RaceState>()
     private val lanesByRace = ConcurrentHashMap<String, List<Int>>()
     private val jobs = ConcurrentHashMap<String, Job>()
-    // Bumped per prepareRace so a repeated race (same raceId) draws a fresh RNG stream.
-    private val attempts = ConcurrentHashMap<String, Int>()
+    // One stream for the whole process: every race continues where the last left off,
+    // so two runs of the same race can never agree. Thread-safe (CAS on AtomicLong).
+    private val random = Random(seed)
 
     fun outgoing(): Flow<String> {
         return outgoing.asSharedFlow()
@@ -88,7 +92,6 @@ class FakeRaspberryPiController(
         }
         states[raceId] = RaceState.PREPARED
         lanesByRace[raceId] = command.lanes
-        attempts[raceId] = (attempts[raceId] ?: 0) + 1
         emit(raceId = raceId, event = DeviceEvent.RaceReady(lanes = command.lanes, gateState = "closed"))
     }
 
@@ -132,8 +135,6 @@ class FakeRaspberryPiController(
     }
 
     private suspend fun runRace(raceId: String, lanes: List<Int>) {
-        val attempt = attempts[raceId] ?: 1
-        val random = Random(seed xor raceId.hashCode().toLong() xor attempt.toLong())
         val plans = lanes.map { lane ->
             val dnf = random.nextDouble() < dnfProbability
             val durationMs = if (dnf) dnfTimeoutMs else raceMinMs + random.nextLong(raceMaxMs - raceMinMs + 1)

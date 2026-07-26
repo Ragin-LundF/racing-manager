@@ -110,6 +110,29 @@ class FakeRaspberryPiControllerTest {
     }
 
     @Test
+    fun `repeating the same race redraws the DNF verdict, not just the times`() = runBlocking {
+        // Regression: the DNF roll is the first draw of the race. Reseeding per (raceId, attempt)
+        // left it stuck — java.util.Random's first nextDouble barely moves when only the low seed
+        // bits change — so a lane that DNF'd once DNF'd on every repeat forever. At p=0.5 over 30
+        // runs, seeing only one verdict has probability 2 * 0.5^30.
+        val controller = FakeRaspberryPiController(
+            rampDelayMs = 1, raceMinMs = 1, raceMaxMs = 2, dnfTimeoutMs = 2, dnfProbability = 0.5,
+        )
+
+        val verdicts = mutableSetOf<String>()
+        repeat(times = 30) {
+            val events = collect(controller = controller, stopOn = { it is DeviceEvent.RaceFinished }) {
+                controller.onCommand(text = prepare(lanes = listOf(1)))
+                controller.onCommand(text = start())
+            }
+            val result = events.filterIsInstance<DeviceEvent.RaceFinished>().single().results.single()
+            verdicts.add(element = result.status)
+        }
+
+        assertEquals(expected = setOf("finished", "timeout"), actual = verdicts)
+    }
+
+    @Test
     fun `a certain-DNF race reports every lane as timeout with no finishDetected`() = runBlocking {
         val controller = FakeRaspberryPiController(
             rampDelayMs = 1,

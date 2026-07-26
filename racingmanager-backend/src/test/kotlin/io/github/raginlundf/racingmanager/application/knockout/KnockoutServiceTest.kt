@@ -625,6 +625,42 @@ class KnockoutServiceTest {
     }
 
     @Test
+    fun `a repeated heat can record its winner again after the match was reset`() {
+        setupQualificationAndFinalize()
+        knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
+        knockoutService.generatePairings(eventId = eventId, actorId = actorId)
+        val match1 = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 1 && it.matchNumber == 1 }
+        val heat = (knockoutService.createHeatForMatch(
+            eventId = eventId, matchId = match1.id, actorId = actorId
+        ) as CreateHeatForMatchResult.Success).heat
+
+        // First run: lane 1 wins, result accepted.
+        heatRepository.insertMeasurement(
+            Measurement(UUID.randomUUID(), heat.id, 1, 1_000_000_000, LaneOutcome.FINISHED, heat.createdAt),
+        )
+        knockoutService.recordResultFromHeat(eventId = eventId, heatId = heat.id, actorId = actorId)
+
+        // Repeat: undo the match, discard the measurements, re-race the same heat with lane 2 winning.
+        assertIs<ResetMatchResult.Success>(
+            value = knockoutService.resetMatchForHeat(eventId = eventId, heatId = heat.id, actorId = actorId),
+        )
+        heatRepository.reopenForRepeat(id = heat.id)
+        heatRepository.insertMeasurement(
+            Measurement(UUID.randomUUID(), heat.id, 2, 3_000_000_000, LaneOutcome.FINISHED, heat.createdAt),
+        )
+
+        val result = knockoutService.recordResultFromHeat(eventId = eventId, heatId = heat.id, actorId = actorId)
+        assertIs<RecordResultFromHeatResult.Success>(value = result)
+        val completed = knockoutService.getMatches(eventId = eventId).first { it.id == match1.id }
+        assertEquals(expected = KnockoutMatchStatus.COMPLETED, actual = completed.status)
+        assertEquals(expected = match1.participant2Id, actual = completed.winnerId)
+        val finalMatch = knockoutService.getMatches(eventId = eventId)
+            .first { it.roundNumber == 2 && it.matchNumber == 1 }
+        assertEquals(expected = match1.participant2Id, actual = finalMatch.participant1Id)
+    }
+
+    @Test
     fun `recordResultFromHeat returns NoWinner when no lane finished`() {
         setupQualificationAndFinalize()
         knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
@@ -683,8 +719,11 @@ class KnockoutServiceTest {
 
         val after = knockoutService.getMatches(eventId = eventId)
         val match1After = after.first { it.id == match1.id }
-        assertEquals(expected = KnockoutMatchStatus.PLANNED, actual = match1After.status)
+        // Back to IN_PROGRESS with the heat link intact: the repeated heat is re-raced, and
+        // accepting it must find this match again (it is looked up by heatId).
+        assertEquals(expected = KnockoutMatchStatus.IN_PROGRESS, actual = match1After.status)
         assertNull(actual = match1After.winnerId)
+        assertEquals(expected = heat.id, actual = match1After.heatId)
         val finalAfter = after.first { it.roundNumber == 2 && it.matchNumber == 1 }
         assertNull(actual = finalAfter.participant1Id)
         assertEquals(expected = finalBefore.participant2Id, actual = finalAfter.participant2Id)

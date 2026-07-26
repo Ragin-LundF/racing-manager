@@ -150,13 +150,13 @@ class KnockoutRepository {
         }
     }
 
-    /** Undo a recorded result: clear the winner/heat and set the match back to PLANNED. */
+    /** Undo a recorded result: clear the winner and park the match back IN_PROGRESS. The heat link
+        is kept — the repeated heat is re-raced, and accepting it must find this match again. */
     fun resetMatch(id: UUID) {
         transaction {
             KnockoutMatchTable.update(where = { KnockoutMatchTable.id eq id }) {
                 it[winnerId] = null
-                it[heatId] = null
-                it[status] = KnockoutMatchStatus.PLANNED.name
+                it[status] = KnockoutMatchStatus.IN_PROGRESS.name
             }
         }
     }
