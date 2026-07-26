@@ -4,6 +4,12 @@ Racing Manager is a race-day operations tool for racing events (e.g. Pinewood-De
 lanes). It covers the whole event lifecycle: create an event, register participants, run qualification and knockout
 rounds, control races heat by heat, and publish results — with a live spectator view for the audience.
 
+## Screenshots
+
+![Winner Screenshot](docs/screenshots/images/004_spectator-view-knockout-winner-round.png)
+
+Find [more screenshots here](docs/screenshots/README.md).
+
 ## Features
 
 - **Event management** — create, edit, activate, archive and reactivate events; each event tracks its own status (draft,
@@ -23,7 +29,11 @@ rounds, control races heat by heat, and publish results — with a live spectato
 
 ## Specification of the API
 
-You can find the specification of the API under [docs/developer/SYSTEM_SPEC.md](docs/developer/SYSTEM_SPEC.md).
+You can find the specification of the API under [docs/developer/README.md](docs/developer/README.md).
+
+## Hardware Details for Timing Devices
+
+[Track setup](docs/track_setup/README.md)
 
 ## Project structure
 
