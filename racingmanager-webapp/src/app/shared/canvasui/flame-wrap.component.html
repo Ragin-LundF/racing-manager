@@ -1,0 +1,18 @@
+<div
+  class="flame-wrap"
+  [style.--flame-reach-top]="reachTop()"
+  [style.--flame-reach-side]="reachSide()"
+>
+  <!--
+    Required by the effect API. Deliberately left empty: canvas children are only
+    rendered where the HTML-in-Canvas origin trial is active, so projecting the
+    content in here would hide it in every other browser.
+  -->
+  <canvas #source class="flame-wrap__source" aria-hidden="true"></canvas>
+
+  <div #content class="flame-wrap__content">
+    <ng-content />
+  </div>
+
+  <canvas #output class="flame-wrap__output" aria-hidden="true"></canvas>
+</div>

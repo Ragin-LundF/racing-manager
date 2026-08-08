@@ -1,0 +1,35 @@
+.flame-wrap {
+  position: relative;
+  display: block;
+}
+
+// Never shown. The effect only reads a 2D context off it.
+.flame-wrap__source {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flame-wrap__content {
+  position: relative;
+  z-index: 1;
+}
+
+// Overhangs the content so flames can rise off the top edge and the glow can
+// bleed around the sides. Width and height are stated explicitly because an
+// absolutely positioned canvas with `auto` sizing falls back to its intrinsic
+// bitmap size instead of stretching to the insets.
+.flame-wrap__output {
+  position: absolute;
+  top: calc(-1 * var(--flame-reach-top));
+  left: calc(-1 * var(--flame-reach-side));
+  z-index: 2;
+  display: block;
+  width: calc(100% + 2 * var(--flame-reach-side));
+  height: calc(100% + var(--flame-reach-top) + var(--flame-reach-side));
+  pointer-events: none;
+}

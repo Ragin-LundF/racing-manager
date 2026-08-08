@@ -4,55 +4,60 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth.service';
 import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
+import { FlameWrapComponent } from '../../shared/canvasui/flame-wrap.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, LocaleSelectorComponent, RouterLink, TranslatePipe],
+  imports: [FlameWrapComponent, FormsModule, LocaleSelectorComponent, RouterLink, TranslatePipe],
   template: `
     <div class="auth-page">
-      <div class="auth-card">
-        <div class="auth-locale"><app-locale-selector /></div>
+      <app-flame-wrap>
+        <div class="auth-card">
+          <div class="auth-locale"><app-locale-selector /></div>
 
-        <h2>{{ 'login.title' | translate }}</h2>
+          <h2>{{ 'login.title' | translate }}</h2>
 
-        @if (errorMessage(); as msg) {
-          <p class="error">{{ msg }}</p>
-        }
-
-        <form #form="ngForm" (ngSubmit)="onSubmit()">
-          <label>
-            <span>{{ 'login.username.label' | translate }}</span>
-            <input name="username" [(ngModel)]="username" required #usernameField="ngModel" />
-          </label>
-          @if (usernameField.invalid && usernameField.touched) {
-            <small>{{ 'login.username.required' | translate }}</small>
+          @if (errorMessage(); as msg) {
+            <p class="error">{{ msg }}</p>
           }
 
-          <label>
-            <span>{{ 'login.password.label' | translate }}</span>
-            <input
-              type="password"
-              name="password"
-              [(ngModel)]="password"
-              required
-              #passwordField="ngModel"
-            />
-          </label>
-          @if (passwordField.invalid && passwordField.touched) {
-            <small>{{ 'login.password.required' | translate }}</small>
-          }
+          <form #form="ngForm" (ngSubmit)="onSubmit()">
+            <label>
+              <span>{{ 'login.username.label' | translate }}</span>
+              <input name="username" [(ngModel)]="username" required #usernameField="ngModel" />
+            </label>
+            @if (usernameField.invalid && usernameField.touched) {
+              <small>{{ 'login.username.required' | translate }}</small>
+            }
 
-          <label>
-            <span>{{ 'login.tenantSlug.label' | translate }}</span>
-            <input name="tenantSlug" [(ngModel)]="tenantSlug" />
-          </label>
+            <label>
+              <span>{{ 'login.password.label' | translate }}</span>
+              <input
+                type="password"
+                name="password"
+                [(ngModel)]="password"
+                required
+                #passwordField="ngModel"
+              />
+            </label>
+            @if (passwordField.invalid && passwordField.touched) {
+              <small>{{ 'login.password.required' | translate }}</small>
+            }
 
-          <button type="submit" [disabled]="form.invalid">{{ 'login.submit' | translate }}</button>
-        </form>
+            <label>
+              <span>{{ 'login.tenantSlug.label' | translate }}</span>
+              <input name="tenantSlug" [(ngModel)]="tenantSlug" />
+            </label>
 
-        <a [routerLink]="['/register']">{{ 'login.registerLink' | translate }}</a>
-      </div>
+            <button type="submit" [disabled]="form.invalid">
+              {{ 'login.submit' | translate }}
+            </button>
+          </form>
+
+          <a [routerLink]="['/register']">{{ 'login.registerLink' | translate }}</a>
+        </div>
+      </app-flame-wrap>
 
       <a class="docs-button" [routerLink]="['/raspberry-pi']">{{ 'login.raspberryPiLink' | translate }}</a>
     </div>

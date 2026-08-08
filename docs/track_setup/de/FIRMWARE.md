@@ -18,8 +18,8 @@ Die Konfigurationsdatei ist die Stelle, an der ein identisches ESP32-Programm zu
 device_id: start-01
 module_role: start
 gpio:
-  lane_1: 32
-  lane_2: 33
+  lane_1: 16
+  lane_2: 17
 sensor:
   active_level: 0
   debounce_us: 15000
@@ -31,7 +31,15 @@ transport:
   rs485_fallback: false
 ```
 
-Das Zielmodul verwendet `device_id: finish-01` und `module_role: finish`. `active_level` muss nach dem realen Sensor geprüft werden: Health-Ansicht muss „frei“ zeigen, wenn der Strahl frei ist.
+Das Zielmodul verwendet `device_id: finish-01` und `module_role: finish`. `active_level` muss nach dem realen Sensor geprüft werden: Health-Ansicht muss „frei“ zeigen, wenn der Strahl frei ist. Beim ADA2167 mit internem Pull-up liegt der Pin bei unterbrochenem Strahl auf LOW, `active_level: 0` ist also korrekt. GPIO 16/17 sind die freien Eingänge auf dem ESP32-Board mit integriertem LCD; auf einem normalen DevKit funktionieren auch 32/33 – siehe [Verdrahtung](WIRING.md).
+
+## Lauffähige Referenzimplementierung
+
+Der [ESP32-Sensor-Firmware-Leitfaden](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md) enthält vollständige, direkt flashbare
+Arduino-Sketche für einen Sensoreingang – einen für ein normales DevKit und einen für das Board mit integriertem
+Display, inklusive Board-Einstellungen, benötigter Bibliotheken und Display-Pinplan. Das ist der schnellste Weg, die
+Hardware nachzuweisen, und ein guter Ausgangspunkt vor der hier beschriebenen vollständigen ESP-IDF-Umsetzung. Der
+Leitfaden liegt nur auf Englisch vor und gilt für beide Sprachfassungen.
 
 ## Kernablauf
 
@@ -54,5 +62,7 @@ Zeigen: Modulrolle, WLAN/RS485-Status, Serverkontakt, S1/S2 frei/blockiert, akti
 ---
 
 **Navigation:** [← Verdrahtung](WIRING.md) · [Weiter: Protokoll →](PROTOCOL.md) · [English](../en/FIRMWARE.md)
+
+**Gemeinsame Ressourcen (englisch):** [CAD-Paket](../cad_files/README.md) · [ESP32-Sensor-Firmware-Leitfaden](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md)
 
 **Alle Themen:** [Projektüberblick](PROJECT.md) · [Materialliste](MATERIALS.md) · [Architektur](ARCHITECTURE.md) · [Verdrahtung](WIRING.md) · **Firmware** · [Protokoll](PROTOCOL.md) · [Aufbau](SETUP.md) · [Tests](TESTING.md) · [ESP-Agentenauftrag](ESP_AGENT_GUIDE.md) · [Racing-Manager-Integration](AGENT_RACING_MANAGER_INTEGRATION.md)

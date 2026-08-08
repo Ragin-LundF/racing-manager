@@ -21,7 +21,8 @@ Run 20 controlled reference passes and record elapsed time, `sync_uncertainty_us
 
 ## Immediately-before-event checklist
 
-- [ ] Pi, power supplies, sensor brackets, and spare cables checked
+- [ ] Pi, power supplies, printed frames and housings, and spare cables checked
+- [ ] Cable covers seated and sensors still firmly in their pockets after transport
 - [ ] Local Wi-Fi and all operator devices connected
 - [ ] Both modules online and firmware versions match
 - [ ] All sensors clear and labeled correctly

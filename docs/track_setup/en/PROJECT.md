@@ -8,15 +8,18 @@ No electronics or programming experience is required to follow this guide. Work 
 
 1. Buy the [materials](MATERIALS.md) and read the safety notes.
 2. Decide on the [architecture](ARCHITECTURE.md) and [wiring](WIRING.md) before building.
-3. Install the hardware using [setup](SETUP.md).
-4. Implement the ESP firmware using [firmware](FIRMWARE.md) and the [protocol](PROTOCOL.md).
-5. Commission it with [testing](TESTING.md).
+3. Print the frames and housings from the [CAD package](../cad_files/README.md).
+4. Install the hardware using [setup](SETUP.md).
+5. Implement the ESP firmware using [firmware](FIRMWARE.md) and the [protocol](PROTOCOL.md); the
+   [ESP32 sensor firmware guide](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md) has a ready-to-flash sketch to prove the
+   hardware first.
+6. Commission it with [testing](TESTING.md).
 
 ## Scope and reference assumptions
 
 - Two lanes; one start and one finish line each: four optical pass events.
 - Track length: about 10–20 m; Wi-Fi is the default transport, RS485 over CAT cable is optional.
-- ESP32 modules: one standard ESP32 DevKit at start and one at finish, each with two sensor inputs.
+- ESP32 modules: one board at start and one at finish, each with two sensor inputs. The reference build uses an ESP32 with a 1.96" LCD as a local status display; a plain DevKit works too.
 - Raspberry Pi: central race logic, storage, web UI, and local Wi-Fi access point.
 - Wi-Fi: only for the two ESP32 modules and **one registration station** that enters participant and vehicle data; it is not public participant Wi-Fi.
 - Version 1 has no starting gate. A future shared gate (servo/solenoid) belongs to the start module.
@@ -34,6 +37,15 @@ No electronics or programming experience is required to follow this guide. Work 
 | [TESTING.md](TESTING.md) | Commissioning and event checklist |
 | [ESP_AGENT_GUIDE.md](ESP_AGENT_GUIDE.md) | Work order for an ESP firmware agent |
 | [AGENT_RACING_MANAGER_INTEGRATION.md](AGENT_RACING_MANAGER_INTEGRATION.md) | Work order for central integration |
+
+## Shared resources
+
+These two packages are language-neutral and are referenced by both editions. They exist only in English.
+
+| Package | Purpose |
+|---|---|
+| [`../cad_files/`](../cad_files/README.md) | OpenSCAD sources for the break-beam gate: U-frames, cable covers, electronics housing, export scripts, and print notes |
+| [`../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md`](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md) | Practical Arduino guide: wiring of the ADA2167, board and library setup, and two complete sketches |
 
 ## Important accuracy note
 

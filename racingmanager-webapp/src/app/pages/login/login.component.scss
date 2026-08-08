@@ -1,5 +1,13 @@
 @use '../auth-card';
 
+// The flame canvas overhangs the card, so the wrapper -- not the card -- is now
+// the flex item. It carries the same width constraint as `.auth-card`.
+app-flame-wrap {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+}
+
 // Prominent green call-to-action under the login card, aligned to its width.
 .docs-button {
   display: inline-flex;

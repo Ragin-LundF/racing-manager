@@ -21,7 +21,8 @@ Führen Sie 20 Durchläufe einer kontrollierten Referenz durch und protokolliere
 
 ## Checkliste unmittelbar vor dem Event
 
-- [ ] Pi, Netzteile, Sensorhalter und Reservekabel geprüft
+- [ ] Pi, Netzteile, gedruckte Rahmen und Gehäuse sowie Reservekabel geprüft
+- [ ] Kabelabdeckungen sitzen, Sensoren nach dem Transport noch fest in ihren Taschen
 - [ ] Lokales WLAN und alle Bediengeräte verbunden
 - [ ] Beide Module online, Firmwareversionen passend
 - [ ] Alle Sensoren frei und korrekt beschriftet

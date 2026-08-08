@@ -33,7 +33,13 @@ You can find the specification of the API under [docs/developer/README.md](docs/
 
 ## Hardware Details for Timing Devices
 
-[Track setup](docs/track_setup/README.md)
+[Track setup](docs/track_setup/README.md) — full build documentation in
+[English](docs/track_setup/en/PROJECT.md) and [German](docs/track_setup/de/PROJECT.md), including:
+
+- [CAD files](docs/track_setup/cad_files/README.md) — OpenSCAD sources for the 3D-printed break-beam gates,
+  cable covers, and electronics housings.
+- [ESP32 sensor firmware guide](docs/track_setup/esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md) — wiring and complete
+  Arduino sketches for the light-barrier modules.
 
 ## Project structure
 

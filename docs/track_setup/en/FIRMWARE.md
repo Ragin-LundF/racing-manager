@@ -18,8 +18,8 @@ The configuration file makes the same ESP32 program become a start or finish mod
 device_id: start-01
 module_role: start
 gpio:
-  lane_1: 32
-  lane_2: 33
+  lane_1: 16
+  lane_2: 17
 sensor:
   active_level: 0
   debounce_us: 15000
@@ -31,7 +31,15 @@ transport:
   rs485_fallback: false
 ```
 
-The finish module uses `device_id: finish-01` and `module_role: finish`. Verify `active_level` with the actual sensor: the health view must say `clear` when the beam is clear.
+The finish module uses `device_id: finish-01` and `module_role: finish`. Verify `active_level` with the actual sensor: the health view must say `clear` when the beam is clear. With the ADA2167 and an internal pull-up, a broken beam reads LOW, so `active_level: 0` is correct. GPIO 16/17 are the free inputs on the ESP32 board with the integrated LCD; on a plain DevKit, 32/33 also work — see [Wiring](WIRING.md).
+
+## Working reference implementation
+
+The [ESP32 sensor firmware guide](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md) contains complete, ready-to-flash Arduino
+sketches for one sensor input — one for a plain DevKit and one for the board with the integrated display, including
+board settings, the required libraries, and the display pin map. It is the fastest way to prove the hardware works, and
+a useful starting point before implementing the full ESP-IDF module described here. That guide exists in English only
+and is shared by both language editions.
 
 ## Main flow
 
@@ -54,5 +62,7 @@ Show module role, Wi-Fi/RS485 state, server contact, L1/L2 clear/blocked, curren
 ---
 
 **Navigation:** [← Wiring](WIRING.md) · [Next: Protocol →](PROTOCOL.md) · [Deutsch](../de/FIRMWARE.md)
+
+**Shared resources:** [CAD package](../cad_files/README.md) · [ESP32 sensor firmware guide](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md)
 
 **All topics:** [Project overview](PROJECT.md) · [Materials](MATERIALS.md) · [Architecture](ARCHITECTURE.md) · [Wiring](WIRING.md) · **Firmware** · [Protocol](PROTOCOL.md) · [Setup](SETUP.md) · [Testing](TESTING.md) · [ESP agent brief](ESP_AGENT_GUIDE.md) · [Racing Manager integration](AGENT_RACING_MANAGER_INTEGRATION.md)
