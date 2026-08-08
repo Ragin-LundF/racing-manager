@@ -168,8 +168,12 @@ check. The display uses these GPIOs:
 | Backlight | 32 |
 
 GPIO 16 remains free for the white light-barrier signal wire. The display is
-in portrait orientation and acts as a large signal light: green = clear lane,
-red = light barrier interrupted.
+in portrait orientation and acts as a signal light: green = clear lane, red =
+light barrier interrupted. The sketch draws the static layout once and then
+updates only the small regions whose values changed. This avoids the visible
+flicker caused by repeatedly clearing the whole ST7789 framebuffer over SPI.
+See the performance-oriented UI mockup at
+[`display-performance-mockup.svg`](display-performance-mockup.svg).
 
 **Sketch:** [`racing-sensor-ino-prj/LightSensorDisplay/LightSensorDisplay.ino`](racing-sensor-ino-prj/LightSensorDisplay/LightSensorDisplay.ino)
 

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="380" viewBox="0 0 420 380">
+  <title>ESP32 low-flicker display mockup</title>
+  <style>
+    text { font-family: Arial, sans-serif; }
+    .caption { fill: #1f2937; font-size: 13px; }
+    .header { fill: #fff; font-size: 15px; font-weight: 700; }
+    .subheader { fill: #44d9ff; font-size: 9px; }
+    .beamText { font-size: 31px; font-weight: 800; }
+    .label { fill: #bec4cf; font-size: 10px; font-weight: 700; letter-spacing: .5px; }
+    .status { font-size: 18px; font-weight: 800; }
+    .events { fill: #fff; font-size: 39px; font-weight: 800; }
+  </style>
+
+  <rect width="420" height="380" fill="#f4f5f7"/>
+  <text x="210" y="28" text-anchor="middle" class="caption">Low-flicker display: redraw only changed regions</text>
+
+  <g transform="translate(28 46)">
+    <text x="85" y="-10" text-anchor="middle" class="caption">Clear lane</text>
+    <rect width="170" height="320" rx="14" fill="#111"/>
+    <rect width="170" height="34" fill="#1437d5"/>
+    <text x="85" y="22" text-anchor="middle" class="header">lane-1-start</text>
+    <text x="85" y="52" text-anchor="middle" class="subheader">Lane 1 / start</text>
+
+    <text x="85" y="82" text-anchor="middle" class="label">BEAM</text>
+    <rect x="20" y="108" width="130" height="5" fill="#18d75b"/>
+    <circle cx="85" cy="110" r="16" fill="#18d75b"/>
+    <text x="85" y="161" text-anchor="middle" class="beamText" fill="#18d75b">CLEAR</text>
+
+    <rect x="8" y="190" width="72" height="38" rx="5" fill="#111" stroke="#18d75b"/>
+    <text x="44" y="203" text-anchor="middle" class="label">WIFI</text>
+    <text x="44" y="222" text-anchor="middle" class="status" fill="#18d75b">OK</text>
+
+    <rect x="90" y="190" width="72" height="38" rx="5" fill="#111" stroke="#ffd84a"/>
+    <text x="126" y="203" text-anchor="middle" class="label">SERVER</text>
+    <text x="126" y="222" text-anchor="middle" class="status" fill="#ffd84a">--</text>
+
+    <text x="85" y="256" text-anchor="middle" class="label">EVENTS</text>
+    <text x="85" y="296" text-anchor="middle" class="events">12</text>
+  </g>
+
+  <g transform="translate(222 46)">
+    <text x="85" y="-10" text-anchor="middle" class="caption">Interrupted beam</text>
+    <rect width="170" height="320" rx="14" fill="#111"/>
+    <rect width="170" height="34" fill="#1437d5"/>
+    <text x="85" y="22" text-anchor="middle" class="header">lane-1-start</text>
+    <text x="85" y="52" text-anchor="middle" class="subheader">Lane 1 / start</text>
+
+    <text x="85" y="82" text-anchor="middle" class="label">BEAM</text>
+    <rect x="20" y="108" width="130" height="5" fill="#ff2d2d"/>
+    <circle cx="85" cy="110" r="16" fill="#ff2d2d"/>
+    <text x="85" y="161" text-anchor="middle" class="beamText" fill="#ff2d2d">BLOCKED</text>
+
+    <rect x="8" y="190" width="72" height="38" rx="5" fill="#111" stroke="#18d75b"/>
+    <text x="44" y="203" text-anchor="middle" class="label">WIFI</text>
+    <text x="44" y="222" text-anchor="middle" class="status" fill="#18d75b">OK</text>
+
+    <rect x="90" y="190" width="72" height="38" rx="5" fill="#111" stroke="#18d75b"/>
+    <text x="126" y="203" text-anchor="middle" class="label">SERVER</text>
+    <text x="126" y="222" text-anchor="middle" class="status" fill="#18d75b">OK</text>
+
+    <text x="85" y="256" text-anchor="middle" class="label">EVENTS</text>
+    <text x="85" y="296" text-anchor="middle" class="events">13</text>
+  </g>
+</svg>
+
