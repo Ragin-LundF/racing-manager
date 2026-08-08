@@ -9,9 +9,9 @@
 // ===== Configuration: adapt for each measuring module =====
 constexpr char WIFI_SSID[] = "RacingManager";
 constexpr char WIFI_PASSWORD[] = "race-4-life";
-constexpr char MODULE_ID[] = "lane-1-start";
+constexpr char MODULE_ID[] = "lane-1-finish";
 constexpr uint8_t LANE_NUMBER = 1;
-constexpr char MODULE_POSITION[] = "start"; // "start" or "finish"
+constexpr char MODULE_POSITION[] = "finish"; // "start" or "finish"
 
 constexpr char WEBSOCKET_HOST[] = "192.168.10.1";
 constexpr uint16_t WEBSOCKET_PORT = 8080;
@@ -87,12 +87,35 @@ void IRAM_ATTR onBeamBroken() {
 void connectWifi() {
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
+
+  Serial.println("[WiFi] Scanning for visible networks...");
+  const int found = WiFi.scanNetworks();
+  bool targetSeen = false;
+  for (int i = 0; i < found; i++) {
+    Serial.printf("[WiFi]  - '%s' ch=%d rssi=%ddBm enc=%d%s\n",
+                  WiFi.SSID(i).c_str(), WiFi.channel(i), WiFi.RSSI(i), WiFi.encryptionType(i),
+                  WiFi.SSID(i) == WIFI_SSID ? "  <-- target" : "");
+    if (WiFi.SSID(i) == WIFI_SSID) targetSeen = true;
+  }
+  Serial.printf("[WiFi] Target SSID '%s' seen in scan: %s\n", WIFI_SSID, targetSeen ? "YES" : "NO");
+
+  Serial.printf("[WiFi] Connecting to SSID '%s'...\n", WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   const uint32_t startedAt = millis();
+  wl_status_t lastStatus = WiFi.status();
   while (WiFi.status() != WL_CONNECTED && millis() - startedAt < WIFI_CONNECT_TIMEOUT_MS) {
     delay(100);
+    if (WiFi.status() != lastStatus) {
+      lastStatus = WiFi.status();
+      Serial.printf("[WiFi] status changed to %d at %lu ms\n", lastStatus, millis() - startedAt);
+    }
   }
   wifiConnected = WiFi.status() == WL_CONNECTED;
+  if (wifiConnected) {
+    Serial.printf("[WiFi] Connected. IP=%s RSSI=%ddBm\n", WiFi.localIP().toString().c_str(), WiFi.RSSI());
+  } else {
+    Serial.printf("[WiFi] Failed to connect within %lu ms. Final status=%d\n", WIFI_CONNECT_TIMEOUT_MS, WiFi.status());
+  }
 }
 
 void onWebSocketEvent(WStype_t type, uint8_t *payload, size_t length) {

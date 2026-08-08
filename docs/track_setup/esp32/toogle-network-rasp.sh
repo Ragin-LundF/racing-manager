@@ -51,7 +51,18 @@ case "$1" in
         echo "[+] Deploying Access Point layout..."
         nmcli connection add type wifi ifname $IFACE con-name "$HOTSPOT_NAME" ssid "$HOTSPOT_NAME" mode ap
         nmcli connection modify "$HOTSPOT_NAME" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$HOTSPOT_PASS"
-        nmcli connection modify "$HOTSPOT_NAME" 802-11-wireless.band bg
+        # Without an explicit proto, wpa_supplicant's AP mode infers WPA vs
+        # WPA2 from the AKM list alone. Leaving PMF at its "optional" default
+        # makes NetworkManager add the WPA-PSK-SHA256 AKM, which the ESP32
+        # Arduino WiFi stack can't associate to at all; disabling PMF removes
+        # that AKM but then leaves a bare 'WPA-PSK' that infers legacy
+        # WPA1/TKIP instead of WPA2 — still not something the ESP32 joins.
+        # Pin both explicitly: RSN (WPA2) protocol, no PMF, single AKM.
+        nmcli connection modify "$HOTSPOT_NAME" wifi-sec.proto rsn
+        nmcli connection modify "$HOTSPOT_NAME" wifi-sec.pmf disable
+        # Pin band + a channel inside the universally-unrestricted 1-11 range,
+        # so no ESP32 regulatory-domain default excludes it from the scan.
+        nmcli connection modify "$HOTSPOT_NAME" 802-11-wireless.band bg 802-11-wireless.channel 6
 
         echo "[+] Assigning baseline IP $CIDR with NetworkManager-managed DHCP & DNS..."
         nmcli connection modify "$HOTSPOT_NAME" ipv4.method shared ipv4.addresses "$CIDR"
