@@ -61,13 +61,30 @@ void sendSensorEvent(uint32_t timestampUs) {
   if (websocketConnected) webSocket.sendTXT(message);
 }
 
+void connectWifi() {
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
+
+  Serial.println("[WiFi] Scanning for visible networks...");
+  const int found = WiFi.scanNetworks();
+  bool targetSeen = false;
+  for (int i = 0; i < found; i++) {
+    Serial.printf("[WiFi]  - '%s' ch=%d rssi=%ddBm enc=%d%s\n",
+                  WiFi.SSID(i).c_str(), WiFi.channel(i), WiFi.RSSI(i), WiFi.encryptionType(i),
+                  WiFi.SSID(i) == WIFI_SSID ? "  <-- target" : "");
+    if (WiFi.SSID(i) == WIFI_SSID) targetSeen = true;
+  }
+  Serial.printf("[WiFi] Target SSID '%s' seen in scan: %s\n", WIFI_SSID, targetSeen ? "YES" : "NO");
+
+  Serial.printf("[WiFi] Connecting to SSID '%s'...\n", WIFI_SSID);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(SENSOR_PIN, INPUT_PULLUP);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.setSleep(false);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  connectWifi();
 
   webSocket.begin(WEBSOCKET_HOST, WEBSOCKET_PORT, WEBSOCKET_PATH);
   webSocket.onEvent(onWebSocketEvent);
@@ -80,8 +97,19 @@ void setup() {
 void loop() {
   webSocket.loop();
 
+  static wl_status_t lastWifiStatus = WL_IDLE_STATUS;
+  const wl_status_t currentWifiStatus = WiFi.status();
+  if (currentWifiStatus != lastWifiStatus) {
+    lastWifiStatus = currentWifiStatus;
+    if (currentWifiStatus == WL_CONNECTED) {
+      Serial.printf("[WiFi] Connected. IP=%s RSSI=%ddBm\n", WiFi.localIP().toString().c_str(), WiFi.RSSI());
+    } else {
+      Serial.printf("[WiFi] status changed to %d\n", currentWifiStatus);
+    }
+  }
+
   static uint32_t lastWifiRetryMs = 0;
-  if (WiFi.status() != WL_CONNECTED && millis() - lastWifiRetryMs > WIFI_RETRY_INTERVAL_MS) {
+  if (currentWifiStatus != WL_CONNECTED && millis() - lastWifiRetryMs > WIFI_RETRY_INTERVAL_MS) {
     lastWifiRetryMs = millis();
     WiFi.reconnect();
   }
