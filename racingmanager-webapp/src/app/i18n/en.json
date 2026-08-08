@@ -108,6 +108,7 @@
     "tenantSlug": {
       "label": "Tenant code (required for tenants)"
     },
+    "setupLink": "First start? Set up this installation",
     "registerLink": "Register a new event organization",
     "raspberryPiLink": "Raspberry Pi integration guide"
   },
@@ -140,7 +141,7 @@
     "error": {
       "generic": "Registration failed. Please try again.",
       "slugTaken": "This short name is already taken.",
-      "notHosted": "Registration is not available on this installation."
+      "alreadySetUp": "This installation is already set up. Ask its administrator for an account."
     }
   },
   "participants": {

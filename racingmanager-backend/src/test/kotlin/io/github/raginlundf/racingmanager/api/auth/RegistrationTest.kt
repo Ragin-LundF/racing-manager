@@ -220,7 +220,7 @@ class RegistrationTest {
     }
 
     @Test
-    fun `register is forbidden in local mode`() = testApplication {
+    fun `register bootstraps a fresh local install`() = testApplication {
         application { configureTestApp(DeploymentMode.LOCAL) }
 
         val response = client.post("/api/v1/register") {
@@ -234,8 +234,56 @@ class RegistrationTest {
                 |}""".trimMargin())
         }
 
-        assertEquals(expected = HttpStatusCode.Forbidden, actual = response.status)
-        assertTrue(actual = response.bodyAsText().contains("\"code\":\"NOT_HOSTED\""))
+        assertEquals(expected = HttpStatusCode.Created, actual = response.status)
+        val body = response.bodyAsText()
+        assertTrue(actual = body.contains("\"tenantSlug\":\"acme\""))
+        assertTrue(actual = body.contains("\"role\":\"ADMIN\""))
+        assertTrue(actual = body.contains("\"accessToken\""))
+    }
+
+    @Test
+    fun `register closes in local mode once a user exists`() = testApplication {
+        application { configureTestApp(DeploymentMode.LOCAL) }
+        authService.setupAdmin(username = "admin", password = "password123", displayName = "Admin")
+
+        val response = client.post("/api/v1/register") {
+            contentType(ContentType.Application.Json)
+            setBody("""{
+                |"tenantName":"Acme Racing",
+                |"tenantSlug":"acme",
+                |"username":"intruder",
+                |"password":"password123",
+                |"displayName":"Intruder"
+                |}""".trimMargin())
+        }
+
+        assertEquals(expected = HttpStatusCode.Conflict, actual = response.status)
+        assertTrue(actual = response.bodyAsText().contains("\"code\":\"ALREADY_SETUP\""))
+    }
+
+    @Test
+    fun `register stays open in hosted mode after the first tenant exists`() = testApplication {
+        application { configureTestApp(DeploymentMode.HOSTED) }
+        authService.register(
+            tenantDisplayName = "First Tenant",
+            tenantSlug = "first",
+            username = "admin",
+            password = "password123",
+            displayName = "Admin"
+        )
+
+        val response = client.post("/api/v1/register") {
+            contentType(ContentType.Application.Json)
+            setBody("""{
+                |"tenantName":"Second Tenant",
+                |"tenantSlug":"second",
+                |"username":"admin2",
+                |"password":"password123",
+                |"displayName":"Admin Two"
+                |}""".trimMargin())
+        }
+
+        assertEquals(expected = HttpStatusCode.Created, actual = response.status)
     }
 
     @Test
@@ -376,6 +424,7 @@ class RegistrationTest {
     fun `duplicate username within the same tenant is rejected`() = testApplication {
         application { configureTestApp(mode = DeploymentMode.LOCAL) }
 
+        authService.setupAdmin(username = "admin", password = "password123", displayName = "Admin")
         val login = authService.login(username = "admin", password = "password123") as LoginResult.Success
         client.post("/api/v1/tenant/users") {
             header("Authorization", "Bearer ${login.accessToken}")

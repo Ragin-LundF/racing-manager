@@ -108,6 +108,7 @@
     "tenantSlug": {
       "label": "Mandantenkürzel (benötigt für Mandanten)"
     },
+    "setupLink": "Erster Start? Diese Installation einrichten",
     "registerLink": "Neue Veranstaltungsorganisation registrieren",
     "raspberryPiLink": "Raspberry-Pi-Integrationsleitfaden"
   },
@@ -140,7 +141,7 @@
     "error": {
       "generic": "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
       "slugTaken": "Dieser Kurzname ist bereits vergeben.",
-      "notHosted": "Die Registrierung ist in dieser Installation nicht verfügbar."
+      "alreadySetUp": "Diese Installation ist bereits eingerichtet. Bitte wenden Sie sich an den Administrator."
     }
   },
   "participants": {

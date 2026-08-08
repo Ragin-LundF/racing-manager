@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -55,7 +55,12 @@ import { FlameWrapComponent } from '../../shared/canvasui/flame-wrap.component';
             </button>
           </form>
 
-          <a [routerLink]="['/register']">{{ 'login.registerLink' | translate }}</a>
+          @if (showSetupLink()) {
+            <a [routerLink]="['/setup']">{{ 'login.setupLink' | translate }}</a>
+          }
+          @if (showRegisterLink()) {
+            <a [routerLink]="['/register']">{{ 'login.registerLink' | translate }}</a>
+          }
         </div>
       </app-flame-wrap>
 
@@ -64,7 +69,7 @@ import { FlameWrapComponent } from '../../shared/canvasui/flame-wrap.component';
   `,
   styleUrl: './login.component.scss',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
@@ -73,6 +78,25 @@ export class LoginComponent {
   protected password = '';
   protected tenantSlug = '';
   protected errorMessage = signal<string | null>(null);
+
+  private readonly mode = signal<'LOCAL' | 'HOSTED' | null>(null);
+  private readonly firstRun = signal(false);
+
+  /** A freshly installed instance holds no data at all, so the login form
+      alone is a dead end — this is the only pointer to the two ways of
+      creating that first account. `/setup` bootstraps the implicit local
+      tenant and exists in local mode only; `/register` creates a named
+      tenant and stays open permanently in hosted mode, but closes on a local
+      instance as soon as the first user exists. */
+  protected readonly showSetupLink = computed(() => this.mode() === 'LOCAL' && this.firstRun());
+  protected readonly showRegisterLink = computed(() => this.mode() === 'HOSTED' || this.firstRun());
+
+  ngOnInit(): void {
+    this.authService.getSetupStatus().subscribe((status) => {
+      this.mode.set(status.mode);
+      this.firstRun.set(status.firstRun);
+    });
+  }
 
   protected onSubmit(): void {
     this.errorMessage.set(null);

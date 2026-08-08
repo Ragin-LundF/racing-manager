@@ -77,8 +77,11 @@ app at your own event.
 3. Open `http://localhost:4200`.
     - With the default `demo` profile, a default administrator account (`admin` / `admin`) is already seeded — just log
       in.
-    - With any other profile (e.g. `prod`), no account exists yet: the app redirects you to a one-time setup page to
-      create the first administrator.
+    - With any other profile (e.g. `prod`), no account exists yet. The login screen then offers the two one-time ways
+      in: **Set up this installation** (`/setup`) creates the first administrator in the implicit local tenant, or
+      **Register a new event organization** (`/register`) creates a named tenant with its own workspace code plus its
+      first administrator. Both close as soon as an account exists, after which the administrator adds further users
+      under **Tenant settings**.
 
 Configuration lives in `racingmanager-backend/src/main/resources/application.conf`
 and can be overridden with environment variables:
@@ -184,9 +187,11 @@ can't).
    administrator account and signs you straight in. Further users of that organization can then log in under its
    workspace slug from `/login`.
 
-In `local` mode, `/register` is disabled and the backend responds with
-`403 NOT_HOSTED`, and `racingmanager.jwt.keys` is not read at all — the signing key is generated and persisted
-automatically on first run.
+In `local` mode, `racingmanager.jwt.keys` is not read at all — the signing key is generated and persisted
+automatically on first run. Registration works there too, but only until the instance has its first user: a fresh
+offline install carries no data, so both `/setup` and `/register` are reachable from the login screen, and both close
+once an account exists (`409 ALREADY_SETUP`). Further users are then created by that administrator under
+**Tenant settings**. See [Getting started — local setup](#getting-started--local-setup).
 
 ## Deploying on a webserver (systemd)
 
@@ -284,6 +289,10 @@ RewriteCond %{REQUEST_URI} !^/api/
 # Everything else is an Angular route → serve the SPA shell                                                                                                                                                                                   
 RewriteRule ^ /index.html [PT]
 ```
+
+The backend now applies these same three rules itself when it serves the bundled UI, so deep links like `/setup` or
+`/racemanager/<id>/results` survive a reload even without a proxy in front. The rewrite above is therefore optional —
+keep it if you prefer the proxy to answer those requests.
 
 ### Changing the port
 

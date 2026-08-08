@@ -34,14 +34,22 @@ fun Route.authRoutes(authService: AuthService, jwtService: JwtService, deploymen
     sessionRoutes(authService = authService, jwtService = jwtService)
 }
 
+/** Public tenant registration. Always open in [DeploymentMode.HOSTED].
+    In [DeploymentMode.LOCAL] it is the first-run alternative to
+    `/api/v1/auth/setup`: a freshly installed offline instance carries no data
+    at all, so refusing registration outright would leave no way in. It closes
+    permanently once the first user exists — a local instance is normally
+    reachable from the whole LAN (spectator view, race device), and nobody on
+    that network may self-register an administrator after the fact. Further
+    users then come from `/api/v1/tenant/users`. */
 private fun Route.registerRoutes(authService: AuthService, deploymentMode: DeploymentMode) {
     post("/api/v1/register") {
-        if (deploymentMode != DeploymentMode.HOSTED) {
+        if (deploymentMode == DeploymentMode.LOCAL && !authService.isFirstRun()) {
             call.respond(
-                status = HttpStatusCode.Forbidden,
+                status = HttpStatusCode.Conflict,
                 message = ErrorResponseModel(
-                    code = "NOT_HOSTED",
-                    message = "Tenant registration is only available in hosted mode"
+                    code = "ALREADY_SETUP",
+                    message = "Local registration is only available before the first user is created"
                 ),
             )
             return@post

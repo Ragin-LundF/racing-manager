@@ -129,8 +129,8 @@ export class RegisterComponent {
     const key =
       code === 'TENANT_SLUG_TAKEN'
         ? 'register.error.slugTaken'
-        : code === 'NOT_HOSTED'
-          ? 'register.error.notHosted'
+        : code === 'ALREADY_SETUP'
+          ? 'register.error.alreadySetUp'
           : 'register.error.generic';
     return this.translate.instant(key);
   }

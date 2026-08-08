@@ -71,9 +71,10 @@ import { LocaleSelectorComponent } from '../../i18n/locale-selector.component';
               </button>
             </form>
 
-            @if (m === 'HOSTED') {
-              <a [routerLink]="['/register']">{{ 'setup.registerTenantLink' | translate }}</a>
-            }
+            <!-- Offered in both modes: locally, registering a named tenant is
+                 the alternative to bootstrapping the implicit one, and it is
+                 still open here because no user exists yet. -->
+            <a [routerLink]="['/register']">{{ 'setup.registerTenantLink' | translate }}</a>
           }
         }
       </div>
