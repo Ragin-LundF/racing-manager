@@ -5,6 +5,7 @@ import io.github.raginlundf.racingmanager.api.audit.auditRoutes
 import io.github.raginlundf.racingmanager.api.auth.authRoutes
 import io.github.raginlundf.racingmanager.api.bootstrap.bootstrapRoutes
 import io.github.raginlundf.racingmanager.api.event.eventRoutes
+import io.github.raginlundf.racingmanager.api.hardware.hardwareRoutes
 import io.github.raginlundf.racingmanager.api.health.healthRoutes
 import io.github.raginlundf.racingmanager.api.heat.heatRoutes
 import io.github.raginlundf.racingmanager.api.knockout.knockoutRoutes
@@ -108,5 +109,6 @@ fun Application.configureRouting(
             settingsRepository = raceDeviceSettingsRepository,
             deploymentMode = deploymentMode
         )
+        hardwareRoutes(gateway = raceDeviceGateway, deploymentMode = deploymentMode)
     }
 }

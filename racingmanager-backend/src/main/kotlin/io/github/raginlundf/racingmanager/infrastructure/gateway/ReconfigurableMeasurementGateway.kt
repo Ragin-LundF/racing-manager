@@ -91,6 +91,14 @@ class ReconfigurableMeasurementGateway(
         return settings
     }
 
+    /** The currently active delegate — for the hardware WebSocket route, which
+        needs to reach the live [io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectMeasurementGateway]
+        instance (if any) on every inbound ESP32 connection. Routes are registered
+        once at startup, but the delegate can be swapped live by [reconfigure]. */
+    fun currentDelegate(): CloseableMeasurementGateway {
+        return delegate
+    }
+
     /** Swaps the live device connection to [newSettings]: stops forwarding, closes
         the old delegate (and its reconnect loop), builds a new delegate, and
         resumes forwarding — all under a lock so overlapping saves serialize. */

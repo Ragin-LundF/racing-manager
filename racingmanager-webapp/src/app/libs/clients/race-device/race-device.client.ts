@@ -2,7 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../core/api.config';
-import { RaceDeviceSettings, RaceDeviceTestRequest, RaceDeviceTestResult, SerialPort } from './race-device.models';
+import {
+  Esp32DeviceStatus,
+  RaceDeviceSettings,
+  RaceDeviceTestRequest,
+  RaceDeviceTestResult,
+  SerialPort,
+} from './race-device.models';
 
 @Injectable({ providedIn: 'root' })
 export class RaceDeviceClient {
@@ -24,5 +30,11 @@ export class RaceDeviceClient {
   /** Serial ports of the machine running the backend, for the Arduino port picker. */
   listSerialPorts(): Observable<SerialPort[]> {
     return this.http.get<SerialPort[]>(`${this.baseUrl}/api/v1/racedevice/serialports`);
+  }
+
+  /** Live connection status of every expected ESP32 module. Empty when the race
+      device is not currently in ESP32_WEBSOCKET_DIRECT mode. */
+  listEsp32Devices(): Observable<Esp32DeviceStatus[]> {
+    return this.http.get<Esp32DeviceStatus[]>(`${this.baseUrl}/api/v1/racedevice/esp32/devices`);
   }
 }

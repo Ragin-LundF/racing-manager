@@ -25,13 +25,15 @@ sensor:
   debounce_us: 15000
 network:
   ssid: RacingManager
-  server_url: ws://192.168.50.1:8080/hardware/ws
+  server_url: ws://192.168.50.1:8080/hardware/esp32/ws
 transport:
   primary: wifi
   rs485_fallback: false
 ```
 
 Das Zielmodul verwendet `device_id: finish-01` und `module_role: finish`. `active_level` muss nach dem realen Sensor geprüft werden: Health-Ansicht muss „frei“ zeigen, wenn der Strahl frei ist. Beim ADA2167 mit internem Pull-up liegt der Pin bei unterbrochenem Strahl auf LOW, `active_level: 0` ist also korrekt. GPIO 16/17 sind die freien Eingänge auf dem ESP32-Board mit integriertem LCD; auf einem normalen DevKit funktionieren auch 32/33 – siehe [Verdrahtung](WIRING.md).
+
+Auf der Racing-Manager-Seite ist das der Gerätemodus `ESP32_WEBSOCKET_DIRECT` („ESP32 WebSocket Direct Connect“ in der Einstellungs-UI): Der Pi betreibt den WebSocket-Server unter `/hardware/esp32/ws`, die Module verbinden sich als Client dorthin – umgekehrt zum älteren Modus `HARDWARE`, der sich zu einem separaten Raspberry-Pi-Controller verbunden hat. Die ausgelieferte Voreinstellung erwartet 4 Module mit je einem Sensoreingang (`lane-1-start`, `lane-1-finish`, `lane-2-start`, `lane-2-finish`) statt der oben gezeigten 2 Module mit je zwei Spuren (`start-01`/`finish-01`) – beide Aufteilungen sprechen dasselbe Protokoll; die Einstellung `expectedDeviceIds` legt fest, welche `device_id`s der Server akzeptiert. Das Backend implementiert den Handshake `race.arm`/`race.armed`/`race.start`/`race.reset` und `time.sync_request`/`time.sync_response` noch nicht: Es verarbeitet aktuell nur `device.register`, `device.heartbeat` und `sensor.event` und ermittelt die Zeit jeder Spur aus der Differenz der Empfangszeitpunkte von Start- und Ziel-`beam_broken`.
 
 ## Lauffähige Referenzimplementierung
 

@@ -5,6 +5,7 @@ import io.github.raginlundf.racingmanager.infrastructure.gateway.RaceDeviceMode
 import io.github.raginlundf.racingmanager.infrastructure.gateway.RaceDeviceSettings
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.ArduinoTwoLaneSettings
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.FinishSemantics
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectSettings
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -78,6 +79,39 @@ class RaceDeviceSettingsRepositoryTest {
         )
 
         assertNull(actual = repository.find()?.arduino)
+    }
+
+    @Test
+    fun `save then find round-trips the esp32 options`() {
+        val settings = RaceDeviceSettings(
+            mode = RaceDeviceMode.ESP32_WEBSOCKET_DIRECT,
+            endpoint = "ws://unused",
+            finishTimeoutMs = 30_000,
+            esp32 = Esp32WebSocketDirectSettings(
+                expectedDeviceIds = listOf("lane-1-start", "lane-1-finish"),
+                registerTimeoutMs = 5_000,
+                useDeviceHeartbeat = false,
+                heartbeatTimeoutMs = 3_000,
+                rawLogPath = "logs/raw-esp32.log",
+            ),
+        )
+
+        repository.save(settings = settings)
+
+        assertEquals(expected = settings, actual = repository.find())
+    }
+
+    @Test
+    fun `the esp32 options are absent for the other modes`() {
+        repository.save(
+            settings = RaceDeviceSettings(
+                mode = RaceDeviceMode.SIMULATED,
+                endpoint = "ws://test",
+                finishTimeoutMs = 30_000,
+            ),
+        )
+
+        assertNull(actual = repository.find()?.esp32)
     }
 
     @Test

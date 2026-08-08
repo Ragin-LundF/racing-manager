@@ -8,4 +8,5 @@ data class RaceDeviceSettingsResponseModel(
     val endpoint: String,
     val finishTimeoutMs: Long,
     val arduino: ArduinoSettingsModel? = null,
+    val esp32: Esp32SettingsModel? = null,
 )

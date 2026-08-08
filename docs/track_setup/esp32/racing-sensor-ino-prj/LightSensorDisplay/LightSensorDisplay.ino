@@ -15,7 +15,7 @@ constexpr char MODULE_POSITION[] = "start"; // "start" or "finish"
 
 constexpr char WEBSOCKET_HOST[] = "192.168.10.1";
 constexpr uint16_t WEBSOCKET_PORT = 8080;
-constexpr char WEBSOCKET_PATH[] = "/ws";
+constexpr char WEBSOCKET_PATH[] = "/hardware/esp32/ws";
 
 constexpr uint8_t SENSOR_PIN = 16;
 constexpr uint8_t SENSOR_ACTIVE_LEVEL = LOW;
@@ -24,6 +24,9 @@ constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 15'000;
 constexpr uint32_t WIFI_RETRY_INTERVAL_MS = 10'000;
 constexpr uint32_t WEBSOCKET_RECONNECT_MS = 3'000;
 constexpr uint32_t DISPLAY_POLL_INTERVAL_MS = 50;
+constexpr uint32_t HEARTBEAT_INTERVAL_MS = 1'000;
+// PROTOCOL.md's message contract; this sketch only ever sends v=1 frames.
+constexpr uint8_t PROTOCOL_VERSION = 1;
 
 // Hard-wired pins of the built-in ST7789 display.
 constexpr uint8_t LCD_MOSI = 23;
@@ -41,6 +44,10 @@ volatile uint32_t lastInterruptUs = 0;
 bool wifiConnected = false;
 bool websocketConnected = false;
 uint32_t eventCount = 0;
+uint32_t lastHeartbeatMs = 0;
+// Changes every boot so the backend can tell a reconnect from a reset; two
+// random words are enough entropy to be unique among the 4 modules on one Pi.
+String bootId;
 uint32_t lastScreenUpdateMs = 0;
 bool screenStaticDrawn = false;
 bool beamStateDrawn = false;
@@ -118,8 +125,46 @@ void connectWifi() {
   }
 }
 
+void sendDeviceRegister() {
+  StaticJsonDocument<256> message;
+  message["v"] = PROTOCOL_VERSION;
+  message["type"] = "device.register";
+  message["device_id"] = MODULE_ID;
+  message["boot_id"] = bootId;
+  message["role"] = MODULE_POSITION;
+  message["firmware"] = "1.0.0";
+  JsonArray capabilities = message.createNestedArray("capabilities");
+  capabilities.add("beam_sensor");
+  capabilities.add("wifi");
+
+  String text;
+  serializeJson(message, text);
+  Serial.println(text);
+  webSocket.sendTXT(text);
+}
+
+void sendHeartbeat() {
+  StaticJsonDocument<256> message;
+  message["v"] = PROTOCOL_VERSION;
+  message["type"] = "device.heartbeat";
+  message["device_id"] = MODULE_ID;
+  message["boot_id"] = bootId;
+  message["uptime_ms"] = millis();
+  message["transport"] = "wifi";
+  JsonObject sensors = message.createNestedObject("sensors");
+  const bool beamBroken = digitalRead(SENSOR_PIN) == SENSOR_ACTIVE_LEVEL;
+  sensors[String("lane_") + LANE_NUMBER] = beamBroken ? "blocked" : "clear";
+
+  String text;
+  serializeJson(message, text);
+  webSocket.sendTXT(text);
+}
+
 void onWebSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
-  if (type == WStype_CONNECTED) websocketConnected = true;
+  if (type == WStype_CONNECTED) {
+    websocketConnected = true;
+    sendDeviceRegister();
+  }
   if (type == WStype_DISCONNECTED) websocketConnected = false;
   drawStatus();
 }
@@ -127,12 +172,16 @@ void onWebSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 void sendSensorEvent(uint32_t timestampUs) {
   eventCount++;
   StaticJsonDocument<256> event;
-  event["type"] = "sensor_event";
-  event["moduleId"] = MODULE_ID;
-  event["lane"] = LANE_NUMBER;
-  event["position"] = MODULE_POSITION;
-  event["timestampUs"] = timestampUs;
+  event["v"] = PROTOCOL_VERSION;
+  event["type"] = "sensor.event";
+  event["message_id"] = bootId + "-" + String(eventCount);
+  event["device_id"] = MODULE_ID;
+  event["boot_id"] = bootId;
   event["sequence"] = eventCount;
+  event["role"] = MODULE_POSITION;
+  event["lane"] = LANE_NUMBER;
+  event["event"] = "beam_broken";
+  event["local_timestamp_us"] = timestampUs;
 
   String message;
   serializeJson(event, message);
@@ -222,6 +271,7 @@ void drawStatus() {
 void setup() {
   Serial.begin(115200);
   pinMode(SENSOR_PIN, INPUT_PULLUP);
+  bootId = String(esp_random(), HEX) + String(esp_random(), HEX);
 
   // On this board, initialise Wi-Fi before the display.
   connectWifi();
@@ -268,6 +318,11 @@ void loop() {
   }
   interrupts();
   if (eventReady) sendSensorEvent(timestampUs);
+
+  if (websocketConnected && millis() - lastHeartbeatMs >= HEARTBEAT_INTERVAL_MS) {
+    lastHeartbeatMs = millis();
+    sendHeartbeat();
+  }
 
   if (millis() - lastScreenUpdateMs >= DISPLAY_POLL_INTERVAL_MS) {
     lastScreenUpdateMs = millis();

@@ -10,6 +10,8 @@
   .success { color: var(--color-success); }
 
   label { display: block; margin-bottom: var(--space-3); }
+  label.checkbox { display: flex; align-items: center; gap: var(--space-2); }
+  label.checkbox input { display: inline-block; width: auto; margin-top: 0; }
   input, select { display: block; width: 100%; margin-top: var(--space-1); }
   .hint { display: block; margin-top: var(--space-1); color: var(--color-text-muted); }
 
@@ -26,5 +28,25 @@
 
     &:hover { border-color: var(--color-text-muted); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  .esp32-devices {
+    margin-top: var(--space-5);
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-2);
+    }
+    .header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      text-align: left;
+      padding: var(--space-2);
+      border-bottom: 1px solid var(--color-border);
+    }
+    th { color: var(--color-text-secondary); font-weight: 600; }
   }
 }

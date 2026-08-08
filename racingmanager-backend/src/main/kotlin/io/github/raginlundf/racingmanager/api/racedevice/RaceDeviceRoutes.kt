@@ -3,6 +3,8 @@ package io.github.raginlundf.racingmanager.api.racedevice
 import io.github.raginlundf.racingmanager.api.auth.models.ErrorResponseModel
 import io.github.raginlundf.racingmanager.api.authenticateRequest
 import io.github.raginlundf.racingmanager.api.racedevice.models.ArduinoSettingsModel
+import io.github.raginlundf.racingmanager.api.racedevice.models.Esp32DeviceStatusModel
+import io.github.raginlundf.racingmanager.api.racedevice.models.Esp32SettingsModel
 import io.github.raginlundf.racingmanager.api.racedevice.models.RaceDeviceSettingsResponseModel
 import io.github.raginlundf.racingmanager.api.racedevice.models.SerialPortModel
 import io.github.raginlundf.racingmanager.api.racedevice.models.TestRaceDeviceRequestModel
@@ -19,6 +21,9 @@ import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.FinishSemantics
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.SerialPortDiscovery
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.TwoLaneSerialProbe
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32DeviceSnapshot
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectMeasurementGateway
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectSettings
 import io.github.raginlundf.racingmanager.infrastructure.repositories.RaceDeviceSettingsRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
 import io.ktor.http.HttpStatusCode
@@ -43,7 +48,8 @@ fun Route.raceDeviceRoutes(
     deploymentMode: DeploymentMode,
 ) {
     raceDeviceSettingsRoutes(jwtService, gateway, settingsRepository, deploymentMode)
-    raceDeviceTestRoutes(jwtService, deploymentMode)
+    raceDeviceTestRoutes(jwtService, gateway, deploymentMode)
+    raceDeviceEsp32Routes(jwtService, gateway, deploymentMode)
 }
 
 private fun Route.raceDeviceSettingsRoutes(
@@ -73,6 +79,7 @@ private fun Route.raceDeviceSettingsRoutes(
 
 private fun Route.raceDeviceTestRoutes(
     jwtService: JwtService,
+    gateway: ReconfigurableMeasurementGateway,
     deploymentMode: DeploymentMode,
 ) {
     post("/api/v1/racedevice/test") {
@@ -94,6 +101,10 @@ private fun Route.raceDeviceTestRoutes(
                 val arduino = request.arduino?.toSettings() ?: return@post call.respondValidationError()
                 call.respondProbeResult(result = TwoLaneSerialProbe.testConnection(settings = arduino))
             }
+
+            // Nothing to dial: the devices connect to us. "Test" instead reports
+            // which of the currently configured devices are connected right now.
+            RaceDeviceMode.ESP32_WEBSOCKET_DIRECT -> call.respondEsp32ConnectionSummary(gateway = gateway)
         }
     }
 
@@ -107,6 +118,35 @@ private fun Route.raceDeviceTestRoutes(
     }
 }
 
+private fun Route.raceDeviceEsp32Routes(
+    jwtService: JwtService,
+    gateway: ReconfigurableMeasurementGateway,
+    deploymentMode: DeploymentMode,
+) {
+    get("/api/v1/racedevice/esp32/devices") {
+        if (!call.requireLocalMode(deploymentMode)) return@get
+        val principal = call.authenticateRequest(jwtService) ?: return@get
+        if (!call.requireScope(principal, Scopes.ADMIN)) return@get
+        call.respond(gateway.esp32DeviceSnapshotsOrEmpty().map { it.toModel() })
+    }
+}
+
+private fun ReconfigurableMeasurementGateway.esp32DeviceSnapshotsOrEmpty(): List<Esp32DeviceSnapshot> {
+    val esp32Gateway = currentDelegate() as? Esp32WebSocketDirectMeasurementGateway ?: return emptyList()
+    return esp32Gateway.deviceSnapshots()
+}
+
+private suspend fun ApplicationCall.respondEsp32ConnectionSummary(gateway: ReconfigurableMeasurementGateway) {
+    val snapshots = gateway.esp32DeviceSnapshotsOrEmpty()
+    val missing = snapshots.filterNot { it.connected }.map { it.deviceId }
+    respond(
+        TestRaceDeviceResponseModel(
+            ok = snapshots.isNotEmpty() && missing.isEmpty(),
+            error = missing.takeIf { it.isNotEmpty() }?.let { "Not connected: ${it.joinToString()}" },
+        ),
+    )
+}
+
 /** Validates and builds settings from the request; null on any invalid input. The
     mode-specific block is only validated when that mode is selected — switching
     back keeps the other block around so the operator does not retype it. */
@@ -116,11 +156,14 @@ private fun parseSettings(request: UpdateRaceDeviceSettingsRequestModel): RaceDe
     if (parsedMode == RaceDeviceMode.HARDWARE && !isValidEndpoint(endpoint = request.endpoint)) return null
     val arduino = request.arduino?.toSettings()
     if (parsedMode == RaceDeviceMode.ARDUINO_TWO_LANE && arduino == null) return null
+    val esp32 = request.esp32?.toSettings()
+    if (parsedMode == RaceDeviceMode.ESP32_WEBSOCKET_DIRECT && esp32 == null) return null
     return RaceDeviceSettings(
         mode = parsedMode,
         endpoint = request.endpoint,
         finishTimeoutMs = request.finishTimeoutMs,
         arduino = arduino,
+        esp32 = esp32,
     )
 }
 
@@ -137,6 +180,27 @@ private fun ArduinoSettingsModel.toSettings(): ArduinoTwoLaneSettings? {
         readyTimeoutMs = readyTimeoutMs,
         falseStartWindowMs = falseStartWindowMs,
         finishSemantics = semantics,
+        rawLogPath = rawLogPath,
+    )
+}
+
+/** Null when the block is unusable: an empty device list, a non-positive timeout,
+    or the still-unimplemented handshake/time-sync flags — see
+    [io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectMeasurementGateway]. */
+private fun Esp32SettingsModel.toSettings(): Esp32WebSocketDirectSettings? {
+    if (expectedDeviceIds.isEmpty() || rawLogPath.isBlank()) return null
+    if (registerTimeoutMs <= 0 || heartbeatTimeoutMs <= 0 || armTimeoutMs <= 0) return null
+    if (timeSyncRounds <= 0) return null
+    if (useRaceControlHandshake || useTimeSync) return null
+    return Esp32WebSocketDirectSettings(
+        expectedDeviceIds = expectedDeviceIds,
+        registerTimeoutMs = registerTimeoutMs,
+        useRaceControlHandshake = useRaceControlHandshake,
+        useTimeSync = useTimeSync,
+        useDeviceHeartbeat = useDeviceHeartbeat,
+        heartbeatTimeoutMs = heartbeatTimeoutMs,
+        armTimeoutMs = armTimeoutMs,
+        timeSyncRounds = timeSyncRounds,
         rawLogPath = rawLogPath,
     )
 }
@@ -164,6 +228,30 @@ private fun RaceDeviceSettings.toResponseModel(): RaceDeviceSettingsResponseMode
                 rawLogPath = it.rawLogPath,
             )
         },
+        esp32 = esp32?.let {
+            Esp32SettingsModel(
+                expectedDeviceIds = it.expectedDeviceIds,
+                registerTimeoutMs = it.registerTimeoutMs,
+                useRaceControlHandshake = it.useRaceControlHandshake,
+                useTimeSync = it.useTimeSync,
+                useDeviceHeartbeat = it.useDeviceHeartbeat,
+                heartbeatTimeoutMs = it.heartbeatTimeoutMs,
+                armTimeoutMs = it.armTimeoutMs,
+                timeSyncRounds = it.timeSyncRounds,
+                rawLogPath = it.rawLogPath,
+            )
+        },
+    )
+}
+
+private fun Esp32DeviceSnapshot.toModel(): Esp32DeviceStatusModel {
+    return Esp32DeviceStatusModel(
+        deviceId = deviceId,
+        connected = connected,
+        online = online,
+        lane = lane,
+        role = role?.wireValue,
+        lastHeartbeatAt = lastHeartbeatAt?.toString(),
     )
 }
 

@@ -450,8 +450,40 @@
           "label": "Ready timeout (ms)"
         }
       },
+      "esp32": {
+        "deviceIds": {
+          "hint": "Comma-separated device_id list the modules must register as, e.g. lane-1-start, lane-1-finish, lane-2-start, lane-2-finish. A module outside this list is rejected.",
+          "label": "Expected device IDs"
+        },
+        "devices": {
+          "connected": "Connected",
+          "deviceId": "Device",
+          "heading": "Connected devices",
+          "lastHeartbeat": "Last heartbeat",
+          "never": "Never",
+          "notConnected": "Not connected",
+          "refresh": "Refresh",
+          "status": "Status"
+        },
+        "heartbeat": {
+          "label": "Track device heartbeat (online/offline status)"
+        },
+        "heartbeatTimeout": {
+          "hint": "A device shows as offline after this long without a heartbeat (about 5 missed 1 s heartbeats).",
+          "label": "Heartbeat timeout (ms)"
+        },
+        "protocolNote": "Race-control handshake and clock sync are not implemented yet. Each lane's time is simply the delay between its start and finish light barrier breaking, measured by this server.",
+        "rawLogPath": {
+          "label": "Raw log file"
+        },
+        "registerTimeout": {
+          "hint": "How long to wait for a module to identify itself right after it connects.",
+          "label": "Registration timeout (ms)"
+        }
+      },
       "mode": {
         "arduinoTwoLane": "Arduino 2-lane light barrier (serial)",
+        "esp32WebSocketDirect": "ESP32 WebSocket Direct Connect (4 light barriers)",
         "hardware": "Raspberry Pi (hardware)",
         "label": "Device",
         "simulated": "Simulator (no hardware)"

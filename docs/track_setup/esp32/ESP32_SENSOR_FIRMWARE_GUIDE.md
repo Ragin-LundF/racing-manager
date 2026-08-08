@@ -113,30 +113,72 @@ not need to be installed separately.
 
 ## 3. Common message format
 
-A triggered light barrier sends a WebSocket message like this:
+The sketches speak the envelope from [`../en/PROTOCOL.md`](../en/PROTOCOL.md).
+Right after the WebSocket connects, a module registers itself once:
 
 ```json
 {
-  "type": "sensor_event",
-  "moduleId": "lane-1-start",
+  "v": 1,
+  "type": "device.register",
+  "device_id": "lane-1-start",
+  "boot_id": "a1b2c3d4e5f60718",
+  "role": "start",
+  "firmware": "1.0.0",
+  "capabilities": ["beam_sensor", "wifi"]
+}
+```
+
+Every second while connected, it reports a heartbeat with its own beam state:
+
+```json
+{
+  "v": 1,
+  "type": "device.heartbeat",
+  "device_id": "lane-1-start",
+  "boot_id": "a1b2c3d4e5f60718",
+  "uptime_ms": 64321,
+  "transport": "wifi",
+  "sensors": { "lane_1": "clear" }
+}
+```
+
+A triggered light barrier sends:
+
+```json
+{
+  "v": 1,
+  "type": "sensor.event",
+  "message_id": "a1b2c3d4e5f60718-1",
+  "device_id": "lane-1-start",
+  "boot_id": "a1b2c3d4e5f60718",
+  "sequence": 1,
+  "role": "start",
   "lane": 1,
-  "position": "start",
-  "timestampUs": 123456,
-  "sequence": 1
+  "event": "beam_broken",
+  "local_timestamp_us": 123456
 }
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `moduleId` | Unique device ID, for example `lane-1-start` |
+| `device_id` | Unique device ID, for example `lane-1-start` |
+| `boot_id` | Changes every boot; two random hex words, enough to tell a reconnect from a reset |
+| `role` | `start` or `finish` |
 | `lane` | Lane number: `1` or `2` |
-| `position` | `start` or `finish` |
-| `timestampUs` | Microseconds since the ESP32 was powered on |
-| `sequence` | Consecutive local event number |
+| `event` | Always `beam_broken` in this firmware |
+| `local_timestamp_us` | Microseconds since the ESP32 was powered on |
+| `sequence` | Consecutive local event number, also embedded in `message_id` |
+
+The backend does not yet implement the `race.arm`/`race.armed`/`race.start`/
+`race.reset` handshake or `time.sync_request`/`time.sync_response` — see
+[`../en/FIRMWARE.md`](../en/FIRMWARE.md) — so the sketches never wait for or
+send those messages; `race_id`, `sync_timestamp_us`, and `sync_uncertainty_us`
+are simply omitted from `sensor.event`. `event.ack` is likewise not sent back,
+since it is part of the same not-yet-implemented handshake.
 
 The exact WebSocket address must match Racing Manager. The examples use
-Raspberry Pi address `192.168.10.1`, port `8080`, and path `/ws`. Change these
-values if the server configuration differs.
+Raspberry Pi address `192.168.10.1`, port `8080`, and path `/hardware/esp32/ws`.
+Change these values if the server configuration differs.
 
 ## 4. Sketch: 32-pin ESP32 without integrated display
 
@@ -207,10 +249,19 @@ modules.
 ## 7. Further development and important limitations
 
 - The example sends events as soon as the sensor triggers. It does not
-  implement race logic; that belongs in Racing Manager on the Raspberry Pi.
-- `timestampUs` overflows after roughly 71 minutes. This does not matter for
-  simple event order, but directly comparable times across ESP32s later require
-  a shared time base or clock synchronisation.
+  implement race logic; that belongs in Racing Manager on the Raspberry Pi,
+  which times each lane from the delay between its start and finish
+  `beam_broken` events using its own receipt time — not a device timestamp.
+- `local_timestamp_us` overflows after roughly 71 minutes and is not used for
+  timing by the backend for exactly that reason. It is device-local only
+  (useful for correlating log lines on one module), never compared across
+  devices.
+- The `race.arm`/`race.armed`/`race.start`/`race.reset` handshake and the
+  `time.sync_request`/`time.sync_response` exchange from
+  [`../en/PROTOCOL.md`](../en/PROTOCOL.md) are part of the protocol but not
+  implemented here, on either side: the backend gateway currently refuses to
+  start with them enabled. Add the incoming-message handling (`WStype_TEXT`)
+  and reply logic to these sketches only once that backend work exists.
 - For a wired expansion, keep the sensor-event generation and replace or add to
   the WebSocket transport with RS485.
 - For long wires or external 12/24 V sensors, use a suitable isolated digital
