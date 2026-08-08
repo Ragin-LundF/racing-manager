@@ -8,7 +8,7 @@
 
 // ===== Configuration: adapt for each measuring module =====
 constexpr char WIFI_SSID[] = "RacingManager";
-constexpr char WIFI_PASSWORD[] = "YOUR-WIFI-PASSWORD";
+constexpr char WIFI_PASSWORD[] = "race-4-life";
 constexpr char MODULE_ID[] = "lane-1-start";
 constexpr uint8_t LANE_NUMBER = 1;
 constexpr char MODULE_POSITION[] = "start"; // "start" or "finish"
@@ -23,6 +23,7 @@ constexpr uint32_t DEBOUNCE_US = 20'000;
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 15'000;
 constexpr uint32_t WIFI_RETRY_INTERVAL_MS = 10'000;
 constexpr uint32_t WEBSOCKET_RECONNECT_MS = 3'000;
+constexpr uint32_t DISPLAY_POLL_INTERVAL_MS = 50;
 
 // Hard-wired pins of the built-in ST7789 display.
 constexpr uint8_t LCD_MOSI = 23;
@@ -41,14 +42,37 @@ bool wifiConnected = false;
 bool websocketConnected = false;
 uint32_t eventCount = 0;
 uint32_t lastScreenUpdateMs = 0;
+bool screenStaticDrawn = false;
+bool beamStateDrawn = false;
+bool wifiStatusDrawn = false;
+bool websocketStatusDrawn = false;
+bool eventCountDrawn = false;
+bool lastBeamBroken = false;
+bool lastWifiDisplayed = false;
+bool lastWebsocketDisplayed = false;
+uint32_t lastEventCountDisplayed = 0;
 
 void drawStatus();
 
-void drawCenteredText(const String &text, int16_t y, uint8_t size, uint16_t color) {
+void drawCenteredText(const String &text, int16_t y, uint8_t size, uint16_t color,
+                      uint16_t background = ST77XX_BLACK) {
+  display.setTextSize(size);
+  display.setTextColor(color, background);
+  const int16_t width = text.length() * 6 * size;
+  int16_t x = (display.width() - width) / 2;
+  if (x < 0) x = 0;
+  display.setCursor(x, y);
+  display.print(text);
+}
+
+void drawTextCenteredInBox(const String &text, int16_t x, int16_t width, int16_t y,
+                           uint8_t size, uint16_t color) {
   display.setTextSize(size);
   display.setTextColor(color, ST77XX_BLACK);
-  const int16_t width = text.length() * 6 * size;
-  display.setCursor((display.width() - width) / 2, y);
+  const int16_t textWidth = text.length() * 6 * size;
+  int16_t cursorX = x + (width - textWidth) / 2;
+  if (cursorX < x + 2) cursorX = x + 2;
+  display.setCursor(cursorX, y);
   display.print(text);
 }
 
@@ -94,42 +118,82 @@ void sendSensorEvent(uint32_t timestampUs) {
   drawStatus();
 }
 
-void drawLine(const String &text, uint16_t color) {
-  display.setTextSize(2);
-  display.setTextColor(color, ST77XX_BLACK);
-  display.println(text);
+void drawStaticLayout() {
+  display.fillScreen(ST77XX_BLACK);
+  display.setTextWrap(false);
+
+  display.fillRect(0, 0, display.width(), 34, ST77XX_BLUE);
+  drawCenteredText(MODULE_ID, 9, 2, ST77XX_WHITE, ST77XX_BLUE);
+  drawCenteredText(String("Lane ") + LANE_NUMBER + " / " + MODULE_POSITION, 43, 1, ST77XX_CYAN);
+
+  const uint16_t dividerColor = display.color565(70, 70, 70);
+  display.drawFastHLine(8, 176, display.width() - 16, dividerColor);
+  display.drawFastHLine(8, 236, display.width() - 16, dividerColor);
+  drawCenteredText("EVENTS", 247, 1, display.color565(170, 170, 170));
+
+  beamStateDrawn = false;
+  wifiStatusDrawn = false;
+  websocketStatusDrawn = false;
+  eventCountDrawn = false;
+  screenStaticDrawn = true;
+}
+
+void drawBeamState(bool beamBroken) {
+  if (beamStateDrawn && beamBroken == lastBeamBroken) return;
+
+  lastBeamBroken = beamBroken;
+  beamStateDrawn = true;
+
+  const uint16_t sensorColor = beamBroken ? ST77XX_RED : ST77XX_GREEN;
+  const int16_t centerX = display.width() / 2;
+  const int16_t centerY = 110;
+
+  display.fillRect(0, 66, display.width(), 102, ST77XX_BLACK);
+  drawCenteredText("BEAM", 72, 1, display.color565(170, 170, 170));
+  display.fillRect(20, centerY - 2, display.width() - 40, 5, sensorColor);
+  display.fillCircle(centerX, centerY, 16, sensorColor);
+  display.drawCircle(centerX, centerY, 18, ST77XX_WHITE);
+  drawCenteredText(beamBroken ? "BLOCKED" : "CLEAR", 138, 3, sensorColor);
+}
+
+void drawStatusTile(int16_t x, const String &label, bool connected, bool &drawn, bool &lastValue) {
+  if (drawn && connected == lastValue) return;
+
+  drawn = true;
+  lastValue = connected;
+
+  constexpr int16_t tileY = 190;
+  constexpr int16_t tileWidth = 72;
+  constexpr int16_t tileHeight = 38;
+  const uint16_t color = connected ? ST77XX_GREEN : ST77XX_YELLOW;
+
+  display.fillRect(x, tileY, tileWidth, tileHeight, ST77XX_BLACK);
+  display.drawRoundRect(x, tileY, tileWidth, tileHeight, 5, color);
+  drawTextCenteredInBox(label, x, tileWidth, tileY + 6, 1, display.color565(190, 190, 190));
+  drawTextCenteredInBox(connected ? "OK" : "--", x, tileWidth, tileY + 20, 2, color);
+}
+
+void drawEventCount() {
+  if (eventCountDrawn && eventCount == lastEventCountDisplayed) return;
+
+  eventCountDrawn = true;
+  lastEventCountDisplayed = eventCount;
+
+  const String countText = String(eventCount);
+  const uint8_t textSize = countText.length() <= 3 ? 4 : (countText.length() <= 5 ? 3 : 2);
+
+  display.fillRect(0, 262, display.width(), 40, ST77XX_BLACK);
+  drawCenteredText(countText, 266, textSize, ST77XX_WHITE);
 }
 
 void drawStatus() {
-  display.fillScreen(ST77XX_BLACK);
-  display.setTextWrap(false);
+  if (!screenStaticDrawn) drawStaticLayout();
+
   const bool beamBroken = digitalRead(SENSOR_PIN) == SENSOR_ACTIVE_LEVEL;
-  const uint16_t sensorColor = beamBroken ? ST77XX_RED : ST77XX_GREEN;
-
-  display.fillRect(0, 0, display.width(), 34, ST77XX_BLUE);
-  drawCenteredText(MODULE_ID, 9, 2, ST77XX_WHITE);
-  drawCenteredText(String("Lane ") + LANE_NUMBER + " / " + MODULE_POSITION, 43, 1, ST77XX_CYAN);
-
-  const int16_t centerX = display.width() / 2;
-  const int16_t centerY = 102;
-  display.drawCircle(centerX, centerY, 43, ST77XX_WHITE);
-  display.fillCircle(centerX, centerY, 39, sensorColor);
-  display.fillCircle(centerX - 13, centerY - 13, 10, beamBroken ? ST77XX_ORANGE : ST77XX_YELLOW);
-  drawCenteredText(beamBroken ? "INTERRUPTED" : "CLEAR LANE", 151, 2, sensorColor);
-
-  display.drawFastHLine(8, 178, display.width() - 16, display.color565(70, 70, 70));
-  display.setCursor(12, 188);
-  drawLine(wifiConnected ? "WIFI  OK" : "WIFI  ...", wifiConnected ? ST77XX_GREEN : ST77XX_YELLOW);
-  display.setCursor(12, 211);
-  drawLine(websocketConnected ? "SERVER OK" : "SERVER ...",
-           websocketConnected ? ST77XX_GREEN : ST77XX_YELLOW);
-  display.setCursor(100, 199);
-  display.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-  display.setTextSize(1);
-  display.print("Events");
-  display.setCursor(100, 212);
-  display.setTextSize(2);
-  display.print(eventCount);
+  drawBeamState(beamBroken);
+  drawStatusTile(8, "WIFI", wifiConnected, wifiStatusDrawn, lastWifiDisplayed);
+  drawStatusTile(90, "SERVER", websocketConnected, websocketStatusDrawn, lastWebsocketDisplayed);
+  drawEventCount();
 }
 
 void setup() {
@@ -144,7 +208,8 @@ void setup() {
   digitalWrite(LCD_DC, HIGH);
   SPI.begin(LCD_SCLK, -1, LCD_MOSI, LCD_CS);
   display.init(170, 320);
-  display.setRotation(0);
+  // Use flipped portrait orientation so the mounted board is readable.
+  display.setRotation(2);
   drawStatus();
 
   webSocket.begin(WEBSOCKET_HOST, WEBSOCKET_PORT, WEBSOCKET_PATH);
@@ -181,7 +246,7 @@ void loop() {
   interrupts();
   if (eventReady) sendSensorEvent(timestampUs);
 
-  if (millis() - lastScreenUpdateMs >= 250) {
+  if (millis() - lastScreenUpdateMs >= DISPLAY_POLL_INTERVAL_MS) {
     lastScreenUpdateMs = millis();
     drawStatus();
   }
