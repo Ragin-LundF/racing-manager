@@ -5,7 +5,7 @@
 
 // ===== Configuration: adapt for each measuring module =====
 constexpr char WIFI_SSID[] = "RacingManager";
-constexpr char WIFI_PASSWORD[] = "YOUR-WIFI-PASSWORD";
+constexpr char WIFI_PASSWORD[] = "race-4-life";
 constexpr char MODULE_ID[] = "lane-1-start";
 constexpr uint8_t LANE_NUMBER = 1;
 constexpr char MODULE_POSITION[] = "start"; // "start" or "finish"
