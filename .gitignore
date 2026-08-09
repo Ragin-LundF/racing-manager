@@ -3,7 +3,6 @@
 *.iws
 *.iml
 *.ipr
-*.iml
 !.idea/inspectionProfiles
 !.idea/inspectionProfiles/*
 !.idea/detekt.xml
@@ -22,4 +21,4 @@
 .hermes
 .plan
 .data
-raw-timing.log
+*.log
