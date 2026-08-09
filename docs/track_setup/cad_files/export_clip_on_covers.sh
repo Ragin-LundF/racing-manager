@@ -15,11 +15,11 @@ export_part() {
 
 export_part "finish_clip_lower_arm" finish_lower_arm
 export_part "finish_clip_upper_arm" finish_upper_arm
-export_part "finish_clip_outer_full" finish_outer_full
+export_part "finish_clip_outer_lower" finish_outer_lower
+export_part "finish_clip_outer_upper" finish_outer_upper
 export_part "start_clip_lower_arm" start_lower_arm
 export_part "start_clip_upper_arm" start_upper_arm
 export_part "start_clip_outer_lower" start_outer_lower
 export_part "start_clip_outer_upper" start_outer_upper
 
 echo "Done. STL files are in: $OUT/"
-

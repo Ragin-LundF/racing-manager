@@ -11,7 +11,7 @@ The design deliberately separates the structural U-frame, removable cable covers
 | `pinewood_u_frame.scad` | Main parametric U-frame: start and finish variants, left/right mirrors, cable channels, sensor pockets, covers, and 250 mm printer split joints. |
 | `electronics_housing_40mm_entry.scad` | Separate glue-on electronics housing with board supports, display opening, USB opening, cable pass-through, and sliding lid. |
 | `breakbeam_sensor_holder_test.scad` | Small isolated test model for the sensor pocket, optical slot, cable channel, and cover fit. Print this first when changing sensor-related dimensions. |
-| `clip_on_cable_covers.scad` | Supplemental external 3 mm wall clip-on covers for the cable ducts; it does not modify the original U-frame. |
+| `clip_on_cable_covers.scad` | Supplemental external clip-on covers with tapered 2 mm to 3.5 mm legs; it does not modify the original U-frame. |
 | `export_all_stls.sh` | Exports all required U-frame, cover, and housing STL files. |
 | `export_housing_stls.sh` | Exports only the two housing STL files. |
 | `export_clip_on_covers.sh` | Exports only the supplemental clip-on cover STL files. |
@@ -120,7 +120,7 @@ The generated files are written to `stl/`. The full export contains:
 - Two one-piece finish frames: left and right.
 - Four covers for each frame height: lower/upper arm cover and lower/upper rail cover.
 - One housing base and one housing display lid.
-- Seven supplemental clip-on covers: two arm clips per frame type, one full-length finish outer clip, and two start outer clips ending at the device gap.
+- Eight supplemental clip-on covers: two arm clips per frame type, two 80 mm finish outer clips, and two 130 mm start outer clips.
 
 To export only the housing:
 
@@ -138,22 +138,24 @@ To export only the supplemental clip-on covers:
 
 `clip_on_cable_covers.scad` is an additive-only model. It is not referenced by,
 and does not alter, `pinewood_u_frame.scad`. Every cover is a U-shaped friction
-clip with a 21 mm clear inner width at the closed side, narrowing to 19 mm at
-the open clipping side. Its 15 mm legs taper from 2 mm to 4 mm thickness and
+clip with a 21 mm clear inner width at the closed side, narrowing to 19.5 mm at
+the open clipping side. Its 15 mm legs taper from 2 mm to 3.5 mm thickness and
 provide the snap/friction fit over the 20 mm frame profile from the cable-duct
 side.
 
 Exported installation-specific parts are:
 
-- `finish_clip_lower_arm` and `finish_clip_upper_arm`: one for each arm of a finish U-frame.
-- `finish_clip_outer_full`: one 240 mm clip for the complete outer rail of a finish U-frame.
-- `start_clip_lower_arm` and `start_clip_upper_arm`: one for each arm of a start U-frame.
-- `start_clip_outer_lower` and `start_clip_outer_upper`: two 150 mm clips for the outer start rail, stopping before the central 40 mm device connection.
+- `finish_clip_lower_arm` and `finish_clip_upper_arm`: one 105 mm clip for each arm of a finish U-frame. The final 20 mm has only the flat cover; its side legs stop after 85 mm.
+- `finish_clip_outer_lower` and `finish_clip_outer_upper`: two 80 mm rear clips for a finish U-frame, each with both side legs over the full 80 mm length.
+- `start_clip_lower_arm` and `start_clip_upper_arm`: one 105 mm clip for each arm of a start U-frame. The final 20 mm has only the flat cover; its side legs stop after 85 mm.
+- `start_clip_outer_lower` and `start_clip_outer_upper`: two 130 mm rear clips for a start U-frame, each with both side legs over the full 130 mm length.
 
 The clips are exported in print orientation, with their flat outer top face on
 the print bed and their legs facing upward. They need no support. The 21 mm
 clearance is intentionally a friction fit. If your PETG profile or printer
 calibration makes it too tight, increase `clip_open_inner_width` in 0.1 mm steps.
+`piece="print_layout"` displays all eight required physical clips separately
+and fits them onto a 250 x 250 mm print bed.
 
 The scripts expect `openscad` to be available on the command path. To use a different executable, set `OPENSCAD_BIN`:
 
