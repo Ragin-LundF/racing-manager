@@ -25,6 +25,7 @@ import io.github.raginlundf.racingmanager.infrastructure.repositories.Qualificat
 import kotlin.time.Clock
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class KnockoutService(
     private val knockoutRepository: KnockoutRepository,
     private val heatRepository: HeatRepository,
@@ -388,7 +389,10 @@ class KnockoutService(
      * participant, so it is completed as a bye and advanced recursively.
      */
     private fun advanceWinner(sourceMatch: KnockoutMatchEntity, winnerId: UUID) {
-        val nextRoundMatches = knockoutRepository.findMatchesByRound(sourceMatch.tournamentId, sourceMatch.roundNumber + 1)
+        val nextRoundMatches = knockoutRepository.findMatchesByRound(
+            tournamentId = sourceMatch.tournamentId,
+            roundNumber = sourceMatch.roundNumber + 1
+        )
         if (nextRoundMatches.isEmpty()) return
         val targetNumber = ((sourceMatch.matchNumber - 1) / 2) + 1
         val target = nextRoundMatches.find { it.matchNumber == targetNumber } ?: return
@@ -559,13 +563,12 @@ class KnockoutService(
     }
 
     private fun getQualificationRankings(eventId: UUID): List<QualificationRanking> {
-        val qualification = qualificationRepository.findByEventId(eventId) ?: return emptyList()
-        val participants = participantRepository.findByEventId(eventId)
+        val participants = participantRepository.findByEventId(eventId = eventId)
             .filter { it.status == ParticipantStatus.ACTIVE }
-        val heats = heatRepository.findByEventId(eventId)
+        val heats = heatRepository.findByEventId(eventId = eventId)
             .filter { it.round == 1 }
 
-        return calculateRankings(participants, heats)
+        return calculateRankings(participants = participants, heats = heats)
     }
 
     private fun calculateRankings(

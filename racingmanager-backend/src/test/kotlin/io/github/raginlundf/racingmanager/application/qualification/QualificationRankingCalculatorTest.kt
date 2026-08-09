@@ -37,10 +37,23 @@ class QualificationRankingCalculatorTest {
             heatNumber = 1,
             status = HeatStatus.FINISHED,
             lanes = listOf(
-                HeatLaneAssignment(1, participant.id, participant.startNumber, participant.firstName, participant.lastName),
+                HeatLaneAssignment(
+                    lane = 1,
+                    participantId = participant.id,
+                    participantStartNumber = participant.startNumber,
+                    participantFirstName = participant.firstName,
+                    participantLastName = participant.lastName
+                ),
             ),
             measurements = if (outcome == null) emptyList() else listOf(
-                Measurement(UUID.randomUUID(), heatId, 1, nanos, outcome, epoch),
+                Measurement(
+                    id = UUID.randomUUID(),
+                    heatId = heatId,
+                    lane = 1,
+                    durationNanos = nanos,
+                    outcome = outcome,
+                    receivedAt = epoch
+                ),
             ),
             createdAt = epoch,
         )
@@ -48,18 +61,21 @@ class QualificationRankingCalculatorTest {
 
     @Test
     fun `participants with a time rank above DNF-only and no-run participants`() {
-        val alice = participant("Alice", 1)
-        val bob = participant("Bob", 2)
-        val dave = participant("Dave", 3)
-        val erin = participant("Erin", 4)
+        val alice = participant(name = "Alice", startNumber = 1)
+        val bob = participant(name = "Bob", startNumber = 2)
+        val dave = participant(name = "Dave", startNumber = 3)
+        val erin = participant(name = "Erin", startNumber = 4)
         val heats = listOf(
-            heat(alice, LaneOutcome.FINISHED, 1_000_000_000),
-            heat(bob, LaneOutcome.FINISHED, 2_000_000_000),
-            heat(dave, LaneOutcome.DNF, 0),
-            heat(erin, null, 0),
+            heat(participant = alice, outcome = LaneOutcome.FINISHED, nanos = 1_000_000_000),
+            heat(participant = bob, outcome = LaneOutcome.FINISHED, nanos = 2_000_000_000),
+            heat(participant = dave, outcome = LaneOutcome.DNF, nanos = 0),
+            heat(participant = erin, outcome = null, nanos = 0),
         )
 
-        val ranked = QualificationRankingCalculator.calculate(listOf(alice, bob, dave, erin), heats)
+        val ranked = QualificationRankingCalculator.calculate(
+            participants = listOf(alice, bob, dave, erin),
+            heats = heats
+        )
 
         assertEquals(expected = alice.id, actual = ranked[0].participantId)
         assertEquals(expected = 1, actual = ranked[0].rank)
@@ -77,14 +93,14 @@ class QualificationRankingCalculatorTest {
 
     @Test
     fun `equal best times share a rank`() {
-        val alice = participant("Alice", 1)
-        val bob = participant("Bob", 2)
+        val alice = participant(name = "Alice", startNumber = 1)
+        val bob = participant(name = "Bob", startNumber = 2)
         val heats = listOf(
-            heat(alice, LaneOutcome.FINISHED, 1_000_000_000),
-            heat(bob, LaneOutcome.FINISHED, 1_000_000_000),
+            heat(participant = alice, outcome = LaneOutcome.FINISHED, nanos = 1_000_000_000),
+            heat(participant = bob, outcome = LaneOutcome.FINISHED, nanos = 1_000_000_000),
         )
 
-        val ranked = QualificationRankingCalculator.calculate(listOf(alice, bob), heats)
+        val ranked = QualificationRankingCalculator.calculate(participants = listOf(alice, bob), heats = heats)
 
         assertEquals(expected = 1, actual = ranked[0].rank)
         assertEquals(expected = 1, actual = ranked[1].rank)
