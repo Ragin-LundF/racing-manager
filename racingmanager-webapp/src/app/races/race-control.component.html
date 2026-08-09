@@ -17,7 +17,7 @@
   <!-- QUALIFICATION phase -->
   @if (qualification() || qualHeats().length > 0) {
     <div class="section">
-      <div class="phase-header" (click)="toggleQual()">
+      <div class="phase-header" role="button" tabindex="0" (click)="toggleQual()" (keydown.enter)="toggleQual()" (keydown.space)="toggleQual()">
         <h3>{{ 'races.control.phaseQualification' | translate }}</h3>
         @if (qualification(); as q) {
           <span class="chip" [class]="phaseChipClass(q.status)">{{ q.status }}</span>
@@ -63,7 +63,7 @@
   <!-- KNOCKOUT phase -->
   @if (knockout()) {
     <div class="section">
-      <div class="phase-header" (click)="toggleKo()">
+      <div class="phase-header" role="button" tabindex="0" (click)="toggleKo()" (keydown.enter)="toggleKo()" (keydown.space)="toggleKo()">
         <h3>{{ 'races.control.phaseKnockout' | translate }}</h3>
         @if (knockout(); as k) {
           <span class="chip" [class]="phaseChipClass(k.status)">{{ k.status }}</span>
@@ -102,7 +102,7 @@
 
   <ng-template #heatCard let-heat>
     @if (isHeatCollapsed(heat)) {
-      <div class="heat-summary" (click)="toggleHeat(heat.id)">
+      <div class="heat-summary" role="button" tabindex="0" (click)="toggleHeat(heat.id)" (keydown.enter)="toggleHeat(heat.id)" (keydown.space)="toggleHeat(heat.id)">
         @if (heat.round === 2) {
           <strong>{{ 'races.control.knockoutHeatLabel' | translate: { number: heat.heatNumber } }}</strong>
         } @else {

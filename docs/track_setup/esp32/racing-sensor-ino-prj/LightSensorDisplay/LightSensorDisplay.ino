@@ -9,9 +9,9 @@
 // ===== Configuration: adapt for each measuring module =====
 constexpr char WIFI_SSID[] = "RacingManager";
 constexpr char WIFI_PASSWORD[] = "race-4-life";
-constexpr char MODULE_ID[] = "lane-1-start";
+constexpr char MODULE_ID[] = "lane-1-finish";
 constexpr uint8_t LANE_NUMBER = 1;
-constexpr char MODULE_POSITION[] = "start"; // "start" or "finish"
+constexpr char MODULE_POSITION[] = "finish"; // "start" or "finish"
 
 constexpr char WEBSOCKET_HOST[] = "192.168.10.1";
 constexpr uint16_t WEBSOCKET_PORT = 8080;
