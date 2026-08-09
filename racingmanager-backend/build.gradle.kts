@@ -106,6 +106,10 @@ tasks.register<Jar>("fatJar") {
     from(tasks.named("processResources").map { it.outputs })
 }
 
+tasks.named("assemble") {
+    dependsOn("fatJar")
+}
+
 // jpackage native installer
 val jpackageOutputDir = layout.buildDirectory.dir("jpackage").get().asFile
 

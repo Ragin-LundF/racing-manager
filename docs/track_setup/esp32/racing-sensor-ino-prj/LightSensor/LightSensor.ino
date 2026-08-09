@@ -12,13 +12,16 @@ constexpr char MODULE_POSITION[] = "start"; // "start" or "finish"
 
 constexpr char WEBSOCKET_HOST[] = "192.168.10.1";
 constexpr uint16_t WEBSOCKET_PORT = 8080;
-constexpr char WEBSOCKET_PATH[] = "/ws";
+constexpr char WEBSOCKET_PATH[] = "/hardware/esp32/ws";
 
 constexpr uint8_t SENSOR_PIN = 16;
 constexpr uint8_t SENSOR_ACTIVE_LEVEL = LOW;
 constexpr uint32_t DEBOUNCE_US = 20'000;
 constexpr uint32_t WIFI_RETRY_INTERVAL_MS = 10'000;
 constexpr uint32_t WEBSOCKET_RECONNECT_MS = 3'000;
+constexpr uint32_t HEARTBEAT_INTERVAL_MS = 1'000;
+// PROTOCOL.md's message contract; this sketch only ever sends v=1 frames.
+constexpr uint8_t PROTOCOL_VERSION = 1;
 
 WebSocketsClient webSocket;
 volatile bool sensorEventPending = false;
@@ -26,6 +29,10 @@ volatile uint32_t sensorEventTimestampUs = 0;
 volatile uint32_t lastInterruptUs = 0;
 bool websocketConnected = false;
 uint32_t eventCount = 0;
+uint32_t lastHeartbeatMs = 0;
+// Changes every boot so the backend can tell a reconnect from a reset; two
+// random words are enough entropy to be unique among the 4 modules on one Pi.
+String bootId;
 
 void IRAM_ATTR onBeamBroken() {
   const uint32_t nowUs = micros();
@@ -35,10 +42,46 @@ void IRAM_ATTR onBeamBroken() {
   sensorEventPending = true;
 }
 
+void sendDeviceRegister() {
+  StaticJsonDocument<256> message;
+  message["v"] = PROTOCOL_VERSION;
+  message["type"] = "device.register";
+  message["device_id"] = MODULE_ID;
+  message["boot_id"] = bootId;
+  message["role"] = MODULE_POSITION;
+  message["firmware"] = "1.0.0";
+  JsonArray capabilities = message.createNestedArray("capabilities");
+  capabilities.add("beam_sensor");
+  capabilities.add("wifi");
+
+  String text;
+  serializeJson(message, text);
+  Serial.println(text);
+  webSocket.sendTXT(text);
+}
+
+void sendHeartbeat() {
+  StaticJsonDocument<256> message;
+  message["v"] = PROTOCOL_VERSION;
+  message["type"] = "device.heartbeat";
+  message["device_id"] = MODULE_ID;
+  message["boot_id"] = bootId;
+  message["uptime_ms"] = millis();
+  message["transport"] = "wifi";
+  JsonObject sensors = message.createNestedObject("sensors");
+  const bool beamBroken = digitalRead(SENSOR_PIN) == SENSOR_ACTIVE_LEVEL;
+  sensors[String("lane_") + LANE_NUMBER] = beamBroken ? "blocked" : "clear";
+
+  String text;
+  serializeJson(message, text);
+  webSocket.sendTXT(text);
+}
+
 void onWebSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
   if (type == WStype_CONNECTED) {
     websocketConnected = true;
     Serial.println("WebSocket connected");
+    sendDeviceRegister();
   } else if (type == WStype_DISCONNECTED) {
     websocketConnected = false;
     Serial.println("WebSocket disconnected");
@@ -48,12 +91,16 @@ void onWebSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 void sendSensorEvent(uint32_t timestampUs) {
   eventCount++;
   StaticJsonDocument<256> event;
-  event["type"] = "sensor_event";
-  event["moduleId"] = MODULE_ID;
-  event["lane"] = LANE_NUMBER;
-  event["position"] = MODULE_POSITION;
-  event["timestampUs"] = timestampUs;
+  event["v"] = PROTOCOL_VERSION;
+  event["type"] = "sensor.event";
+  event["message_id"] = bootId + "-" + String(eventCount);
+  event["device_id"] = MODULE_ID;
+  event["boot_id"] = bootId;
   event["sequence"] = eventCount;
+  event["role"] = MODULE_POSITION;
+  event["lane"] = LANE_NUMBER;
+  event["event"] = "beam_broken";
+  event["local_timestamp_us"] = timestampUs;
 
   String message;
   serializeJson(event, message);
@@ -83,6 +130,7 @@ void connectWifi() {
 void setup() {
   Serial.begin(115200);
   pinMode(SENSOR_PIN, INPUT_PULLUP);
+  bootId = String(esp_random(), HEX) + String(esp_random(), HEX);
 
   connectWifi();
 
@@ -125,4 +173,9 @@ void loop() {
   interrupts();
 
   if (eventReady) sendSensorEvent(timestampUs);
+
+  if (websocketConnected && millis() - lastHeartbeatMs >= HEARTBEAT_INTERVAL_MS) {
+    lastHeartbeatMs = millis();
+    sendHeartbeat();
+  }
 }

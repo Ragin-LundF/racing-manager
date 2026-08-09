@@ -450,8 +450,40 @@
           "label": "Bereit-Timeout (ms)"
         }
       },
+      "esp32": {
+        "deviceIds": {
+          "hint": "Kommagetrennte Liste der device_id, unter denen sich die Module anmelden müssen, z. B. lane-1-start, lane-1-finish, lane-2-start, lane-2-finish. Ein Modul außerhalb dieser Liste wird abgewiesen.",
+          "label": "Erwartete Geräte-IDs"
+        },
+        "devices": {
+          "connected": "Verbunden",
+          "deviceId": "Gerät",
+          "heading": "Verbundene Geräte",
+          "lastHeartbeat": "Letzter Heartbeat",
+          "never": "Nie",
+          "notConnected": "Nicht verbunden",
+          "refresh": "Aktualisieren",
+          "status": "Status"
+        },
+        "heartbeat": {
+          "label": "Geräte-Heartbeat verfolgen (Online-/Offline-Status)"
+        },
+        "heartbeatTimeout": {
+          "hint": "Ein Gerät gilt nach dieser Zeit ohne Heartbeat als offline (etwa 5 ausgebliebene 1-s-Heartbeats).",
+          "label": "Heartbeat-Timeout (ms)"
+        },
+        "protocolNote": "Race-Control-Handshake und Zeitsynchronisation sind noch nicht implementiert. Die Zeit jeder Bahn ist einfach die Zeitspanne zwischen dem Auslösen der Start- und der Ziel-Lichtschranke, gemessen von diesem Server.",
+        "rawLogPath": {
+          "label": "Rohprotokoll-Datei"
+        },
+        "registerTimeout": {
+          "hint": "Wie lange gewartet wird, bis sich ein Modul nach dem Verbinden meldet.",
+          "label": "Anmelde-Timeout (ms)"
+        }
+      },
       "mode": {
         "arduinoTwoLane": "Arduino-Lichtschranke, 2 Bahnen (seriell)",
+        "esp32WebSocketDirect": "ESP32 WebSocket Direct Connect (4 Lichtschranken)",
         "hardware": "Raspberry Pi (Hardware)",
         "label": "Gerät",
         "simulated": "Simulator (keine Hardware)"

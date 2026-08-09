@@ -21,6 +21,17 @@ Der Raspberry Pi ist kein zeitkritischer Sensor-Controller. Er verwaltet Rennen,
 
 Die Registrierungsstation ist ein einzelnes Notebook oder Tablet am Anmeldepunkt. Dort werden Namen und Fahrzeugdaten vor dem Rennen im Racing Manager erfasst. Das lokale WLAN ist daher ein internes Arbeitsnetz und kein Netz für Besucher. Der Rennleiter öffnet die Zuschaueransicht auf seinem Notebook. **Beamer oder externer TV werden ausschließlich direkt an dieses Notebook angeschlossen** (zum Beispiel über HDMI, USB-C/DisplayPort-Adapter oder eine Dockingstation); der Raspberry Pi liefert kein eigenes Bildsignal für die Zuschaueranzeige.
 
+> Das Diagramm und die Tabelle unten zeigen den Referenzentwurf: 2 Module,
+> `ESP32 START` und `ESP32 ZIEL`, jedes für beide Spuren zuständig. Der
+> ausgelieferte Gerätemodus `ESP32_WEBSOCKET_DIRECT` verwendet stattdessen
+> standardmäßig 4 Module mit je einem Sensoreingang – `lane-1-start`,
+> `lane-1-finish`, `lane-2-start`, `lane-2-finish` –, passend zu den
+> lauffähigen Sketchen im
+> [ESP32-Sensor-Firmware-Leitfaden](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md).
+> Beide Aufteilungen sprechen dasselbe WebSocket-Protokoll; die
+> Backend-Einstellung `expectedDeviceIds` legt fest, welche `device_id`s
+> akzeptiert werden – beide Varianten funktionieren ohne Protokolländerung.
+
 ## Zuordnung
 
 | Messpunkt | Besitzer | Sensor-ID | Ereignis |

@@ -25,13 +25,15 @@ sensor:
   debounce_us: 15000
 network:
   ssid: RacingManager
-  server_url: ws://192.168.50.1:8080/hardware/ws
+  server_url: ws://192.168.50.1:8080/hardware/esp32/ws
 transport:
   primary: wifi
   rs485_fallback: false
 ```
 
 The finish module uses `device_id: finish-01` and `module_role: finish`. Verify `active_level` with the actual sensor: the health view must say `clear` when the beam is clear. With the ADA2167 and an internal pull-up, a broken beam reads LOW, so `active_level: 0` is correct. GPIO 16/17 are the free inputs on the ESP32 board with the integrated LCD; on a plain DevKit, 32/33 also work — see [Wiring](WIRING.md).
+
+On the Racing Manager side, this is the `ESP32_WEBSOCKET_DIRECT` race-device mode ("ESP32 WebSocket Direct Connect" in the settings UI): the Pi hosts the WebSocket server at `/hardware/esp32/ws` and the modules dial in as clients — the reverse of the older `HARDWARE` mode, which dialed out to a separate Raspberry Pi controller. The shipped default expects 4 single-sensor modules (`lane-1-start`, `lane-1-finish`, `lane-2-start`, `lane-2-finish`, one GPIO input each) rather than the 2 dual-lane modules (`start-01`/`finish-01`) shown above — both module counts speak the same protocol; the `expectedDeviceIds` setting controls which `device_id`s the server accepts. The backend does not yet implement the `race.arm`/`race.armed`/`race.start`/`race.reset` handshake or `time.sync_request`/`time.sync_response`: it currently only consumes `device.register`, `device.heartbeat`, and `sensor.event`, timing each lane from the receipt-time delta between its start and finish `beam_broken` events.
 
 ## Working reference implementation
 

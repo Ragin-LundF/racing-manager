@@ -1,6 +1,6 @@
 <div class="shell">
   <!-- Scrim behind the drawer on phones; tap to close (spec: responsive nav). -->
-  <div class="nav-scrim" [class.open]="navOpen()" (click)="closeNav()"></div>
+  <div class="nav-scrim" role="presentation" [class.open]="navOpen()" (click)="closeNav()"></div>
 
   <aside class="nav-rail" [class.open]="navOpen()">
     <div class="brand">
@@ -8,12 +8,13 @@
       <span class="brand-name">{{ 'racemanager.brand' | translate }}</span>
     </div>
 
-    <nav class="nav-items" (click)="closeNav()">
+    <nav class="nav-items">
       <a
         class="nav-item"
         [routerLink]="['/', 'racemanager']"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeNav()"
       >
         <span class="nav-icon">▦</span>
         <span>{{ 'racemanager.nav.overview' | translate }}</span>
@@ -25,6 +26,7 @@
           [routerLink]="['/', 'racemanager', activeEvent.id]"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeNav()"
         >
           <span class="nav-icon">▤</span>
           <span>{{ 'racemanager.nav.participants' | translate }}</span>
@@ -33,6 +35,7 @@
           class="nav-item"
           [routerLink]="['/', 'racemanager', activeEvent.id, 'qualification']"
           routerLinkActive="active"
+          (click)="closeNav()"
         >
           <span class="nav-icon">◔</span>
           <span>{{ 'racemanager.nav.preliminary' | translate }}</span>
@@ -41,6 +44,7 @@
           class="nav-item"
           [routerLink]="['/', 'racemanager', activeEvent.id, 'race-control']"
           routerLinkActive="active"
+          (click)="closeNav()"
         >
           <span class="nav-icon">⚑</span>
           <span>{{ 'racemanager.nav.races' | translate }}</span>
@@ -56,6 +60,7 @@
         [routerLink]="['/', 'racemanager', 'diagnostics']"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeNav()"
       >
         <span class="nav-icon">◎</span>
         <span>{{ 'racemanager.nav.diagnostics' | translate }}</span>
@@ -67,6 +72,7 @@
           [routerLink]="['/', 'racemanager', 'tenant']"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeNav()"
         >
           <span class="nav-icon">⚙</span>
           <span>{{ 'racemanager.nav.tenant' | translate }}</span>
@@ -79,6 +85,7 @@
           [routerLink]="['/', 'racemanager', 'race-device']"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeNav()"
         >
           <span class="nav-icon">🔧</span>
           <span>{{ 'racemanager.nav.raspberryPiConfig' | translate }}</span>
@@ -90,6 +97,7 @@
         [routerLink]="['/', 'racemanager', 'raspberry-pi']"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeNav()"
       >
         <span class="nav-icon">📡</span>
         <span>{{ 'racemanager.nav.raspberryPi' | translate }}</span>

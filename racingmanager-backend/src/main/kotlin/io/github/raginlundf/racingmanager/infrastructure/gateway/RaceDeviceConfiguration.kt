@@ -7,6 +7,8 @@ import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.JSerialCommLine
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.RawTimingLog
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.TwoLaneSerialMeasurementGateway
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectMeasurementGateway
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectSettings
 import io.github.raginlundf.racingmanager.infrastructure.gateway.transport.WebSocketRaceDeviceTransport
 import io.github.raginlundf.racingmanager.infrastructure.repositories.RaceDeviceSettingsRepository
 import io.ktor.server.application.Application
@@ -44,6 +46,16 @@ fun buildRaceDeviceGateway(settings: RaceDeviceSettings): CloseableMeasurementGa
                 config = arduino,
                 laneTimeoutMs = settings.finishTimeoutMs,
                 rawLog = RawTimingLog(path = arduino.rawLogPath),
+            )
+        }
+
+        RaceDeviceMode.ESP32_WEBSOCKET_DIRECT -> {
+            val esp32 = settings.esp32 ?: Esp32WebSocketDirectSettings()
+            logger.info { "Race device: ESP32 WebSocket Direct Connect, expecting ${esp32.expectedDeviceIds}" }
+            Esp32WebSocketDirectMeasurementGateway(
+                settings = esp32,
+                laneTimeoutMs = settings.finishTimeoutMs,
+                rawLog = RawTimingLog(path = esp32.rawLogPath),
             )
         }
     }
@@ -86,6 +98,7 @@ private fun Application.raceDeviceSettingsFromConfig(): RaceDeviceSettings {
         endpoint = endpoint,
         finishTimeoutMs = finishTimeoutMs,
         arduino = arduinoSettingsFromConfig(),
+        esp32 = esp32SettingsFromConfig(),
     )
 }
 
@@ -106,6 +119,32 @@ private fun Application.arduinoSettingsFromConfig(): ArduinoTwoLaneSettings {
         falseStartWindowMs = value(key = "falseStartWindowMs")?.toLong() ?: defaults.falseStartWindowMs,
         finishSemantics = value(key = "finishSemantics")?.let { FinishSemantics.from(value = it) }
             ?: defaults.finishSemantics,
+        rawLogPath = value(key = "rawLogPath") ?: defaults.rawLogPath,
+    )
+}
+
+/** ESP32 direct-connect startup defaults; every value falls back to
+    [Esp32WebSocketDirectSettings]'s concrete-case defaults so an install only has
+    to override what differs (e.g. a non-default device-id list). */
+private fun Application.esp32SettingsFromConfig(): Esp32WebSocketDirectSettings {
+    val config = environment.config
+    fun value(key: String): String? {
+        return config.propertyOrNull(path = "racingmanager.racedevice.esp32.$key")?.getString()?.takeIf {
+            it.isNotBlank()
+        }
+    }
+    val defaults = Esp32WebSocketDirectSettings()
+    return Esp32WebSocketDirectSettings(
+        expectedDeviceIds = value(key = "expectedDeviceIds")?.split(",")?.map { it.trim() }
+            ?: defaults.expectedDeviceIds,
+        registerTimeoutMs = value(key = "registerTimeoutMs")?.toLong() ?: defaults.registerTimeoutMs,
+        useRaceControlHandshake = value(key = "useRaceControlHandshake")?.toBoolean()
+            ?: defaults.useRaceControlHandshake,
+        useTimeSync = value(key = "useTimeSync")?.toBoolean() ?: defaults.useTimeSync,
+        useDeviceHeartbeat = value(key = "useDeviceHeartbeat")?.toBoolean() ?: defaults.useDeviceHeartbeat,
+        heartbeatTimeoutMs = value(key = "heartbeatTimeoutMs")?.toLong() ?: defaults.heartbeatTimeoutMs,
+        armTimeoutMs = value(key = "armTimeoutMs")?.toLong() ?: defaults.armTimeoutMs,
+        timeSyncRounds = value(key = "timeSyncRounds")?.toInt() ?: defaults.timeSyncRounds,
         rawLogPath = value(key = "rawLogPath") ?: defaults.rawLogPath,
     )
 }
