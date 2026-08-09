@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCAD="pinewood_u_frame.scad"
 HOUSING_SCAD="electronics_housing_40mm_entry.scad"
+CLIP_SCAD="clip_on_cable_covers.scad"
 OUT="stl"
 OPENSCAD_BIN="${OPENSCAD_BIN:-openscad}"
 mkdir -p "$OUT"
@@ -19,6 +20,12 @@ export_housing() {
   local name="$1" piece="$2"
   "$OPENSCAD_BIN" -o "$OUT/$name.stl" \
     -D "piece=\"$piece\"" "$HOUSING_SCAD"
+}
+
+export_clip() {
+  local name="$1" piece="$2"
+  "$OPENSCAD_BIN" -o "$OUT/$name.stl" \
+    -D "piece=\"$piece\"" "$CLIP_SCAD"
 }
 
 # Start gate: three interlocking frame sections per side.
@@ -45,5 +52,14 @@ done
 # Separate glue-on electronics housing and its display lid.
 export_housing "housing_base_95mm" base
 export_housing "housing_display_lid_95mm" lid
+
+# Supplemental clip-on covers; these do not alter the original frame or covers.
+export_clip "finish_clip_lower_arm" finish_lower_arm
+export_clip "finish_clip_upper_arm" finish_upper_arm
+export_clip "finish_clip_outer_full" finish_outer_full
+export_clip "start_clip_lower_arm" start_lower_arm
+export_clip "start_clip_upper_arm" start_upper_arm
+export_clip "start_clip_outer_lower" start_outer_lower
+export_clip "start_clip_outer_upper" start_outer_upper
 
 echo "Done. STL files are in: $OUT/"

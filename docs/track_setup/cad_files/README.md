@@ -4,18 +4,6 @@ This folder is the maintained source package for a two-lane Pinewood Derby infra
 
 The design deliberately separates the structural U-frame, removable cable covers, and electronics housing. That keeps parts printable without excessive support material and lets the electronics housing be replaced independently.
 
-## Where this fits
-
-This package is shared by both language editions of the track documentation and exists only in English. Start at the [package overview](../README.md), or go directly to the [English](../en/PROJECT.md) or [German](../de/PROJECT.md) project overview.
-
-The geometry is dimensioned for the parts listed in [Materials](../en/MATERIALS.md) / [Materialliste](../de/MATERIALS.md):
-
-- Sensor pockets and optical slots for the **Adafruit ADA2167** break-beam sensor.
-- A housing sized for the **30-pin ESP32 breakout board** with the **ESP32 board carrying a 1.96" LCD** plugged in; the display opening and USB opening follow that assembly.
-- Cable channels sized for 20 AWG silicone wire and inline LT-1 splices.
-
-Wiring that goes into these parts is described in [Wiring](../en/WIRING.md) / [Verdrahtung](../de/WIRING.md); the assembly order is in [Setup](../en/SETUP.md) / [Aufbau](../de/SETUP.md). Firmware for the board inside the housing is in the [ESP32 sensor firmware guide](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md).
-
 ## Package contents
 
 | File | Purpose |
@@ -23,8 +11,10 @@ Wiring that goes into these parts is described in [Wiring](../en/WIRING.md) / [V
 | `pinewood_u_frame.scad` | Main parametric U-frame: start and finish variants, left/right mirrors, cable channels, sensor pockets, covers, and 250 mm printer split joints. |
 | `electronics_housing_40mm_entry.scad` | Separate glue-on electronics housing with board supports, display opening, USB opening, cable pass-through, and sliding lid. |
 | `breakbeam_sensor_holder_test.scad` | Small isolated test model for the sensor pocket, optical slot, cable channel, and cover fit. Print this first when changing sensor-related dimensions. |
+| `clip_on_cable_covers.scad` | Supplemental external 3 mm wall clip-on covers for the cable ducts; it does not modify the original U-frame. |
 | `export_all_stls.sh` | Exports all required U-frame, cover, and housing STL files. |
 | `export_housing_stls.sh` | Exports only the two housing STL files. |
+| `export_clip_on_covers.sh` | Exports only the supplemental clip-on cover STL files. |
 
 ## Coordinate system and design intent
 
@@ -120,7 +110,7 @@ Set `piece` to:
 Open a terminal in this folder and run:
 
 ```bash
-chmod +x export_all_stls.sh export_housing_stls.sh
+chmod +x export_all_stls.sh export_housing_stls.sh export_clip_on_covers.sh
 ./export_all_stls.sh
 ```
 
@@ -130,12 +120,40 @@ The generated files are written to `stl/`. The full export contains:
 - Two one-piece finish frames: left and right.
 - Four covers for each frame height: lower/upper arm cover and lower/upper rail cover.
 - One housing base and one housing display lid.
+- Seven supplemental clip-on covers: two arm clips per frame type, one full-length finish outer clip, and two start outer clips ending at the device gap.
 
 To export only the housing:
 
 ```bash
 ./export_housing_stls.sh
 ```
+
+To export only the supplemental clip-on covers:
+
+```bash
+./export_clip_on_covers.sh
+```
+
+### Supplemental clip-on covers
+
+`clip_on_cable_covers.scad` is an additive-only model. It is not referenced by,
+and does not alter, `pinewood_u_frame.scad`. Every cover is a U-shaped friction
+clip with a 21 mm clear inner width at the closed side, narrowing to 19 mm at
+the open clipping side. Its 15 mm legs taper from 2 mm to 4 mm thickness and
+provide the snap/friction fit over the 20 mm frame profile from the cable-duct
+side.
+
+Exported installation-specific parts are:
+
+- `finish_clip_lower_arm` and `finish_clip_upper_arm`: one for each arm of a finish U-frame.
+- `finish_clip_outer_full`: one 240 mm clip for the complete outer rail of a finish U-frame.
+- `start_clip_lower_arm` and `start_clip_upper_arm`: one for each arm of a start U-frame.
+- `start_clip_outer_lower` and `start_clip_outer_upper`: two 150 mm clips for the outer start rail, stopping before the central 40 mm device connection.
+
+The clips are exported in print orientation, with their flat outer top face on
+the print bed and their legs facing upward. They need no support. The 21 mm
+clearance is intentionally a friction fit. If your PETG profile or printer
+calibration makes it too tight, increase `clip_open_inner_width` in 0.1 mm steps.
 
 The scripts expect `openscad` to be available on the command path. To use a different executable, set `OPENSCAD_BIN`:
 
@@ -177,9 +195,3 @@ Keep the following invariants unless the project requirements explicitly change:
 4. Frame and cover geometry must use matching C-groove dimensions.
 5. Start-frame joints must remain keyed and preserve the 90° geometry.
 6. The housing lid must slide freely from its open entry side and must not include a fragile bridge across that entry.
-
----
-
-**Track documentation:** [Package overview](../README.md) · [English project overview](../en/PROJECT.md) · [Deutscher Projektüberblick](../de/PROJECT.md)
-
-**Directly related chapters:** [Materials](../en/MATERIALS.md) · [Wiring](../en/WIRING.md) · [Setup](../en/SETUP.md) · [ESP32 sensor firmware guide](../esp32/ESP32_SENSOR_FIRMWARE_GUIDE.md)
