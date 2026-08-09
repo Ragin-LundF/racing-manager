@@ -18,6 +18,9 @@ object RaceDeviceSettingsTable : Table("race_device_settings") {
         keeps the Arduino knobs cohesive instead of spreading six nullable columns
         that only one mode ever reads. */
     val arduinoOptions = text("arduino_options").nullable()
+
+    /** Serialized `Esp32WebSocketDirectSettings`; null for the other modes. */
+    val esp32Options = text("esp32_options").nullable()
     val updatedAt = timestamp("updated_at")
 
     override val primaryKey = PrimaryKey(id)

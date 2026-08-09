@@ -87,10 +87,14 @@ class SpectatorService(
         val matches = knockoutRepository.findMatchesByTournamentId(tournament.id)
 
         fun matchesFor(id: UUID) = matches.filter { it.participant1Id == id || it.participant2Id == id }
-        val furthestRound = participants.associate { p -> p.id to (matchesFor(p.id).maxOfOrNull { it.roundNumber } ?: 0) }
+        val furthestRound = participants.associate {
+            p -> p.id to (matchesFor(p.id).maxOfOrNull { it.roundNumber } ?: 0)
+        }
         // Accepted results only: a match becomes COMPLETED when its heat result is accepted.
         val eliminated = participants.filter { p ->
-            matchesFor(p.id).any { it.status == KnockoutMatchStatus.COMPLETED && it.winnerId != null && it.winnerId != p.id }
+            matchesFor(p.id).any {
+                it.status == KnockoutMatchStatus.COMPLETED && it.winnerId != null && it.winnerId != p.id
+            }
         }.map { it.id }.toSet()
         val racing = matches.filter { it.status == KnockoutMatchStatus.IN_PROGRESS }
             .flatMap { listOfNotNull(it.participant1Id, it.participant2Id) }

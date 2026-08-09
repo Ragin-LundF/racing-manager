@@ -19,6 +19,7 @@
         <option value="SIMULATED">{{ 'raspberryPi.config.mode.simulated' | translate }}</option>
         <option value="HARDWARE">{{ 'raspberryPi.config.mode.hardware' | translate }}</option>
         <option value="ARDUINO_TWO_LANE">{{ 'raspberryPi.config.mode.arduinoTwoLane' | translate }}</option>
+        <option value="ESP32_WEBSOCKET_DIRECT">{{ 'raspberryPi.config.mode.esp32WebSocketDirect' | translate }}</option>
       </select>
     </label>
 
@@ -93,6 +94,40 @@
       </label>
     }
 
+    @if (mode === 'ESP32_WEBSOCKET_DIRECT') {
+      <label>
+        <span>{{ 'raspberryPi.config.esp32.deviceIds.label' | translate }}</span>
+        <input name="esp32DeviceIds" [(ngModel)]="esp32DeviceIdsText" required />
+        <small class="hint">{{ 'raspberryPi.config.esp32.deviceIds.hint' | translate }}</small>
+      </label>
+
+      <label>
+        <span>{{ 'raspberryPi.config.esp32.registerTimeout.label' | translate }}</span>
+        <input type="number" name="esp32RegisterTimeoutMs" [(ngModel)]="esp32.registerTimeoutMs" required min="1" />
+        <small class="hint">{{ 'raspberryPi.config.esp32.registerTimeout.hint' | translate }}</small>
+      </label>
+
+      <label class="checkbox">
+        <input type="checkbox" name="esp32UseHeartbeat" [(ngModel)]="esp32.useDeviceHeartbeat" />
+        <span>{{ 'raspberryPi.config.esp32.heartbeat.label' | translate }}</span>
+      </label>
+
+      @if (esp32.useDeviceHeartbeat) {
+        <label>
+          <span>{{ 'raspberryPi.config.esp32.heartbeatTimeout.label' | translate }}</span>
+          <input type="number" name="esp32HeartbeatTimeoutMs" [(ngModel)]="esp32.heartbeatTimeoutMs" required min="1" />
+          <small class="hint">{{ 'raspberryPi.config.esp32.heartbeatTimeout.hint' | translate }}</small>
+        </label>
+      }
+
+      <label>
+        <span>{{ 'raspberryPi.config.esp32.rawLogPath.label' | translate }}</span>
+        <input name="esp32RawLogPath" [(ngModel)]="esp32.rawLogPath" required />
+      </label>
+
+      <p class="hint">{{ 'raspberryPi.config.esp32.protocolNote' | translate }}</p>
+    }
+
     <label>
       <span>{{ 'raspberryPi.config.timeout.label' | translate }}</span>
       <input type="number" name="finishTimeoutMs" [(ngModel)]="finishTimeoutMs" required min="1" />
@@ -108,5 +143,39 @@
 
   @if (testResult(); as result) {
     <p [class.success]="testOk()" [class.error]="!testOk()">{{ result }}</p>
+  }
+
+  @if (mode === 'ESP32_WEBSOCKET_DIRECT') {
+    <div class="esp32-devices">
+      <div class="header">
+        <h3>{{ 'raspberryPi.config.esp32.devices.heading' | translate }}</h3>
+        <button type="button" (click)="refreshEsp32Devices()">
+          {{ 'raspberryPi.config.esp32.devices.refresh' | translate }}
+        </button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'raspberryPi.config.esp32.devices.deviceId' | translate }}</th>
+            <th>{{ 'raspberryPi.config.esp32.devices.status' | translate }}</th>
+            <th>{{ 'raspberryPi.config.esp32.devices.lastHeartbeat' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (device of esp32Devices(); track device.deviceId) {
+            <tr>
+              <td>{{ device.deviceId }}</td>
+              <td [class.success]="device.online" [class.error]="!device.online">
+                {{
+                  (device.online ? 'raspberryPi.config.esp32.devices.connected' : 'raspberryPi.config.esp32.devices.notConnected')
+                    | translate
+                }}
+              </td>
+              <td>{{ device.lastHeartbeatAt ?? ('raspberryPi.config.esp32.devices.never' | translate) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 </div>

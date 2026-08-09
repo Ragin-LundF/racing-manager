@@ -364,7 +364,9 @@ class QualificationServiceTest {
         )
         heatRepository.updateStatus(id = heat.id, status = HeatStatus.FINISHED, finishedAt = heat.createdAt)
 
-        val before = qualificationService.getRankings(eventId = eventId).first { it.participantId == lane.participantId }
+        val before = qualificationService.getRankings(eventId = eventId).first {
+            it.participantId == lane.participantId
+        }
         assertEquals(expected = 1, actual = before.completedRuns)
         assertNotNull(actual = before.bestTimeNanos)
 

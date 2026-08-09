@@ -214,7 +214,12 @@ class SpectatorServiceTest {
 
         val standings = spectatorService.getSnapshot(eventId)!!.knockoutStandings
         assertEquals(
-            expected = listOf(match1.participant1Id, match2.participant1Id, match1.participant2Id, match2.participant2Id),
+            expected = listOf(
+                match1.participant1Id,
+                match2.participant1Id,
+                match1.participant2Id,
+                match2.participant2Id
+            ),
             actual = standings.map { it.participantId },
         )
         assertEquals(expected = listOf(1, 2, 3, 4), actual = standings.map { it.place })

@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.raginlundf.racingmanager.infrastructure.gateway.RaceDeviceMode
 import io.github.raginlundf.racingmanager.infrastructure.gateway.RaceDeviceSettings
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.ArduinoTwoLaneSettings
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectSettings
 import io.github.raginlundf.racingmanager.infrastructure.tables.RaceDeviceSettingsTable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.deleteAll
@@ -29,6 +30,7 @@ class RaceDeviceSettingsRepository {
                     endpoint = it[RaceDeviceSettingsTable.endpoint],
                     finishTimeoutMs = it[RaceDeviceSettingsTable.finishTimeoutMs],
                     arduino = it[RaceDeviceSettingsTable.arduinoOptions]?.let(::decodeArduino),
+                    esp32 = it[RaceDeviceSettingsTable.esp32Options]?.let(::decodeEsp32),
                 )
             }
         }
@@ -39,6 +41,12 @@ class RaceDeviceSettingsRepository {
     private fun decodeArduino(stored: String): ArduinoTwoLaneSettings? {
         return runCatching { json.decodeFromString<ArduinoTwoLaneSettings>(stored) }
             .onFailure { logger.warn(throwable = it) { "Ignoring unreadable stored Arduino options" } }
+            .getOrNull()
+    }
+
+    private fun decodeEsp32(stored: String): Esp32WebSocketDirectSettings? {
+        return runCatching { json.decodeFromString<Esp32WebSocketDirectSettings>(stored) }
+            .onFailure { logger.warn(throwable = it) { "Ignoring unreadable stored ESP32 options" } }
             .getOrNull()
     }
 
@@ -53,6 +61,7 @@ class RaceDeviceSettingsRepository {
                 it[endpoint] = settings.endpoint
                 it[finishTimeoutMs] = settings.finishTimeoutMs
                 it[arduinoOptions] = settings.arduino?.let { options -> json.encodeToString(options) }
+                it[esp32Options] = settings.esp32?.let { options -> json.encodeToString(options) }
                 it[updatedAt] = Clock.System.now()
             }
         }

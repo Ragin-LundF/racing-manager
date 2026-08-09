@@ -11,6 +11,7 @@ import io.github.raginlundf.racingmanager.infrastructure.gateway.RaspberryPiMeas
 import io.github.raginlundf.racingmanager.infrastructure.gateway.ReconfigurableMeasurementGateway
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.ArduinoTwoLaneSettings
 import io.github.raginlundf.racingmanager.infrastructure.gateway.adruino.twolane.FinishSemantics
+import io.github.raginlundf.racingmanager.infrastructure.gateway.esp32.direct.Esp32WebSocketDirectSettings
 import io.github.raginlundf.racingmanager.infrastructure.repositories.RaceDeviceSettingsRepository
 import io.github.raginlundf.racingmanager.infrastructure.repositories.SigningKeyRepository
 import io.github.raginlundf.racingmanager.infrastructure.security.JwtService
@@ -54,6 +55,20 @@ class RaceDeviceRoutesTest {
           "falseStartWindowMs": 250,
           "finishSemantics": "TIMESTAMP",
           "rawLogPath": "raw-timing.log"
+        }
+    """.trimIndent()
+
+    private val esp32Body = """
+        {
+          "expectedDeviceIds": ["lane-1-start", "lane-1-finish", "lane-2-start", "lane-2-finish"],
+          "registerTimeoutMs": 10000,
+          "useRaceControlHandshake": false,
+          "useTimeSync": false,
+          "useDeviceHeartbeat": true,
+          "heartbeatTimeoutMs": 5000,
+          "armTimeoutMs": 5000,
+          "timeSyncRounds": 5,
+          "rawLogPath": "raw-esp32-timing.log"
         }
     """.trimIndent()
 
@@ -207,6 +222,146 @@ class RaceDeviceRoutesTest {
         }
 
         assertEquals(expected = HttpStatusCode.BadRequest, actual = response.status)
+    }
+
+    @Test
+    fun `returns the active settings including the esp32 block`() = testApplication {
+        application {
+            configureTestApp(
+                settings = RaceDeviceSettings(
+                    mode = RaceDeviceMode.ESP32_WEBSOCKET_DIRECT,
+                    endpoint = "ws://unused",
+                    finishTimeoutMs = 30_000,
+                    esp32 = Esp32WebSocketDirectSettings(expectedDeviceIds = listOf("lane-1-start")),
+                ),
+            )
+        }
+
+        val response = client.get("/api/v1/racedevice/settings") { adminAuth() }
+
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
+        val body = response.bodyAsText()
+        assertContains(charSequence = body, other = "\"mode\":\"ESP32_WEBSOCKET_DIRECT\"")
+        assertContains(charSequence = body, other = "\"expectedDeviceIds\":[\"lane-1-start\"]")
+    }
+
+    @Test
+    fun `saves the esp32 mode and persists the options`() = testApplication {
+        application { configureTestApp() }
+
+        val response = client.put("/api/v1/racedevice/settings") {
+            adminAuth()
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"mode":"ESP32_WEBSOCKET_DIRECT","endpoint":"ws://unused","finishTimeoutMs":45000,
+                   "esp32":$esp32Body}""",
+            )
+        }
+
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
+        val saved = settingsRepository.find()
+        assertNotNull(actual = saved)
+        assertEquals(
+            expected = RaceDeviceSettings(
+                mode = RaceDeviceMode.ESP32_WEBSOCKET_DIRECT,
+                endpoint = "ws://unused",
+                finishTimeoutMs = 45_000,
+                esp32 = Esp32WebSocketDirectSettings(
+                    expectedDeviceIds = listOf("lane-1-start", "lane-1-finish", "lane-2-start", "lane-2-finish"),
+                    registerTimeoutMs = 10_000,
+                    rawLogPath = "raw-esp32-timing.log",
+                ),
+            ),
+            actual = saved,
+        )
+    }
+
+    @Test
+    fun `rejects the esp32 mode without device options`() = testApplication {
+        application { configureTestApp() }
+
+        val response = client.put("/api/v1/racedevice/settings") {
+            adminAuth()
+            contentType(ContentType.Application.Json)
+            setBody("""{"mode":"ESP32_WEBSOCKET_DIRECT","endpoint":"ws://unused","finishTimeoutMs":30000}""")
+        }
+
+        assertEquals(expected = HttpStatusCode.BadRequest, actual = response.status)
+    }
+
+    @Test
+    fun `rejects unusable esp32 options`() = testApplication {
+        application { configureTestApp() }
+
+        val emptyDeviceIds = "\"lane-1-start\", \"lane-1-finish\", \"lane-2-start\", \"lane-2-finish\""
+        val invalidBlocks = listOf(
+            esp32Body.replace(oldValue = emptyDeviceIds, newValue = ""),
+            esp32Body.replace(oldValue = "\"registerTimeoutMs\": 10000", newValue = "\"registerTimeoutMs\": 0"),
+            esp32Body.replace(oldValue = "\"heartbeatTimeoutMs\": 5000", newValue = "\"heartbeatTimeoutMs\": 0"),
+            esp32Body.replace(oldValue = "\"armTimeoutMs\": 5000", newValue = "\"armTimeoutMs\": 0"),
+            esp32Body.replace(oldValue = "\"timeSyncRounds\": 5", newValue = "\"timeSyncRounds\": 0"),
+            esp32Body.replace(oldValue = "\"raw-esp32-timing.log\"", newValue = "\"\""),
+            // Not implemented yet — see Esp32WebSocketDirectMeasurementGateway.
+            esp32Body.replace(
+                oldValue = "\"useRaceControlHandshake\": false",
+                newValue = "\"useRaceControlHandshake\": true",
+            ),
+            esp32Body.replace(oldValue = "\"useTimeSync\": false", newValue = "\"useTimeSync\": true"),
+        )
+
+        invalidBlocks.forEach { block ->
+            val response = client.put("/api/v1/racedevice/settings") {
+                adminAuth()
+                contentType(ContentType.Application.Json)
+                setBody("""{"mode":"ESP32_WEBSOCKET_DIRECT","endpoint":"ws://unused","finishTimeoutMs":30000,
+                          "esp32":$block}""")
+            }
+            assertEquals(expected = HttpStatusCode.BadRequest, actual = response.status, message = block)
+        }
+    }
+
+    @Test
+    fun `reports which expected esp32 devices are connected`() = testApplication {
+        application { configureTestApp() }
+
+        val response = client.post("/api/v1/racedevice/test") {
+            adminAuth()
+            contentType(ContentType.Application.Json)
+            setBody("""{"mode":"ESP32_WEBSOCKET_DIRECT","endpoint":"ws://unused","esp32":$esp32Body}""")
+        }
+
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
+        assertContains(charSequence = response.bodyAsText(), other = "\"ok\":false")
+    }
+
+    @Test
+    fun `lists no esp32 devices when the gateway is not in that mode`() = testApplication {
+        application { configureTestApp() }
+
+        val response = client.get("/api/v1/racedevice/esp32/devices") { adminAuth() }
+
+        assertEquals(expected = HttpStatusCode.OK, actual = response.status)
+        assertEquals(expected = "[]", actual = response.bodyAsText())
+    }
+
+    @Test
+    fun `denies the esp32 device list without the admin scope`() = testApplication {
+        application { configureTestApp() }
+
+        val response = client.get("/api/v1/racedevice/esp32/devices") {
+            header("Authorization", "Bearer ${token(scope = Scopes.USER)}")
+        }
+
+        assertEquals(expected = HttpStatusCode.Forbidden, actual = response.status)
+    }
+
+    @Test
+    fun `hides the esp32 device list outside a local deployment`() = testApplication {
+        application { configureTestApp(deploymentMode = DeploymentMode.HOSTED) }
+
+        val response = client.get("/api/v1/racedevice/esp32/devices") { adminAuth() }
+
+        assertEquals(expected = HttpStatusCode.Forbidden, actual = response.status)
     }
 
     @Test

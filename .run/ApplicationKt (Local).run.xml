@@ -1,0 +1,29 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ApplicationKt (Local)" type="KtorApplicationConfigurationType" factoryName="Ktor">
+    <option name="MAIN_CLASS_NAME" value="io.github.raginlundf.racingmanager.ApplicationKt" />
+    <module name="racingmanager.racingmanager-backend.main" />
+    <option name="PROGRAM_PARAMETERS" value="-config=application-local.conf" />
+    <extension name="com.egoshard.intellij.k8s-runtime-config-plugin">
+      <option name="ENABLED" value="false" />
+      <entries />
+    </extension>
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="io.github.raginlundf.racingmanager.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="alternativeJrePath" />
+    <option name="alternativeJrePathEnabled" value="false" />
+    <option name="includeProvidedScope" value="false" />
+    <option name="mainClass" value="io.github.raginlundf.racingmanager.ApplicationKt" />
+    <option name="passParentEnvs" value="true" />
+    <option name="programParameters" value="-config=application-local.conf" />
+    <option name="shortenCommandLine" />
+    <option name="vmParameters" />
+    <option name="workingDirectory" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

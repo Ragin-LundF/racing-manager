@@ -1,10 +1,9 @@
 @if (confirm.request(); as req) {
-  <div class="confirm-backdrop" (click)="cancel()">
+  <div class="confirm-backdrop" role="presentation" (click)="onBackdropClick($event)">
     <div
       class="confirm-panel confirm-panel--{{ req.variant || 'default' }}"
       role="dialog"
       aria-modal="true"
-      (click)="$event.stopPropagation()"
     >
       @if (req.title) {
         <h2 class="confirm-title">{{ req.title }}</h2>
@@ -13,11 +12,11 @@
 
       @if (req.requireText) {
         <input
+          #requireTextInput
           type="text"
           [value]="typed()"
           (input)="typed.set($any($event.target).value)"
           [placeholder]="req.requireTextLabel || ''"
-          autofocus
         />
       }
 

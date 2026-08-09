@@ -41,6 +41,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.assertTrue
 
+@Suppress("TooManyFunctions", "LargeClass")
 class KnockoutServiceTest {
 
     private val eventRepository = EventRepository()
@@ -196,6 +197,7 @@ class KnockoutServiceTest {
         knockoutService.setup(eventId = eventId, pairingMode = PairingMode.FIRST_VS_LAST, actorId = actorId)
         knockoutService.generatePairings(eventId = eventId, actorId = actorId)
         var guard = 0
+        @Suppress("LoopWithTooManyJumpStatements")
         while (guard++ < 20) {
             val matches = knockoutService.getMatches(eventId = eventId)
             if (matches.all { it.status == KnockoutMatchStatus.COMPLETED }) break
@@ -208,7 +210,11 @@ class KnockoutServiceTest {
                     eventId = eventId, matchId = m.id, actorId = actorId
                 ) as CreateHeatForMatchResult.Success).heat
                 knockoutService.recordMatchResult(
-                    eventId = eventId, matchId = m.id, winnerId = m.participant1Id!!, heatId = heat.id, actorId = actorId
+                    eventId = eventId,
+                    matchId = m.id,
+                    winnerId = m.participant1Id!!,
+                    heatId = heat.id,
+                    actorId = actorId
                 )
             }
         }
@@ -620,7 +626,9 @@ class KnockoutServiceTest {
         val completed = knockoutService.getMatches(eventId = eventId).first { it.id == match1.id }
         assertEquals(expected = KnockoutMatchStatus.COMPLETED, actual = completed.status)
         assertEquals(expected = match1.participant1Id, actual = completed.winnerId)
-        val finalMatch = knockoutService.getMatches(eventId = eventId).first { it.roundNumber == 2 && it.matchNumber == 1 }
+        val finalMatch = knockoutService.getMatches(eventId = eventId).first {
+            it.roundNumber == 2 && it.matchNumber == 1
+        }
         assertEquals(expected = match1.participant1Id, actual = finalMatch.participant1Id)
     }
 

@@ -23,7 +23,7 @@ function heat(status: string, round = 1, heatNumber = 1): HeatResponse {
 
 const acceptResult = vi.fn(() => of({ status: 'accepted' }));
 const qualFinalize = vi.fn(() => of(void 0));
-const createHeatForMatch = vi.fn((_eventId: string, _req: { matchId: string }) => of(void 0));
+const createHeatForMatch = vi.fn<KnockoutClient['createHeatForMatch']>(() => of(void 0));
 
 interface Opts {
   qualification?: QualificationResponse;
