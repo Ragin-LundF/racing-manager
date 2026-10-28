@@ -3,6 +3,7 @@
 Canonical entry point for this repository. `AGENTS.md` and `CLAUDE.md` both
 delegate here. Progressive loading: read only the files needed for the current
 task, never everything.
+Do never commit anything or create PRs. The user must check upfront if everything is ok to proceed.
 
 ## Project overview
 
