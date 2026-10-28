@@ -113,10 +113,16 @@ for x in [35, 70]:
 # Kabelweg
 p.line([(78, 10), (40, 6), (2.5, 6), (2.5, h/2), (-8.5, h/2)], stroke=ORANGE, sw=3, dash="8 5")
 p.line([(78, h-10), (40, h-8), (2.5, h-8), (2.5, h/2+4), (-8.5, h/2+4)], stroke=ORANGE, sw=3, dash="8 5")
-# Auto
-p.poly([(118, 38), (160, 38), (160, 46), (150, 52), (125, 52), (118, 46)], fill="#c0392b", stroke=INK, sw=1.5)
-p.circle(126, 38, 3.2, fill=INK); p.circle(152, 38, 3.2, fill=INK)
-add(f'<line x1="{p.p(165,45)[0]:.0f}" y1="{p.p(165,45)[1]:.0f}" x2="{p.p(108,45)[0]:.0f}" y2="{p.p(108,45)[1]:.0f}" stroke="#c0392b" stroke-width="2" marker-end="url(#arr)"/>')
+# Auto in Frontansicht: fährt in die Zeichenebene hinein, durch den Lichtstrahl
+p.rect(73, 42, 113, 56, fill="#c0392b", stroke=INK, sw=1.5)
+p.rect(82, 56, 104, 62, fill="#c0392b", stroke=INK, sw=1.5)
+for wx in [71, 111]:
+    p.rect(wx, 38, wx+4, 47, fill=INK, stroke=INK, sw=1)
+cx_, cy_ = p.p(106, 100)
+add(f'<circle cx="{cx_:.0f}" cy="{cy_:.0f}" r="11" fill="#fff" stroke="#c0392b" stroke-width="2.5"/>')
+add(f'<path d="M{cx_-7:.0f},{cy_-7:.0f} L{cx_+7:.0f},{cy_+7:.0f} M{cx_+7:.0f},{cy_-7:.0f} L{cx_-7:.0f},{cy_+7:.0f}" stroke="#c0392b" stroke-width="2.5"/>')
+text(cx_+16, cy_-2, "Fahrtrichtung:", 13, color="#c0392b")
+text(cx_+16, cy_+14, "in die Ebene", 13, color="#c0392b")
 # Zwinge
 cx = 55
 p.line([(cx, 38), (cx, 46), (cx+0.01, 46)], stroke=GREY, sw=5)
@@ -169,6 +175,12 @@ label(q, y1+12, 50, 1150, 400, "Stützdreiecke 60 mm\n(= blaue Linie\naus deiner
 label(q, fy0+8, -10, 820, 700, "4 Holzschrauben von\nunten in die Bahn", 14)
 label(q, 10, 250, 820, 180, "U steht senkrecht\nzur Bahnfläche", 14)
 dim_h(q, -24.3, fy0, fy1, "≈ 90", off=34)
+# Auto auf der Rampe (Seitenansicht): fährt entlang der Bahn durch das U
+q.poly([(-120, 38), (-75, 38), (-75, 50), (-85, 56), (-110, 56), (-120, 48)], fill="#c0392b", stroke=INK, sw=1.5)
+q.circle(-112, 38, 3.5, fill=INK); q.circle(-83, 38, 3.5, fill=INK)
+q.line([(-60, 66), (-130, 66)], stroke="#c0392b", sw=2.5, marker="arr")
+a_, b_ = q.p(-105, 80)
+text(a_, b_, "Fahrtrichtung", 13, "middle", color="#c0392b")
 
 # ---------------- Panel 3: Sensortasche ----------------
 frame_box(1380, 100, 600, 640, "Sensortasche (Schnitt durch Armspitze)", "3")

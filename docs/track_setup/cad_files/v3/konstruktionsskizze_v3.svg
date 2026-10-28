@@ -34,10 +34,14 @@
 <circle cx="563.0" cy="1151.2" r="5.4" fill="#fff" stroke="#1d2733" stroke-width="1"/>
 <polyline points="582.2,1120.0 491.0,1129.6 401.0,1129.6 401.0,736.0 374.6,736.0" fill="none" stroke="#e07a1f" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" stroke-linecap="round"/>
 <polyline points="582.2,352.0 491.0,347.2 401.0,347.2 401.0,726.4 374.6,726.4" fill="none" stroke="#e07a1f" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" stroke-linecap="round"/>
-<polygon points="678.2,1052.8 779.0,1052.8 779.0,1033.6 755.0,1019.2 695.0,1019.2 678.2,1033.6" fill="#c0392b" stroke="#1d2733" stroke-width="1.5" fill-opacity="1" stroke-linejoin="round"/>
-<circle cx="697.4" cy="1052.8" r="7.7" fill="#1d2733" stroke="#1d2733" stroke-width="2"/>
-<circle cx="759.8" cy="1052.8" r="7.7" fill="#1d2733" stroke="#1d2733" stroke-width="2"/>
-<line x1="791" y1="1036" x2="654" y2="1036" stroke="#c0392b" stroke-width="2" marker-end="url(#arr)"/>
+<polygon points="570.2,1043.2 666.2,1043.2 666.2,1009.6 570.2,1009.6" fill="#c0392b" stroke="#1d2733" stroke-width="1.5" fill-opacity="1" stroke-linejoin="round"/>
+<polygon points="591.8,1009.6 644.6,1009.6 644.6,995.2 591.8,995.2" fill="#c0392b" stroke="#1d2733" stroke-width="1.5" fill-opacity="1" stroke-linejoin="round"/>
+<polygon points="565.4,1052.8 575.0,1052.8 575.0,1031.2 565.4,1031.2" fill="#1d2733" stroke="#1d2733" stroke-width="1" fill-opacity="1" stroke-linejoin="round"/>
+<polygon points="661.4,1052.8 671.0,1052.8 671.0,1031.2 661.4,1031.2" fill="#1d2733" stroke="#1d2733" stroke-width="1" fill-opacity="1" stroke-linejoin="round"/>
+<circle cx="649" cy="904" r="11" fill="#fff" stroke="#c0392b" stroke-width="2.5"/>
+<path d="M642,897 L656,911 M656,897 L642,911" stroke="#c0392b" stroke-width="2.5"/>
+<text x="665.4" y="902.0" font-family="DejaVu Sans, Arial" font-size="13" text-anchor="start" font-weight="normal" fill="#c0392b">Fahrtrichtung:</text>
+<text x="665.4" y="918.0" font-family="DejaVu Sans, Arial" font-size="13" text-anchor="start" font-weight="normal" fill="#c0392b">in die Ebene</text>
 <polyline points="527.0,1052.8 527.0,1033.6 527.0,1033.6" fill="none" stroke="#6b7785" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
 <polygon points="512.6,1052.8 541.4,1052.8 541.4,1043.2 512.6,1043.2" fill="#6b7785" stroke="#6b7785" stroke-width="2" fill-opacity="1" stroke-linejoin="round"/>
 <polyline points="493.4,1033.6 493.4,1230.4 527.0,1230.4 527.0,1211.2" fill="none" stroke="#6b7785" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
@@ -114,6 +118,11 @@
 <text x="820.0" y="197.1" font-family="DejaVu Sans, Arial" font-size="14" text-anchor="start" font-weight="normal" fill="#1d2733">zur Bahnfläche</text>
 <line x1="1005.6" y1="730.5" x2="1096.9" y2="730.5" stroke="#6b7785" stroke-width="1.4" marker-start="url(#tick)" marker-end="url(#tick)"/>
 <text x="1051.3" y="724.5" font-family="DejaVu Sans" font-size="15" fill="#6b7785" text-anchor="middle">≈ 90</text>
+<polygon points="903.0,654.7 948.8,643.3 945.8,631.0 934.1,627.5 908.6,633.8 900.4,644.5" fill="#c0392b" stroke="#1d2733" stroke-width="1.5" fill-opacity="1" stroke-linejoin="round"/>
+<circle cx="911.1" cy="652.7" r="3.7" fill="#1d2733" stroke="#1d2733" stroke-width="2"/>
+<circle cx="940.7" cy="645.3" r="3.7" fill="#1d2733" stroke="#1d2733" stroke-width="2"/>
+<polyline points="957.0,610.9 885.7,628.7" fill="none" stroke="#c0392b" stroke-width="2.5" marker-end="url(#arr)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="907.6" y="608.1" font-family="DejaVu Sans, Arial" font-size="13" text-anchor="middle" font-weight="normal" fill="#c0392b">Fahrtrichtung</text>
 <rect x="1380" y="100" width="600" height="640" rx="10" fill="#ffffff" stroke="#c9d1da" stroke-width="1.5"/>
 <circle cx="1404" cy="126" r="14" fill="#1d2733"/>
 <text x="1404.0" y="132.0" font-family="DejaVu Sans, Arial" font-size="17" text-anchor="middle" font-weight="bold" fill="#fff">3</text>
